@@ -23,12 +23,15 @@ import sys
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from brief import generate_brief, mark_items_sent
+from brief import generate_brief, load_pool, mark_items_sent
 
 log = logging.getLogger(__name__)
 
-FEISHU_WEBHOOK = os.environ.get("FEISHU_WEBHOOK", "").strip()
+FEISHU_WEBHOOK_TEST = os.environ.get("FEISHU_WEBHOOK_TEST", "").strip()
+FEISHU_WEBHOOK = FEISHU_WEBHOOK_TEST or os.environ.get("FEISHU_WEBHOOK", "").strip()
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "").strip()
+TEST_MODE = bool(FEISHU_WEBHOOK_TEST)
+FORCE_RUN = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
 
 
 def _gen_sign(secret, timestamp):
@@ -158,6 +161,19 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
     )
+    today = datetime.now().strftime("%Y-%m-%d")
+    pool_pre = load_pool()
+    already_sent_today = [
+        v for v in pool_pre.get("items", {}).values()
+        if v.get("status") == "sent" and v.get("sent_at") == today
+    ]
+    if already_sent_today and not TEST_MODE and not FORCE_RUN:
+        log.info(
+            f"今日 ({today}) 已成功推送过 {len(already_sent_today)} 篇产品洞察，"
+            "跳过本次重复触发（防止外部 cron 与 GitHub schedule 双重触发连发两期）"
+        )
+        return
+
     items, pool = generate_brief(mark_sent=False)
     if not items:
         log.warning("未生成任何产品洞察内容")
@@ -168,9 +184,11 @@ def main():
     )
     unread_after = max(0, unread_total - len(items))
 
-    sent_ok = send_feishu(items, unread_count=unread_after)
-    if sent_ok:
+    sent_ok = send_feishu(items, date_str=today, unread_count=unread_after)
+    if sent_ok and not TEST_MODE:
         mark_items_sent(pool, [it["url"] for it in items])
+    elif sent_ok and TEST_MODE:
+        log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态）")
     else:
         log.info("本次未推送飞书，文章保持 unread 状态留在池中，待配置 FEISHU_WEBHOOK 后发送")
 

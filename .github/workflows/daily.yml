@@ -2,9 +2,18 @@ name: Palantir AIP 产品深度洞察
 
 on:
   schedule:
-    # UTC 01:00 = 北京时间 09:00，每周一至周五运行
+    # UTC 01:00 = 北京时间 09:00，每周一至周五运行（作为外部 cron 的兜底）
     - cron: '0 1 * * 1-5'
   workflow_dispatch:
+    inputs:
+      feishu_webhook_test:
+        description: '可选：测试群 Webhook（填了只发测试群，不消耗正式池未读状态）'
+        required: false
+        default: ''
+      force_run:
+        description: '可选：填 true 强制再发一期（忽略今日已发防重检查）'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -30,22 +39,40 @@ jobs:
       - name: 拉取最新知识池 (pool.json)
         run: git pull --rebase origin main || true
 
-      - name: 更新知识池并推送今日精读
+      - name: 更新知识池并推送今日精读（失败自动重试一次）
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
-        run: python src/notify.py
+          FEISHU_WEBHOOK_TEST: ${{ github.event.inputs.feishu_webhook_test }}
+          FORCE_RUN: ${{ github.event.inputs.force_run }}
+        run: |
+          if python src/notify.py; then
+            exit 0
+          fi
+          echo "首次运行失败，等待 60 秒后重试一次…"
+          sleep 60
+          python src/notify.py
 
       - name: 提交更新后的知识池 (pool.json)
-        if: success()
+        if: success() && github.event.inputs.feishu_webhook_test == ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -f pool.json ]; then
             git add pool.json
-            git diff --cached --quiet || git commit -m "chore: update pool.json [skip ci]"
-            git push origin main || true
+            if git diff --cached --quiet; then
+              echo "pool.json 无变化，无需提交"
+              exit 0
+            fi
+            git commit -m "chore: update pool.json [skip ci]"
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push origin main && exit 0
+              echo "第 $i 次推送失败，5 秒后重试…"
+              sleep 5
+            done
+            echo "::error::pool.json 推送失败"
+            exit 1
           fi
