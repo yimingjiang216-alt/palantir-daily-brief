@@ -1,7 +1,6 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 .env
 .env.local
 _*.py
 _*.txt
-last_sent.json

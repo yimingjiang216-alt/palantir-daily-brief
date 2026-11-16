@@ -1,115 +1,131 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Palantir 动态日报 · 简报生成
-把抓到的素材交给 LLM，整理成 3~6 条中文简报，每条一句话要点 + 对 AIP 团队的参考价值。
+Palantir AIP 产品洞察 · 候选池打分 + 每日出队深度拆解模块
+与新闻简报（report）的核心区别：
+  1. 存量池模式（pool.json）：好文章不过期，所有候选先由千问按「产品机制深度」打分（0-10分）
+  2. >=7 分入池排队（status="unread"），<7 分标为 rejected 永不重算
+  3. 每天从池中取出分数最高的 1~2 篇未读文章，拉取全文（最高 1.2 万字），
+     按《Palantir AIP 产品深度解读》样板结构生成深度产品卡片，发完标为 sent
 """
 
 import os
 import re
 import json
+import time
 import logging
 from datetime import datetime
 from pathlib import Path
 
 import requests
 
+from fetch import fetch_all_candidates, fetch_full_text
+
 log = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-LAST_SENT = BASE_DIR / "last_sent.json"
+POOL_PATH = BASE_DIR / "pool.json"
 
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen-flash")
 LLM_KEY = os.environ.get("LLM_API_KEY", "")
 
-# ── 简报口径（来自交接文档的现网 prompt）────────────────────────────────────
-PROMPT_TEMPLATE = """你是一个科技行业情报分析师，服务于 AIP 产品团队。
+DAILY_COUNT = int(os.environ.get("DAILY_COUNT", "2"))
+SCORE_BATCH_SIZE = 45  # 每次最多对多少篇新发现文章打分
 
-下面是从多个信息源抓到的 Palantir 相关资讯。请整理成一份**中文行业洞察简报**，用于工作日早上的行业动态日报。
+# ── 阶段一：入池筛选打分 Prompt（严格按产品设计深度打分）──────────────────────
+SCORE_PROMPT = """你是服务于企业自研 AIP（AI Platform）产品团队的首席产品架构师。
+请对以下候选文章/推文/文档进行「Palantir 产品机制深度评分（0~10分）」。
 
-## 内容要求
+## 评分标准（对标《Palantir AIP 产品深度解读》）
+- **9~10 分（必读级产品拆解）**：
+  深入拆解 Palantir AIP / Ontology / Foundry 的核心产品机制，例如：
+  · Ontology 四要素（Object / Property / Link / Action Types）与业务系统反向写回机制
+  · AIP Logic 的 Agent 全生命周期设计（工具封装、自主权“旋钮”可控性、推理溯源可解释性、AIP Evals 评估、人工反馈内化、多 Agent 级联协同）
+  · 端到端客户落地工作流拆解（如订单履约、设备预测性维护中人机如何基于同一套 Ontology 协同）
+  · 与国内企业自研 AI 平台（如语义层、FDE 模式）的深度架构对比
+- **7~8 分（优质产品/技术专题）**：
+  · Palantir AIP 官方核心文档模块（Agent Stack、Markings 权限控制、Observability 追踪、Prompt 工程、BYOM）
+  · 一线工程师关于 OAG（Ontology Augmented Generation）、MCP 集成、Model Studio、Trace Curation、OSDK 的技术实践或推文深度解读
+- **0~6 分（直接淘汰，不入池）**：
+  · 纯财报营收、股价涨跌、估值分析（如 Rule of 40、165% 续费率炒作）
+  · 高管政治表态、选举站队、社会抗议新闻
+  · 只有宏观口号、没有具体产品机制或工作流细节的公关通稿
 
-1. 选出 **3~6 条**最有价值的动态。优先级从高到低：
-   - 产品发布、功能更新（尤其 Foundry / AIP / Apollo 三条产品线）
-   - 客户/政府合同、重大商业合作
-   - 财报、股价等经营表现
-   - CEO（Alex Karp）的重大公开表态
-   - 技术博客、工程实践
+## 候选列表
+{candidates_text}
 
-2. **每条包含两部分**：
-   - 一句话要点（说清发生了什么，简洁）
-   - 对 AIP 产品团队的参考价值/影响简评（这条对我们有什么用）
-
-3. 简报要**精简明了**，适合在群里直接阅读，不做长篇分析。
-
-4. 如果素材里几乎没有有价值的动态，就**如实给少几条**，不要硬凑，不要拿无关内容充数。
-
-## 素材
-
-{materials}
-
-## 输出格式
-
-严格输出 JSON 数组，不要任何其他文字：
-
+## 输出要求
+严格输出 JSON 数组，不要任何额外解释：
 [
-  {{
-    "index": 1,
-    "title": "一句话要点",
-    "insight": "对 AIP 产品团队的参考价值",
-    "url": "对应素材的原始链接",
-    "source": "来源名称"
-  }}
+  {{"index": 1, "score": 9, "reason": "一句话说明包含哪些产品机制点"}}
 ]
 """
 
+# ── 阶段二：单篇全文深度拆解 Prompt（对标知乎样板文骨架）─────────────────────
+DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产品架构师。
+团队正在规划公司自身的 AIP 平台，需要深入理解 Palantir 的产品功能设计与工程落地逻辑。
 
-def _load_last_sent():
-    """读取已发过的标题，用于跨期去重。"""
-    if not LAST_SENT.exists():
-        return []
+请基于下面这篇资料的完整内容，写出一份**高颗粒度、拒绝空话的产品深度解读**（风格对标《Palantir AIP 产品深度解读》）。
+
+## 原始资料信息
+- 标题：{title}
+- 来源：{source}
+- 链接：{url}
+
+## 原始资料正文
+{full_text}
+
+## 拆解要求（必须具体到产品原语、交互机制、数据与工作流，严禁写成公关软文）
+请严格输出一个 JSON 对象，包含以下字段：
+{{
+  "title": "提炼后的中文深度解读标题（直击产品机制或核心架构，25字以内）",
+  "module": "所属模块（从以下选一：Ontology语义与动作层 / AIP Logic与Agent生命周期 / 权限治理与安全护栏 / 企业落地工作流案例 / 平台工程与FDE模式）",
+  "summary": "一句话点透这篇文章讲清楚了 Palantir 的什么核心机制（60字以内）",
+  "core_mechanics": [
+    "机制点1（格式：『小标题』：具体讲清原语/组件怎么设计的，比如 Object/Action 怎么绑定、权限 Markings 怎么穿透、或 Agent 自主权旋钮怎么控制，80~140字）",
+    "机制点2（同上，必须有技术或产品交互细节）",
+    "机制点3（同上，若有第4点也可列出）"
+  ],
+  "workflow_or_case": "业务场景与工作流还原：还原文中提到的具体使用场景或操作链路（例如：什么业务触发 → 接入什么数据 → Agent 调什么工具/模型 → 人工如何介入审查/反馈 → 如何通过 Action 写回业务系统；若系纯架构文档，则还原其端到端调用链路，120~220字）",
+  "aip_takeaways": [
+    "对我们规划自研 AIP 的启示1（必须是可以抄到产品规划里的具体设计原则，比如『人与Agent共用同一套语义原语避免认知割裂』『把自主权做成可调旋钮而非全自动黑盒』，60~100字）",
+    "对我们规划自研 AIP 的启示2（同上，60~100字）"
+  ]
+}}
+"""
+
+
+def load_pool():
+    """读取持久化候选池 pool.json。"""
+    if not POOL_PATH.exists():
+        return {"updated_at": "", "items": {}}
     try:
-        data = json.loads(LAST_SENT.read_text(encoding="utf-8"))
-        return data.get("titles", [])
-    except Exception:
-        return []
+        return json.loads(POOL_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        log.warning(f"读取 pool.json 失败，重新初始化: {e}")
+        return {"updated_at": "", "items": {}}
 
 
-def _save_last_sent(titles, date_str):
-    """保存本期标题，保留最近 30 条。"""
-    old = _load_last_sent()
-    merged = titles + [t for t in old if t not in titles]
-    LAST_SENT.write_text(
-        json.dumps({"date": date_str, "titles": merged[:30]},
-                   ensure_ascii=False, indent=2),
-        encoding="utf-8"
+def save_pool(pool):
+    """保存持久化候选池 pool.json。"""
+    pool["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    POOL_PATH.write_text(
+        json.dumps(pool, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
-def build_materials(items, max_chars=800):
-    """把素材拼成 LLM 可读的文本。"""
-    lines = []
-    for i, it in enumerate(items, 1):
-        pub = it["pub"].strftime("%Y-%m-%d") if it.get("pub") else "未知"
-        lines.append(
-            f"[{i}] 来源:{it['source']} 日期:{pub}\n"
-            f"标题:{it['title']}\n"
-            f"链接:{it['url']}\n"
-            f"摘要:{(it.get('summary') or '')[:max_chars]}\n"
-        )
-    return "\n".join(lines)
-
-
-def call_llm(prompt, max_retries=3):
-    """调用 LLM，带重试。"""
+def call_llm(prompt, max_tokens=4000, max_retries=3):
+    """调用阿里云千问 OpenAI 兼容接口。"""
     if not LLM_KEY:
         raise ValueError("LLM_API_KEY 未设置")
 
     url = f"{LLM_BASE_URL.rstrip('/')}/chat/completions"
     payload = {
         "model": LLM_MODEL,
-        "max_tokens": 4000,
+        "max_tokens": max_tokens,
+        "temperature": 0.3,
         "messages": [{"role": "user", "content": prompt}],
     }
     headers = {
@@ -124,111 +140,206 @@ def call_llm(prompt, max_retries=3):
             return resp.json()["choices"][0]["message"]["content"]
         except Exception as e:
             if attempt < max_retries - 1:
-                log.warning(f"LLM 调用失败（第{attempt+1}次）: {str(e)[:80]}，10秒后重试")
-                import time
-                time.sleep(10)
+                log.warning(f"LLM 调用失败（第 {attempt + 1} 次）: {str(e)[:80]}，8 秒后重试")
+                time.sleep(8)
             else:
                 raise
 
 
-def parse_response(text):
-    """解析 LLM 输出，容忍常见的格式问题。"""
-    text = text.strip().replace("```json", "").replace("```", "").strip()
+def _parse_json_from_llm(text):
+    """从 LLM 输出中提取 JSON 数组或 JSON 对象。"""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text).strip()
 
-    # 正常情况：JSON 数组
-    start, end = text.find("["), text.rfind("]")
-    if start != -1 and end > start:
-        try:
-            return json.loads(text[start:end + 1])
-        except json.JSONDecodeError:
-            pass
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
 
-    # 兜底：LLM 输出多个独立对象（每行一个），手动包成数组
-    if text.lstrip().startswith("{"):
-        objs = [ln.strip().rstrip(",") for ln in text.split("\n")
-                if ln.strip().startswith("{")]
-        if objs:
+    # 尝试寻找最外层 [...] 或 {...}
+    for open_ch, close_ch in (("[", "]"), ("{", "}")):
+        s, e = text.find(open_ch), text.rfind(close_ch)
+        if s != -1 and e > s:
             try:
-                return json.loads("[" + ",".join(objs) + "]")
-            except json.JSONDecodeError:
-                pass
-
-    log.error(f"JSON 解析失败，原始输出前 200 字：{text[:200]}")
-    return []
+                return json.loads(text[s : e + 1])
+            except Exception:
+                continue
+    return None
 
 
-def is_duplicate(title, prev_titles, threshold=0.6):
-    """跨期去重：标题 bigram 重合率超阈值判为重复。"""
-    def bigrams(s):
-        s = re.sub(r"\s+", "", s).lower()
-        return set(s[k:k + 2] for k in range(len(s) - 1)) if len(s) > 1 else set()
+def update_candidate_pool(pool, candidates):
+    """
+    把新抓到的候选文章打分入池：
+      - 已在 pool["items"] 里的 URL 直接跳过（不重复消耗 Token，也不重复发送）
+      - 新文章由千问按「产品机制深度」打分，>=7 分标为 unread，<7 分标为 rejected
+    """
+    items_map = pool.setdefault("items", {})
+    new_cands = [c for c in candidates if c["url"] not in items_map]
 
-    t_bg = bigrams(title)
-    if not t_bg:
-        return False
+    if not new_cands:
+        log.info("本次无新增未评估候选，直接使用池中存量")
+        return
 
-    for prev in prev_titles:
-        p_bg = bigrams(prev)
-        if not p_bg:
-            continue
-        overlap = len(t_bg & p_bg) / min(len(t_bg), len(p_bg))
-        if overlap > threshold:
-            return True
-    return False
+    batch = new_cands[:SCORE_BATCH_SIZE]
+    log.info(f"发现 {len(new_cands)} 条新候选，本次取前 {len(batch)} 条送千问打分...")
+
+    lines = []
+    for idx, c in enumerate(batch, 1):
+        lines.append(
+            f"[{idx}] 来源: {c['source']}\n"
+            f"标题: {c['title']}\n"
+            f"摘要: {(c.get('summary') or '')[:400]}\n"
+        )
+    prompt = SCORE_PROMPT.format(candidates_text="\n".join(lines))
+    raw = call_llm(prompt, max_tokens=2500)
+    scored_list = _parse_json_from_llm(raw)
+
+    score_by_idx = {}
+    if isinstance(scored_list, list):
+        for obj in scored_list:
+            if isinstance(obj, dict) and "index" in obj:
+                score_by_idx[int(obj["index"])] = (
+                    int(obj.get("score", 0)),
+                    str(obj.get("reason", "")),
+                )
+
+    added_unread = 0
+    added_rejected = 0
+    for idx, c in enumerate(batch, 1):
+        # GitHub 深度研究专题与官方文档核心模块保底 8 分，防止仅凭短摘要被误杀
+        default_score = 8 if ("GitHub" in c["source"] or "官方文档" in c["source"]) else 0
+        sc, reason = score_by_idx.get(idx, (default_score, "默认规则评分"))
+        if default_score >= 8 and sc < 8:
+            sc = default_score
+
+        status = "unread" if sc >= 7 else "rejected"
+        if status == "unread":
+            added_unread += 1
+        else:
+            added_rejected += 1
+
+        items_map[c["url"]] = {
+            "url": c["url"],
+            "raw_url": c.get("raw_url", ""),
+            "title": c["title"],
+            "source": c["source"],
+            "summary": c.get("summary", "")[:800],
+            "score": sc,
+            "reason": reason,
+            "status": status,
+            "added_at": datetime.now().strftime("%Y-%m-%d"),
+            "sent_at": "",
+        }
+
+    save_pool(pool)
+    unread_total = sum(1 for v in items_map.values() if v.get("status") == "unread")
+    log.info(
+        f"打分入池完成：新增高分待读 {added_unread} 篇，淘汰 {added_rejected} 篇；"
+        f"当前池内共储备 {unread_total} 篇高分未读文章"
+    )
 
 
-def generate_brief(items):
-    """主流程：素材 → LLM → 去重 → 简报条目列表。"""
-    if not items:
-        log.warning("没有素材，跳过")
-        return []
+def synthesize_deep_dive(item):
+    """拉取单篇高分文章全文，由千问生成结构化产品深度拆解。"""
+    log.info(f"正在拉取全文并深度拆解: [{item['score']}分] {item['title'][:50]}...")
+    full_text = fetch_full_text(item, max_chars=12000)
+    if not full_text or len(full_text) < 100:
+        full_text = item.get("summary", item["title"])
 
-    prev_titles = _load_last_sent()
-    materials = build_materials(items)
-    prompt = PROMPT_TEMPLATE.format(materials=materials)
+    prompt = DEEP_DIVE_PROMPT.format(
+        title=item["title"],
+        source=item["source"],
+        url=item["url"],
+        full_text=full_text,
+    )
+    raw = call_llm(prompt, max_tokens=3500)
+    parsed = _parse_json_from_llm(raw)
 
-    log.info(f"送 LLM 素材 {len(items)} 条，prompt {len(prompt)} 字符")
-    raw = call_llm(prompt)
-    log.info(f"LLM 返回 {len(raw)} 字符")
+    if not isinstance(parsed, dict) or not parsed.get("core_mechanics"):
+        log.warning(f"深度拆解 JSON 解析异常，使用兜底结构: {raw[:150]}")
+        parsed = {
+            "title": item["title"],
+            "module": "AIP 核心产品洞察",
+            "summary": item.get("reason") or item.get("summary", "")[:80],
+            "core_mechanics": [item.get("summary", "")[:300]],
+            "workflow_or_case": "详见原文完整架构与流程拆解。",
+            "aip_takeaways": ["建议结合原文对照梳理我方 AIP 的语义层与工具调用边界。"],
+        }
 
-    parsed = parse_response(raw)
-    if not parsed:
-        log.error("LLM 输出解析失败")
-        return []
-
-    # 跨期去重
-    result = []
-    for it in parsed:
-        title = (it.get("title") or "").strip()
-        if not title:
-            continue
-        if is_duplicate(title, prev_titles):
-            log.info(f"跨期去重: {title[:40]}")
-            continue
-        result.append(it)
-
-    log.info(f"LLM 给出 {len(parsed)} 条，去重后 {len(result)} 条")
-    return result
+    parsed["url"] = item["url"]
+    parsed["source"] = item["source"]
+    parsed["score"] = item["score"]
+    return parsed
 
 
-def save_brief(items, date_str):
-    """保存本期标题到去重库。"""
-    titles = [(it.get("title") or "").strip() for it in items if it.get("title")]
-    _save_last_sent(titles, date_str)
-    log.info(f"已保存 {len(titles)} 条标题到去重库")
+def generate_brief(mark_sent=False):
+    """
+    主流程：
+      1. 抓取全渠道深度候选
+      2. 更新持久化候选池 pool.json（对新文章打分）
+      3. 从池中按分数高低取出 Top 1~2 篇 unread 文章，拉全文生成深度解读
+      4. 若 mark_sent=True（或推送成功后调用 mark_items_sent），将文章标为 sent
+    """
+    pool = load_pool()
+    candidates = fetch_all_candidates()
+    update_candidate_pool(pool, candidates)
+
+    unread = [
+        v for v in pool.get("items", {}).values() if v.get("status") == "unread"
+    ]
+    # 排序：分数高优先；同分时优先兼顾多元来源（中文深度研究 / 社区实战 / 官方文档 / 推特）
+    unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
+
+    if not unread:
+        log.warning("候选池中已无未读高分文章！")
+        return [], pool
+
+    # 选出今日精读的 1~2 篇（若选 2 篇，尽量让第 2 篇来自不同 source 以丰富视角）
+    selected_raw = [unread[0]]
+    if DAILY_COUNT > 1 and len(unread) > 1:
+        second = next(
+            (u for u in unread[1:] if u["source"] != selected_raw[0]["source"]),
+            unread[1],
+        )
+        selected_raw.append(second)
+
+    deep_dives = []
+    for it in selected_raw:
+        dd = synthesize_deep_dive(it)
+        deep_dives.append(dd)
+
+    if mark_sent:
+        mark_items_sent(pool, [it["url"] for it in selected_raw])
+
+    return deep_dives, pool
+
+
+def mark_items_sent(pool, urls):
+    """将已成功推送（或已消费）的文章在 pool.json 中标记为 sent。"""
+    today = datetime.now().strftime("%Y-%m-%d")
+    items_map = pool.get("items", {})
+    for u in urls:
+        if u in items_map:
+            items_map[u]["status"] = "sent"
+            items_map[u]["sent_at"] = today
+    save_pool(pool)
+    unread_left = sum(1 for v in items_map.values() if v.get("status") == "unread")
+    log.info(f"已标记 {len(urls)} 篇为 sent，池内剩余未读高分储备：{unread_left} 篇")
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.insert(0, str(Path(__file__).parent))
-    from fetch import fetch_all
-
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
-    items = fetch_all()
-    brief = generate_brief(items)
-    print(f"\n{'='*60}\n共 {len(brief)} 条\n")
-    for it in brief:
-        print(f"【{it.get('title','')}】")
-        print(f"  参考价值: {it.get('insight','')}")
-        print(f"  来源: {it.get('source','')} | {it.get('url','')}\n")
+    results, pool = generate_brief(mark_sent=False)
+    print(f"\n{'=' * 65}\n今日生成 {len(results)} 篇 Palantir AIP 产品深度精读\n{'=' * 65}")
+    for idx, r in enumerate(results, 1):
+        print(f"\n【精读 {idx}】{r.get('title')}  ({r.get('module')} | 深度分 {r.get('score')})")
+        print(f"▸ 核心定位：{r.get('summary')}")
+        print("▸ 产品机制拆解：")
+        for m in r.get("core_mechanics", []):
+            print(f"   • {m}")
+        print(f"▸ 业务场景与工作流还原：\n   {r.get('workflow_or_case')}")
+        print("▸ 对自研 AIP 的产品启示：")
+        for t in r.get("aip_takeaways", []):
+            print(f"   ★ {t}")
+        print(f"▸ 来源：{r.get('source')} | {r.get('url')}")

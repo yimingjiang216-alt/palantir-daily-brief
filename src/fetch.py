@@ -1,76 +1,125 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Palantir 动态日报 · 抓取模块
-5 个源，统一输出为 [{title, url, summary, pub, source}] 结构。
+Palantir AIP 产品洞察 · 多渠道深度内容抓取模块
+核心逻辑：
+  1. 不做 30 天时间一刀切（产品机制、Ontology 架构、企业落地案例跨年不过期）
+  2. 聚焦 5 类高质量产品拆解源：
+     - 中文深度专栏与开源研究（GitHub palantir-aip-study 全文 + 中文架构搜索）
+     - 推特 (X) 核心产品与架构师解读（@PalantirTech / @chadwahl / @PalantirVision，经 Jina 抓取）
+     - 技术社区长文（Dev.to #palantir / Medium #palantir / HackerNews Algolia OAG & Ontology）
+     - Palantir 官方工程博客（blog.palantir.com/feed）
+     - Palantir AIP 官方文档核心专题（Agent Stack / Markings 权限 / Observability 等 15 个模块）
+  3. 代码级硬过滤（is_noise）：直接剔除纯股价/财报指标炒作、政治选举口水、招聘贴
 """
 
-import os
 import re
-import json
 import logging
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
-from email.utils import parsedate_to_datetime
+from urllib.parse import quote
 
 import requests
 
 log = logging.getLogger(__name__)
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36"
 
-# ── 源清单（实测可用，详见 docs/01-信息源规格.md）────────────────────────────
-SOURCES = [
-    ("Palantir 官方博客", "https://blog.palantir.com/feed"),
-    ("TechCrunch Palantir", "https://techcrunch.com/tag/palantir/feed/"),
-    ("AIHOT 精选", "https://aihot.virxact.com/rss"),
-    ("Google News Palantir",
-     "https://news.google.com/rss/search?q=Palantir&hl=en-US&gl=US&ceid=US:en"),
-    ("Google News Alex Karp",
-     "https://news.google.com/rss/search?q=%22Alex+Karp%22&hl=en-US&gl=US&ceid=US:en"),
+# ── 1. RSS / Atom 深度源（不限时间，排除股票词）──────────────────────────────
+RSS_SOURCES = [
+    ("Palantir 官方工程博客", "https://blog.palantir.com/feed"),
+    ("Dev.to Palantir 技术专栏", "https://dev.to/feed/tag/palantir"),
+    ("Medium Palantir 深度专栏", "https://medium.com/feed/tag/palantir"),
+    (
+        "中文 Palantir AIP 架构搜索",
+        "https://news.google.com/rss/search?q=Palantir+AIP+%E6%9E%B6%E6%9E%84+OR+Ontology+OR+%E4%BA%A7%E5%93%81+OR+Agent&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+    ),
+    (
+        "英文 AIP & Ontology 机制搜索",
+        "https://news.google.com/rss/search?q=%22Palantir+AIP%22+Ontology+OR+%22AIP+Logic%22+OR+workflow+OR+agent+-stock+-NASDAQ+-NYSE+-shares&hl=en-US&gl=US&ceid=US:en",
+    ),
 ]
 
-# Palantir 是低频公司：官方博客最新一篇可能在一个月前，TechCrunch 也可能两周没更新。
-# 窗口太窄会把最有价值的源全滤掉，所以放宽到 30 天，靠 last_sent 去重库避免重复报旧闻。
-FRESH_DAYS = 30
-PER_SOURCE_MAX = 20  # 每源最多取几条
+# ── 2. 推特 (X) 核心账号（通过 r.jina.ai 渲染抓取产品发布与架构思考）──────────
+X_ACCOUNTS = [
+    ("X @PalantirTech (官方产品与DevCon动态)", "PalantirTech"),
+    ("X @chadwahl (Palantir Ontology架构师)", "chadwahl"),
+    ("X @PalantirVision (AIP与MCP产品拆解)", "PalantirVision"),
+]
+
+# ── 3. GitHub 开源 Palantir AIP 中文深度研究专题（可直接拉取 Raw Markdown）────
+GITHUB_STUDY_CHAPTERS = [
+    (
+        "Palantir AIP 与 Ontology 深度拆解：数字孪生与语义操作层",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/01-palantir-aip-ontology.md",
+    ),
+    (
+        "Palantir FDE（前线部署工程师）模式与产品演进机制解析",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/02-fde-forward-deployed-engineer.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/02-fde-forward-deployed-engineer.md",
+    ),
+    (
+        "Palantir 企业级 AI 落地范式：从数据融合到业务流闭环",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/03-enterprise-ai-landing.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/03-enterprise-ai-landing.md",
+    ),
+    (
+        "国产 AI 平台借鉴 Palantir AIP 的产品设计与落地行动指南",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-domestic-ai.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/04-action-guide-domestic-ai.md",
+    ),
+    (
+        "Palantir Ontology 工程设计模式：对象、关系与 Action Types 建模实践",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/05-ontology-engineering-patterns.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/05-ontology-engineering-patterns.md",
+    ),
+    (
+        "语义运行时对比：Palantir Ontology 与阿里 UModel 架构异同",
+        "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-alibaba-semantic-runtime.md",
+        "https://raw.githubusercontent.com/wwwweeia/palantir-aip-study/main/06-umodel-alibaba-semantic-runtime.md",
+    ),
+]
+
+# ── 4. Palantir AIP 官方文档核心产品模块（按体系拆解）──────────────────────
+OFFICIAL_AIP_DOCS = [
+    ("AIP 官方文档：AIP 平台总览与核心架构", "https://www.palantir.com/docs/foundry/aip/overview/"),
+    ("AIP 官方文档：Agent Stack 与工具调用体系", "https://www.palantir.com/docs/foundry/aip/agent-stack/"),
+    ("AIP 官方文档：AIP 核心功能模块矩阵", "https://www.palantir.com/docs/foundry/aip/aip-features/"),
+    ("AIP 官方文档：用 Markings 控制 LLM 数据访问权限", "https://www.palantir.com/docs/foundry/aip/control-llm-data-access-with-markings/"),
+    ("AIP 官方文档：AIP 安全架构与数据护栏", "https://www.palantir.com/docs/foundry/aip/aip-security/"),
+    ("AIP 官方文档：AIP 可观测性与生产追踪 (Observability)", "https://www.palantir.com/docs/foundry/aip/aip-observability/"),
+    ("AIP 官方文档：AI 伦理治理与人工审查闭环", "https://www.palantir.com/docs/foundry/aip/ethics-governance/"),
+    ("AIP 官方文档：企业级 Prompt 工程最佳实践", "https://www.palantir.com/docs/foundry/aip/best-practices-prompt-engineering/"),
+    ("AIP 官方文档：接入自有模型 (BYOM) 架构设计", "https://www.palantir.com/docs/foundry/aip/bring-your-own-model/"),
+    ("AIP 官方文档：计算模块驱动的模型服务 (Compute Modules)", "https://www.palantir.com/docs/foundry/aip/compute-module-backed-models/"),
+    ("AIP 官方文档：构建 LLM 代理与联邦层 (Proxy / Federation)", "https://www.palantir.com/docs/foundry/aip/build-a-proxy-or-federation-layer/"),
+    ("AIP 官方文档：LLM 容量管理与限流机制", "https://www.palantir.com/docs/foundry/aip/llm-capacity-management/"),
+]
+
+# ── 硬过滤黑名单词（直接剔除财经股评、政治口水、招聘、周边售卖）──────────────
+NOISE_KEYWORDS = [
+    "nasdaq:pltr", "nyse:pltr", "rule of 40", "cathie wood", "buy the dip",
+    "unjustifiable price", "never be cheap", "stock price", "share price",
+    "165% retention", "motley fool", "seeking alpha", "zacks", "barron",
+    "democrat", "republican", "midterm", "election", "progressive",
+    "swedish forest", "early talent hiring", "recruitment session",
+    "hoodies", "windbreaker", "veterans", "s&p 500",
+]
 
 
 def _localname(tag):
-    """去掉 XML 命名空间，兼容 RSS 与 Atom。"""
     return tag.split("}")[-1] if "}" in tag else tag
 
 
 def _clean_html(text):
-    """剥离 HTML 标签，压缩空白。"""
     if not text:
         return ""
     text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"&[a-zA-Z]+;", " ", text)
+    text = re.sub(r"&[a-zA-Z0-9#]+;", " ", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _parse_date(raw):
-    """解析 RSS/Atom 的各种时间格式，失败返回 None。"""
-    if not raw:
-        return None
-    raw = raw.strip()
-    # RFC 2822（RSS 的 pubDate）
-    try:
-        return parsedate_to_datetime(raw)
-    except Exception:
-        pass
-    # ISO 8601（Atom 的 published/updated）
-    for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
-        try:
-            return datetime.strptime(raw.replace("Z", "+0000"), fmt)
-        except Exception:
-            continue
-    return None
-
-
 def _get_child(elem, *names):
-    """按 localname 取子元素的文本，支持多个候选标签名。"""
     for child in elem:
         if _localname(child.tag) in names:
             return (child.text or "").strip()
@@ -78,7 +127,6 @@ def _get_child(elem, *names):
 
 
 def _get_link(elem):
-    """取链接。RSS 是 <link>文本</link>，Atom 是 <link href="..."/>。"""
     for child in elem:
         if _localname(child.tag) == "link":
             href = (child.get("href") or "").strip()
@@ -89,118 +137,231 @@ def _get_link(elem):
     return ""
 
 
-def fetch_rss(source_name, url):
-    """抓取并解析单个 RSS/Atom 源。"""
+def is_noise(title, summary=""):
+    """判断是否为纯股价财经、政治口水、招聘或周边售卖噪音。"""
+    blob = f"{title} {summary}".lower()
+    for kw in NOISE_KEYWORDS:
+        if kw in blob:
+            return True
+    # 必须与 Palantir / AIP / Ontology / Foundry / Apollo 相关
+    if not any(k in blob for k in ("palantir", "aip", "ontology", "foundry", "apollo", "osdk")):
+        return True
+    return False
+
+
+def fetch_rss_source(source_name, url, limit=15):
+    """抓取单个 RSS/Atom 源，提取标题、链接与正文摘要。"""
     try:
         resp = requests.get(url, headers={"User-Agent": UA}, timeout=20)
         resp.raise_for_status()
         root = ET.fromstring(resp.content)
-
-        # 同时兼容 <item>（RSS）和 <entry>（Atom）
         entries = [e for e in root.iter() if _localname(e.tag) in ("item", "entry")]
         results = []
-
-        for e in entries[:PER_SOURCE_MAX]:
+        for e in entries[:limit]:
             title = _clean_html(_get_child(e, "title"))
             link = _get_link(e)
-            desc = _clean_html(_get_child(e, "description", "summary", "content"))
-            pub_raw = _get_child(e, "pubDate", "published", "updated")
-
+            # Medium / Dev.to 常在 encoded / content 中带全文
+            body = _clean_html(_get_child(e, "encoded", "content", "description", "summary"))
             if not title or not link:
                 continue
-
-            pub_dt = _parse_date(pub_raw)
+            if is_noise(title, body[:400]):
+                continue
             results.append({
                 "title": title,
                 "url": link,
-                "summary": desc[:500],
-                "pub": pub_dt,
+                "summary": body[:1500],
+                "full_text": body if len(body) > 1200 else "",
                 "source": source_name,
             })
-
-        log.info(f"[{source_name}] 抓到 {len(results)} 条")
+        log.info(f"[{source_name}] 有效候选 {len(results)} 条")
         return results
-
     except Exception as e:
         log.warning(f"[{source_name}] 抓取失败: {str(e)[:100]}")
         return []
 
 
-def is_palantir_related(item):
+def fetch_hn_algolia():
+    """通过 HackerNews Algolia API 搜索 Palantir Ontology / AIP 深度技术文章。"""
+    url = "https://hn.algolia.com/api/v1/search?query=Palantir%20Ontology%20AIP&tags=story&hitsPerPage=12"
+    results = []
+    try:
+        resp = requests.get(url, headers={"User-Agent": UA}, timeout=15)
+        resp.raise_for_status()
+        for h in resp.json().get("hits", []):
+            title = (h.get("title") or "").strip()
+            link = (h.get("url") or "").strip()
+            if not title or not link:
+                continue
+            if is_noise(title):
+                continue
+            results.append({
+                "title": title,
+                "url": link,
+                "summary": f"HackerNews 深度讨论：{title}",
+                "full_text": "",
+                "source": "HackerNews 技术社区",
+            })
+        log.info(f"[HackerNews 技术社区] 有效候选 {len(results)} 条")
+    except Exception as e:
+        log.warning(f"[HackerNews] 抓取失败: {str(e)[:100]}")
+    return results
+
+
+def fetch_x_accounts():
+    """通过 Jina Reader 抓取推特 (X) 核心账号关于 Palantir AIP / Ontology 的推文。"""
+    results = []
+    for source_name, handle in X_ACCOUNTS:
+        url = f"https://r.jina.ai/https://x.com/{handle}"
+        try:
+            resp = requests.get(url, headers={"User-Agent": UA}, timeout=20)
+            if resp.status_code != 200:
+                continue
+            lines = [ln.strip() for ln in resp.text.split("\n") if ln.strip().startswith("*   ")]
+            cnt = 0
+            for ln in lines:
+                # 提取推文链接（若有）
+                m_url = re.search(r"https://x\.com/[A-Za-z0-9_]+/status/\d+", ln)
+                tweet_url = m_url.group(0) if m_url else f"https://x.com/{handle}"
+                # 清理图片和多余链接标记
+                clean = re.sub(r"!\[.*?\]\(.*?\)", "", ln)
+                clean = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", clean)
+                clean = re.sub(r"^\*\s*(Pinned)?\s*", "", clean)
+                clean = re.sub(r"\s+", " ", clean).strip()
+                if len(clean) < 60:
+                    continue
+                # 补上 Palantir 上下文供相关性判断
+                check_text = f"Palantir {clean}"
+                if is_noise(check_text):
+                    continue
+                # 必须含产品/技术信号词才收录推文
+                if not any(k in clean.lower() for k in (
+                    "aip", "ontology", "foundry", "apollo", "agent", "model",
+                    "workflow", "devcon", "mcp", "osdk", "enterprise", "data"
+                )):
+                    continue
+                title = f"@{handle} 产品洞察：{clean[:70]}..."
+                results.append({
+                    "title": title,
+                    "url": tweet_url if m_url else f"https://x.com/{handle}#{ abs(hash(clean[:40])) % 100000 }",
+                    "summary": clean[:1200],
+                    "full_text": clean,
+                    "source": source_name,
+                })
+                cnt += 1
+            log.info(f"[{source_name}] 有效候选 {cnt} 条")
+        except Exception as e:
+            log.warning(f"[{source_name}] 抓取失败: {str(e)[:100]}")
+    return results
+
+
+def fetch_github_study():
+    """加载 GitHub 开源 Palantir AIP 深度研究专题章节。"""
+    results = []
+    for title, html_url, raw_url in GITHUB_STUDY_CHAPTERS:
+        results.append({
+            "title": title,
+            "url": html_url,
+            "raw_url": raw_url,
+            "summary": f"开源专题《palantir-aip-study》深度拆解章节：{title}",
+            "full_text": "",
+            "source": "GitHub 深度专题 (palantir-aip-study)",
+        })
+    log.info(f"[GitHub 深度专题] 载入 {len(results)} 篇核心章节")
+    return results
+
+
+def fetch_official_docs():
+    """加载 Palantir AIP 官方文档核心模块列表。"""
+    results = []
+    for title, url in OFFICIAL_AIP_DOCS:
+        results.append({
+            "title": title,
+            "url": url,
+            "summary": f"Palantir AIP 官方产品文档核心模块拆解：{title}",
+            "full_text": "",
+            "source": "Palantir AIP 官方文档",
+        })
+    log.info(f"[Palantir AIP 官方文档] 载入 {len(results)} 个功能模块")
+    return results
+
+
+def fetch_full_text(item, max_chars=12000):
     """
-    判断一条是否与 Palantir 相关。
-
-    官方博客和 TechCrunch 标签页天然就是 Palantir 内容，直接放行。
-    AIHOT 是通用 AI 新闻聚合，必须筛——否则 15 条全是 Qwen/Anthropic 的噪音。
-    Google News 的查询词已含 Palantir/Alex Karp，但结果里仍可能混入无关文章。
+    为即将精读的 1~2 篇文章拉取完整正文：
+      1. 若已有长全文（如 Medium/Dev.to RSS 内置），直接用
+      2. 若有 GitHub raw_url，直接拉取 Markdown 原文
+      3. 否则优先走 r.jina.ai 提取网页正文，失败则回退直接抓取 HTML 剥离标签
     """
-    # 天然相关的源，不筛
-    if item["source"] in ("Palantir 官方博客", "TechCrunch Palantir"):
-        return True
+    if item.get("full_text") and len(item["full_text"]) > 800:
+        return item["full_text"][:max_chars]
 
-    blob = (item["title"] + " " + item["summary"]).lower()
-    if "palantir" in blob or "pltr" in blob:
-        return True
+    # GitHub Raw 优先
+    raw_url = item.get("raw_url")
+    if raw_url:
+        try:
+            r = requests.get(raw_url, headers={"User-Agent": UA}, timeout=20)
+            if r.status_code == 200 and len(r.text) > 200:
+                return r.text[:max_chars]
+        except Exception as e:
+            log.warning(f"GitHub Raw 拉取失败: {e}")
 
-    # Alex Karp 是 Palantir CEO，提到他基本就是在说 Palantir
-    if "karp" in blob:
-        return True
+    url = item.get("url", "")
+    if not url:
+        return item.get("summary", "")
 
-    # Foundry / AIP / Apollo 三个产品线名，注意避免误伤：
-    # "foundry" 在半导体语境指晶圆厂，"apollo" 可能是其他项目名，
-    # 所以这两个词要和其他 Palantir 信号共现才算（这里用"含公司名"已经覆盖，故不放宽）
-    return False
+    # 1. 尝试 Jina Reader 提取干净 Markdown
+    try:
+        jina_url = f"https://r.jina.ai/{url}"
+        r = requests.get(jina_url, headers={"User-Agent": UA}, timeout=25)
+        if r.status_code == 200 and len(r.text) > 400 and "安全验证" not in r.text[:300]:
+            return r.text[:max_chars]
+    except Exception as e:
+        log.warning(f"Jina 全文提取失败 ({url[:50]}): {str(e)[:80]}")
+
+    # 2. 回退直接抓取网页并清理 HTML
+    try:
+        r = requests.get(url, headers={"User-Agent": UA}, timeout=20)
+        if r.status_code == 200:
+            html = re.sub(r"<(script|style|nav|footer|header)[^>]*>.*?</\1>", " ", r.text, flags=re.S | re.I)
+            txt = _clean_html(html)
+            if len(txt) > 300:
+                return txt[:max_chars]
+    except Exception as e:
+        log.warning(f"直接抓取全文失败 ({url[:50]}): {str(e)[:80]}")
+
+    return item.get("summary", "")
 
 
-def fetch_all():
-    """抓取所有源，去重后按时间过滤。"""
+def fetch_all_candidates():
+    """汇总所有深度渠道的候选内容（按 URL 去重）。"""
     all_items = []
-    for name, url in SOURCES:
-        all_items.extend(fetch_rss(name, url))
+    # 1. GitHub 深度研究章节 & 官方文档核心模块
+    all_items.extend(fetch_github_study())
+    all_items.extend(fetch_official_docs())
+    # 2. 推特 (X) 核心账号产品动态与架构思考
+    all_items.extend(fetch_x_accounts())
+    # 3. RSS 深度源（官方博客、Dev.to、Medium、精准架构搜索）
+    for name, url in RSS_SOURCES:
+        all_items.extend(fetch_rss_source(name, url))
+    # 4. HackerNews 深度讨论
+    all_items.extend(fetch_hn_algolia())
 
-    # URL 去重
     seen = set()
     unique = []
     for it in all_items:
-        if it["url"] in seen:
+        u = it["url"].strip()
+        if not u or u in seen:
             continue
-        seen.add(it["url"])
+        seen.add(u)
         unique.append(it)
 
-    # Palantir 相关性过滤（AIHOT 是通用 AI 新闻，必须筛）
-    relevant = [it for it in unique if is_palantir_related(it)]
-    dropped_irrelevant = len(unique) - len(relevant)
-    if dropped_irrelevant:
-        log.info(f"相关性过滤丢弃 {dropped_irrelevant} 条非 Palantir 内容")
-
-    # 时间过滤（无时间的保留，交由下游判断）
-    cutoff = datetime.now().astimezone() - timedelta(days=FRESH_DAYS)
-    fresh = []
-    dropped_old = 0
-    for it in relevant:
-        if it["pub"] is None:
-            fresh.append(it)  # 无时间不丢，可能是解析失败
-            continue
-        pub = it["pub"]
-        if pub.tzinfo is None:
-            pub = pub.astimezone()
-        if pub >= cutoff:
-            fresh.append(it)
-        else:
-            dropped_old += 1
-
-    log.info(f"合计 {len(all_items)} 条 → 去重后 {len(unique)} 条 → "
-             f"相关 {len(relevant)} 条 → 时间过滤丢 {dropped_old} 条 "
-             f"→ 最终 {len(fresh)} 条")
-    return fresh
+    log.info(f"全渠道共汇总 {len(all_items)} 条，URL 去重后 {len(unique)} 条有效深度候选")
+    return unique
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    items = fetch_all()
-    print(f"\n{'='*60}")
-    for it in items:
-        pub = it["pub"].strftime("%m-%d %H:%M") if it["pub"] else "无时间"
-        print(f"[{it['source']}] {pub}")
-        print(f"  {it['title'][:80]}")
-        print(f"  {it['url'][:90]}")
+    cands = fetch_all_candidates()
+    print(f"\n共 {len(cands)} 条候选，前 15 条预览：")
+    for i, c in enumerate(cands[:15], 1):
+        print(f"  [{i:02d}] ({c['source']}) {c['title'][:65]}")
