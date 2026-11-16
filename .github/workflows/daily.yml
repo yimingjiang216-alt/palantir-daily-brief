@@ -1,0 +1,50 @@
+name: Palantir 动态日报
+
+on:
+  schedule:
+    # UTC 01:00 = 北京时间 09:00，工作日（周一至周五）
+    # GitHub 可能延迟，但本任务对时间不敏感（只要当天发出来就行）
+    - cron: '0 1 * * 1-5'
+  workflow_dispatch:  # 手动触发
+
+permissions:
+  contents: write  # 允许提交 last_sent.json
+
+jobs:
+  run-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 拉取最新去重库
+        run: git pull --rebase origin main || true
+
+      - name: 生成并推送简报
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+        run: python src/notify.py
+
+      - name: 保存去重库
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add last_sent.json || true
+          git diff --cached --quiet || git commit -m "update last_sent.json [skip ci]"
+          git push || true
