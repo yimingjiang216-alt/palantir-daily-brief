@@ -53,23 +53,21 @@ jobs:
           sleep 60
           python src/notify.py
 
-      - name: 提交更新后的知识池 (pool.json)
+      - name: 提交更新后的知识池与洞察库文档 (pool.json & Palantir产品功能洞察库.md)
         if: success() && github.event.inputs.feishu_webhook_test == ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -f pool.json ]; then
-            git add pool.json
-            if git diff --cached --quiet; then
-              echo "pool.json 无变化，无需提交"
-              exit 0
-            fi
-            git commit -m "chore: update pool.json [skip ci]"
-            for i in 1 2 3; do
-              git pull --rebase origin main && git push origin main && exit 0
-              echo "第 $i 次推送失败，5 秒后重试…"
-              sleep 5
-            done
-            echo "::error::pool.json 推送失败"
-            exit 1
+          git add pool.json Palantir产品功能洞察库.md 2>/dev/null || git add pool.json
+          if git diff --cached --quiet; then
+            echo "知识池无变化，无需提交"
+            exit 0
           fi
+          git commit -m "chore: update pool.json & Palantir产品功能洞察库.md [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            echo "第 $i 次推送失败，5 秒后重试…"
+            sleep 5
+          done
+          echo "::error::知识池推送失败"
+          exit 1
