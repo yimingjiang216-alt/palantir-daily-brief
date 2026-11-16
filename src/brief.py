@@ -211,6 +211,20 @@ DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产�
   "aip_inspiration": [
     "【通用设计精髓与认知校准】提炼该机制背后的通用 AIP 产品设计规律，重点点出 Palantir 的真实做法与常规直觉有何不同、帮团队补齐什么认知盲区（75~115字）",
     "【对标框架落位与起步取舍】轻量对照『数据本体底座(FDS) / Agent编排运行时 / 部署运行底座(Stage) / 上层应用』的大体分工，说明该能力应沉淀在哪一层、当前起步阶段先借鉴什么最实用（75~115字）"
+  ],
+  "feature_specs": [
+    {{
+      "component_name": "从文中提炼出的 Palantir 原子级产品功能组件名（如：『Action Submission Criteria（动作前置条件与权限锁）』或『Function-backed Action（代码函数驱动的受控写回）』，22字以内）",
+      "arch_layer": "该功能组件所属的 L1~L5 标准架构层（从上述5个标准层中精确选1个）",
+      "palantir_spec": "【Palantir 功能规格（输入/交互/规则）】只写干货规格：配置该功能需要定义什么输入参数？前端界面怎么交互（如按钮置灰/弹窗确认）？后台执行与校验规则是什么？（100~160字）",
+      "our_action": "【我方对标落位与抄作业动作】明确对应我方哪个方向（如数据本体底座 FDS / Agent 编排运行时 / 部署底座 Stage / 上层应用），指出常规做法缺了哪一步，以及我们在设计对应模块 PRD 时可直接照搬的具体功能点（90~150字）"
+    }},
+    {{
+      "component_name": "从文中提炼出的第 2 个原子级产品功能组件名（必须与第 1 个不同切面，22字以内）",
+      "arch_layer": "该功能组件所属的 L1~L5 标准架构层",
+      "palantir_spec": "【Palantir 功能规格（输入/交互/规则）】（100~160字）",
+      "our_action": "【我方对标落位与抄作业动作】（90~150字）"
+    }}
   ]
 }}
 """
@@ -565,6 +579,26 @@ def synthesize_product_insight(item, recent_sent_focuses):
         feature_tag=parsed.get("feature_tag", ""),
     )
 
+    # 校准每条原子级功能规格 (feature_specs) 的架构层级
+    raw_specs = parsed.get("feature_specs")
+    if not isinstance(raw_specs, list) or not raw_specs:
+        raw_specs = [
+            {
+                "component_name": parsed.get("title", item["title"])[:24],
+                "arch_layer": parsed["arch_layer"],
+                "palantir_spec": "\n".join(parsed.get("product_mechanics", [])[:2]),
+                "our_action": "\n".join(parsed.get("aip_inspiration", [])),
+            }
+        ]
+    for sp in raw_specs:
+        sp["arch_layer"] = resolve_arch_layer(
+            {"url": "", "title": sp.get("component_name", ""), "feature_focus": sp.get("palantir_spec", "")[:100]},
+            llm_layer_str=sp.get("arch_layer", "") or parsed["arch_layer"],
+            insight_title=sp.get("component_name", ""),
+            feature_tag=parsed.get("feature_tag", ""),
+        )
+    parsed["feature_specs"] = raw_specs
+
     parsed["url"] = item["url"]
     parsed["source"] = item["source"]
     parsed["score"] = item.get("score", 8)
@@ -753,6 +787,7 @@ def mark_items_sent(pool, urls, insights=None):
                     "product_mechanics": ins.get("product_mechanics", []),
                     "scenario_usage": ins.get("scenario_usage", ""),
                     "aip_inspiration": ins.get("aip_inspiration", []),
+                    "feature_specs": ins.get("feature_specs", []),
                 }
     save_pool(pool)
     update_knowledge_base_md(pool)
