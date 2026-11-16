@@ -33,6 +33,16 @@ log = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 POOL_PATH = BASE_DIR / "pool.json"
+KB_MD_PATH = BASE_DIR / "Palantir产品功能洞察库.md"
+
+# 标准化的 Palantir 5 层产品架构坐标（用于每篇定位上下游及归档知识库章节）
+ARCH_LAYERS = [
+    "L1 数据接入与管道层 (Data Connection / Pipeline Builder)",
+    "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+    "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+    "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+    "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+]
 
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen-flash")
@@ -116,7 +126,10 @@ DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产�
 请严格输出一个 JSON 对象，包含以下字段：
 {{
   "title": "提炼后的中文产品洞察标题（直击该篇所讲的产品功能或设计机制，28字以内）",
-  "feature_tag": "所属产品模块标签（如：Ontology与动作建模 / AIP Logic与Agent编排 / 权限安全与评估治理 / 行业工作流与落地案例 / 产品理念与架构设计）",
+  "feature_tag": "所属产品模块短标签（如：Ontology与动作建模 / AIP Logic与Agent编排 / Workshop与OSDK应用 / 权限安全与Evals评测 / 行业工作流与落地范式）",
+  "arch_layer": "必须从以下5个标准架构层中精确选填1个：'L1 数据接入与管道层 (Data Connection / Pipeline Builder)' 或 'L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)' 或 'L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)' 或 'L4 交互应用与开发层 (Workshop / OSDK / Automate)' 或 'L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)'",
+  "arch_position": "架构坐标与上下游调用关系：用1~2句话讲清楚该功能处于 Palantir 全局5层架构（L1数据→L2本体与动作→L3 Agent编排→L4应用交互 + L5安全治理）的哪一环，它向上承接什么数据/对象，向下被什么模块（如 Agent、Workshop 按钮或外部 ERP）调用（70~120字）",
+  "related_history": "与往期已发内容的关联：对照上方『近期已推送过的功能点』，用1句话说明本篇与之前讲过的哪个功能模块形成上下游呼应或递进补充（若无直接关联或为首期，则说明本篇在全局认知中的基础铺垫作用，50~90字）",
   "core_concept": "功能定位与通俗解读：这个功能/机制在 Palantir 里到底是什么、解决什么痛点？请结合通俗的打比方或对比（例如对比传统报表、普通RAG或传统工作流），一句话加一段简明解释帮产品经理瞬间看懂本质（120~220字）",
   "product_mechanics": [
     "功能设计细节 1（格式：『模块/机制名』：具体讲清它在产品里是怎么设计的、怎么交互或怎么流转的，带具象例子，90~150字）",
@@ -129,6 +142,16 @@ DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产�
     "对我们规划自研 AIP 的产品启示 2（同上，70~110字）"
   ]
 }}
+"""
+
+DAILY_LEAD_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
+今天我们为团队挑选并拆解了以下 {count} 篇 Palantir 产品功能洞察：
+
+{items_summary}
+
+请写一段 **2句话（70~120字）的「今日主线导读」**：
+一句话点明今天这两篇内容围绕的核心产品命题是什么；第二句话讲清这两篇之间是如何互补或递进的（例如：第1篇从架构上讲清为什么需要某机制，第2篇展示在代码/界面里怎么具体搭出来），帮产品经理带着问题意识往下读。
+直接输出导读纯文本，不要标题或引号：
 """
 
 
@@ -454,11 +477,28 @@ def synthesize_product_insight(item, recent_sent_focuses):
         parsed = {
             "title": item["title"],
             "feature_tag": "AIP 产品功能洞察",
+            "arch_layer": ARCH_LAYERS[1],
+            "arch_position": "处于 Palantir 核心产品链路中，向上连接业务数据对象，向下支撑智能体与业务应用交互。",
+            "related_history": "",
             "core_concept": item.get("summary", "")[:200],
             "product_mechanics": [item.get("summary", "")[:300]],
             "scenario_usage": "详见原文完整产品工作流说明。",
             "aip_inspiration": ["建议对照原文梳理我方 AIP 对应模块的产品功能边界。"],
         }
+
+    if parsed.get("arch_layer") not in ARCH_LAYERS:
+        # 根据标签自动归入最接近的标准架构层
+        tag_blob = f"{parsed.get('feature_tag','')} {parsed.get('arch_layer','')} {item['title']}".lower()
+        if any(k in tag_blob for k in ("pipeline", "连接", "数据接入", "etl", "l1")):
+            parsed["arch_layer"] = ARCH_LAYERS[0]
+        elif any(k in tag_blob for k in ("logic", "agent", "eval", "编排", "评测", "l3")):
+            parsed["arch_layer"] = ARCH_LAYERS[2]
+        elif any(k in tag_blob for k in ("workshop", "osdk", "sdk", "automate", "前端", "应用", "l4")):
+            parsed["arch_layer"] = ARCH_LAYERS[3]
+        elif any(k in tag_blob for k in ("marking", "security", "权限", "安全", "fde", "治理", "l5")):
+            parsed["arch_layer"] = ARCH_LAYERS[4]
+        else:
+            parsed["arch_layer"] = ARCH_LAYERS[1]
 
     parsed["url"] = item["url"]
     parsed["source"] = item["source"]
@@ -466,8 +506,38 @@ def synthesize_product_insight(item, recent_sent_focuses):
     return parsed
 
 
+def generate_daily_lead(results):
+    """生成同日两篇之间的『今日主线导读』，把两篇串成有递进关系的整体。"""
+    if not results:
+        return ""
+    if len(results) == 1:
+        return f"今日聚焦【{results[0].get('feature_tag','核心模块')}】：深入拆解《{results[0].get('title','')}》的设计机制与落地用法。"
+    try:
+        summary_lines = []
+        for idx, r in enumerate(results, 1):
+            summary_lines.append(
+                f"第 {idx} 篇：《{r.get('title')}》（架构层：{r.get('arch_layer')} | 来源：{r.get('source')}）\n"
+                f"核心内容：{r.get('core_concept','')[:150]}"
+            )
+        lead = call_llm(
+            DAILY_LEAD_PROMPT.format(
+                count=len(results),
+                items_summary="\n\n".join(summary_lines),
+            ),
+            max_tokens=250,
+        ).strip()
+        lead = re.sub(r"^[\"“「]+|[\"”」]+$", "", lead).strip()
+        return lead
+    except Exception as e:
+        log.warning(f"生成今日导读失败: {e}")
+        return (
+            f"今日从『{results[0].get('feature_tag','架构原理')}』与『{results[1].get('feature_tag','实操落地')}』"
+            f"两个互补视角，分别拆解《{results[0].get('title')}》与《{results[1].get('title')}》。"
+        )
+
+
 def generate_brief(mark_sent=False):
-    """主流程：抓取候选 -> 打分入池 -> 选今日 Top 1~2 篇 -> 拉全文提炼产品功能洞察。"""
+    """主流程：抓取候选 -> 打分入池 -> 选今日 Top 1~2 篇 -> 拉全文提炼产品功能洞察 + 今日导读。"""
     pool = load_pool()
     candidates = fetch_all_candidates()
     update_candidate_pool(pool, candidates)
@@ -480,28 +550,146 @@ def generate_brief(mark_sent=False):
     sent_items = [v for v in pool.get("items", {}).values() if v.get("status") == "sent"]
     sent_items.sort(key=lambda x: x.get("sent_at", ""), reverse=True)
     recent_focuses = [
-        v.get("feature_focus") or v.get("title", "") for v in sent_items[:8]
+        f"[{v.get('sent_at','')}] {v.get('title','')}（{v.get('feature_focus','')}）"
+        for v in sent_items[:8]
     ]
 
     results = []
     for it in selected_raw:
         insight = synthesize_product_insight(it, recent_focuses)
         results.append(insight)
-        recent_focuses.insert(0, it.get("feature_focus") or it["title"])
+        recent_focuses.insert(
+            0, f"[今日同批] {insight.get('title','')}（{it.get('feature_focus','')}）"
+        )
+
+    daily_lead = generate_daily_lead(results)
+    for r in results:
+        r["daily_lead"] = daily_lead
 
     if mark_sent:
-        mark_items_sent(pool, [it["url"] for it in selected_raw])
+        mark_items_sent(pool, [it["url"] for it in selected_raw], insights=results)
 
     return results, pool
 
 
-def mark_items_sent(pool, urls):
+def update_knowledge_base_md(pool):
+    """
+    根据 pool.json 中所有已发送（status=='sent'）且带有洞察归档记录的条目，
+    自动生成按 Palantir 5 层产品架构分类的《Palantir产品功能洞察库.md》手册。
+    """
+    items_map = pool.get("items", {})
+    sent_items = [v for v in items_map.values() if v.get("status") == "sent"]
+    sent_items.sort(key=lambda x: (x.get("sent_at", ""), x.get("score", 0)), reverse=True)
+
+    lines = [
+        "# Palantir AIP 产品功能洞察库（按架构模块归档）",
+        "",
+        "> 本文档由每日推送任务自动维护更新，按 Palantir **5 层产品架构坐标**归档每一期拆解过的产品功能、核心机制与自研 AIP 启示，方便产品团队按模块查阅。",
+        "",
+        "## 🗺️ 全局 5 层产品架构导航",
+        "",
+        "```",
+        "[L4 交互应用与开发层]  Workshop 操作台  |  Ontology SDK (OSDK)  |  Automate 自动触发器",
+        "         ↑ 调用                     ↑ 读写                              ↑ 唤醒",
+        "[L3 Agent 编排与评测]  AIP Logic (块状工具编排)  |  Agent Studio  |  AIP Evals (快照评测)",
+        "         ↑ 查询对象 & 申请执行 Action",
+        "[L2 本体与动作层]      Object / Property / Link (数字孪生名词)  +  Action Types / Functions (受控写回动词)",
+        "         ↑ 语义映射                                                     ↓ Webhook 写回外部 ERP/SAP",
+        "[L1 数据接入与管道层]  Data Connection (多模态连接器)  |  Pipeline Builder (批流一体清洗)",
+        "──────────────────────────────────────────────────────────────────────────────────────────",
+        "[L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式",
+        "```",
+        "",
+        f"## 📅 已推送洞察总览表（共 {len(sent_items)} 篇）",
+        "",
+        "| 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |",
+        "| :--- | :--- | :--- | :--- | :--- |",
+    ]
+
+    by_layer = {layer: [] for layer in ARCH_LAYERS}
+
+    for it in sent_items:
+        arch = it.get("insight_archive") or {}
+        layer = arch.get("arch_layer") or ARCH_LAYERS[1]
+        if layer not in by_layer:
+            layer = ARCH_LAYERS[1]
+        by_layer[layer].append((it, arch))
+
+        date_s = it.get("sent_at") or it.get("added_at") or ""
+        disp_title = arch.get("title") or it.get("title", "")
+        focus = it.get("feature_focus") or ""
+        src = it.get("source") or "原文"
+        url = it.get("url") or ""
+        short_layer = layer.split(" (")[0]
+        lines.append(
+            f"| {date_s} | {short_layer} | **{disp_title}** | {focus} | [{src}]({url}) |"
+        )
+
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    for layer in ARCH_LAYERS:
+        entries = by_layer.get(layer, [])
+        lines.append(f"## {layer}（已沉淀 {len(entries)} 篇）")
+        lines.append("")
+        if not entries:
+            lines.append("*（待后续日报解锁该层级模块拆解）*")
+            lines.append("")
+            continue
+
+        for it, arch in entries:
+            date_s = it.get("sent_at") or ""
+            disp_title = arch.get("title") or it.get("title", "")
+            url = it.get("url") or ""
+            src = it.get("source") or "原文"
+            lines.append(f"### 📌 [{date_s}] {disp_title}")
+            lines.append(f"- **原文来源**：[{src} — {it.get('title','')}]({url})")
+            if arch.get("arch_position"):
+                lines.append(f"- **🗺️ 架构位置与上下游**：{arch['arch_position']}")
+            if arch.get("related_history"):
+                lines.append(f"- **🔗 往期关联**：{arch['related_history']}")
+            if arch.get("core_concept"):
+                lines.append(f"- **💡 功能本质与通俗解读**：{arch['core_concept']}")
+            if arch.get("product_mechanics"):
+                lines.append("- **🔧 产品功能与机制拆解**：")
+                for m in arch["product_mechanics"]:
+                    lines.append(f"  - {m}")
+            if arch.get("scenario_usage"):
+                lines.append(f"- **🔄 实际业务场景用法**：{arch['scenario_usage']}")
+            if arch.get("aip_inspiration"):
+                lines.append("- **🎯 对自研 AIP 的参考价值**：")
+                for ins in arch["aip_inspiration"]:
+                    lines.append(f"  - ★ {ins}")
+            lines.append("")
+
+    KB_MD_PATH.write_text("\n".join(lines), encoding="utf-8")
+    log.info(f"已同步更新知识库索引文档: {KB_MD_PATH.name}（共归档 {len(sent_items)} 篇）")
+
+
+def mark_items_sent(pool, urls, insights=None):
     today = datetime.now().strftime("%Y-%m-%d")
     items_map = pool.get("items", {})
+    insight_by_url = {x["url"]: x for x in (insights or []) if x.get("url")}
+
     for u in urls:
         if u in items_map:
             items_map[u]["status"] = "sent"
             items_map[u]["sent_at"] = today
+            if u in insight_by_url:
+                ins = insight_by_url[u]
+                items_map[u]["insight_archive"] = {
+                    "title": ins.get("title", ""),
+                    "feature_tag": ins.get("feature_tag", ""),
+                    "arch_layer": ins.get("arch_layer", ARCH_LAYERS[1]),
+                    "arch_position": ins.get("arch_position", ""),
+                    "related_history": ins.get("related_history", ""),
+                    "core_concept": ins.get("core_concept", ""),
+                    "product_mechanics": ins.get("product_mechanics", []),
+                    "scenario_usage": ins.get("scenario_usage", ""),
+                    "aip_inspiration": ins.get("aip_inspiration", []),
+                }
     save_pool(pool)
+    update_knowledge_base_md(pool)
     unread_left = sum(1 for v in items_map.values() if v.get("status") == "unread")
-    log.info(f"已标记 {len(urls)} 篇为 sent，池内剩余未读高分产品洞察：{unread_left} 篇")
+    log.info(f"已标记 {len(urls)} 篇为 sent 并归档至知识库，池内剩余未读高分产品洞察：{unread_left} 篇")
