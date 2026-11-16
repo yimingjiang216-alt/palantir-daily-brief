@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 11:38:14",
+  "updated_at": "2026-11-16 03:45:50",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -1149,6 +1149,126 @@
       "summary": "YouTube 频道 Dr. T. Justin Webb 视频讲解：What Is Palantir AIP? | Ontology Explained With One Work Order (Roam Edition)。简介：What is Palantir AIP? Get Palantir Ontology explained with one fictional work order. See how Foundry, AIP and Apollo fit together, ...",
       "score": 9,
       "feature_focus": "以单个工单为案例，清晰拆解 AIP、Ontology 与 Apollo 的协同关系，展现企业级工作流闭环设计",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://x.com/PalantirTech#76937": {
+      "url": "https://x.com/PalantirTech#76937",
+      "raw_url": "",
+      "title": "@PalantirTech 产品洞察：Own the benchmark. Shape the model. Encode your alpha. At DevCon 7, Pa...",
+      "source": "X @PalantirTech (官方产品与DevCon动态)",
+      "summary": "Own the benchmark. Shape the model. Encode your alpha. At DevCon 7, Palantir Software Engineers launched new capabilities across Model Studio and Trace Curation to bring fine tuning closer to the enterprise. This captures production traces from AIP workflows within the Video 5",
+      "score": 8,
+      "feature_focus": "Model Studio 中的生产级轨迹捕获与微调能力，支持企业级 AIP 工作流的可追溯性与模型优化",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://x.com/PalantirTech#1762": {
+      "url": "https://x.com/PalantirTech#1762",
+      "raw_url": "",
+      "title": "@PalantirTech 产品洞察：You must own your evals to own your alpha. What makes your organizatio...",
+      "source": "X @PalantirTech (官方产品与DevCon动态)",
+      "summary": "You must own your evals to own your alpha. What makes your organization unique can't be protected by benchmarks built for someone else. Ontology Scenarios and Snapshots in Palantir AIP anchor your agents to your enterprise data, letting you freeze any real-world moment, replay it, or stage a what-if to measure performance. Evals then give every agent its own benchmark, on any model. Video 6",
+      "score": 9,
+      "feature_focus": "Ontology Scenarios 与 Snapshots 机制：通过冻结真实业务时刻实现 Agent 性能评估与可复现的 what-if 分析",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://x.com/PalantirVision#59290": {
+      "url": "https://x.com/PalantirVision#59290",
+      "raw_url": "",
+      "title": "@PalantirVision 产品洞察：Watched the $PLTR DevCon3 MCP Code in Prod session. Big deal and good ...",
+      "source": "X @PalantirVision (AIP与MCP第三方拆解)",
+      "summary": "Watched the $PLTR DevCon3 MCP Code in Prod session. Big deal and good quality of life as well. Will be nice to create objects with MCP! I found it slow doing it manually.",
+      "score": 7,
+      "feature_focus": "MCP（Model Control Protocol）在生产环境中的实际应用：支持通过代码方式创建和管理 Ontology 对象，提升开发效率",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=KFKd5Fghh08": {
+      "url": "https://www.youtube.com/watch?v=KFKd5Fghh08",
+      "raw_url": "",
+      "title": "[视频 · jie ding] 什么是Palantir本体论",
+      "source": "YouTube 中文科普与架构拆解 (jie ding)",
+      "summary": "YouTube 频道 jie ding 视频讲解：什么是Palantir本体论。简介：",
+      "score": 6,
+      "feature_focus": "对 Palantir 本体论（Ontology）基础概念的通俗化介绍，但缺乏具体功能机制或工作流拆解",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=H-G76kecXfY": {
+      "url": "https://www.youtube.com/watch?v=H-G76kecXfY",
+      "raw_url": "",
+      "title": "[视频 · 硅谷101] 从追缉本·拉登到AI战争，解密Palantir的崛起之路【深度】",
+      "source": "YouTube 中文科普与架构拆解 (硅谷101)",
+      "summary": "YouTube 频道 硅谷101 视频讲解：从追缉本·拉登到AI战争，解密Palantir的崛起之路【深度】。简介：近期的以伊冲突，又将现代战争话题推上热门。但在飞机和火炮背后，也许未来战争的胜负在开火前就已由AI算法所决定。作为硅谷 ...",
+      "score": 5,
+      "feature_focus": "Palantir 公司历史与战略定位的宏观叙事，未涉及具体产品功能或架构设计细节",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=AuB2sB1QmZw": {
+      "url": "https://www.youtube.com/watch?v=AuB2sB1QmZw",
+      "raw_url": "",
+      "title": "[视频 · 最佳拍档] 卡普：你付费的模型，正在用你的数据训练对手 | Palantir | 亚历克斯·卡普 | 沃尔特·艾萨克森 | AI数据主权 | 本体论 | Ontology | AI监控 |财富税 | 人工智能伦理",
+      "source": "YouTube 中文科普与架构拆解 (最佳拍档)",
+      "summary": "YouTube 频道 最佳拍档 视频讲解：卡普：你付费的模型，正在用你的数据训练对手 | Palantir | 亚历克斯·卡普 | 沃尔特·艾萨克森 | AI数据主权 | 本体论 | Ontology | AI监控 |财富税 | 人工智能伦理。简介：Palantir掌门人亚历克斯·卡普在艾萨克森的对谈里，把AI时代最难回避的几件事摊开了：企业花钱买大模型，专有数据却在替对手 ...",
+      "score": 6,
+      "feature_focus": "围绕 AI 数据主权与伦理的高层对话，虽提及 Ontology 但未深入产品功能实现机制",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Lg1ahSHAJ2A": {
+      "url": "https://www.youtube.com/watch?v=Lg1ahSHAJ2A",
+      "raw_url": "",
+      "title": "[视频 · Jesse's  x Gen AI] Palantir-美军背后的 AI 大脑，如何以“数据本体论”为基石，利用 AI 推动企业业务几何式增长",
+      "source": "YouTube 中文科普与架构拆解 (Jesse's  x Gen AI)",
+      "summary": "YouTube 频道 Jesse's  x Gen AI 视频讲解：Palantir-美军背后的 AI 大脑，如何以“数据本体论”为基石，利用 AI 推动企业业务几何式增长。简介：Palantir-它不仅是美军背后的AI 大脑，不仅能通过AI +大数据找出了\"Ben拉登\"，还能帮助波音等超大型公司提升生产效率，帮助金融 ...",
+      "score": 6,
+      "feature_focus": "将 Palantir 定位为“AI 大脑”并强调其业务增长价值，但未展开本体论如何支撑具体 AIP 功能",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=x3-7f-6l9CY": {
+      "url": "https://www.youtube.com/watch?v=x3-7f-6l9CY",
+      "raw_url": "",
+      "title": "[视频 · Vanyar] What is Palantir Foundry? Architecture, AIP and Ontology | Get Started #1",
+      "source": "YouTube 英文第三方实操与架构科普 (Vanyar)",
+      "summary": "YouTube 频道 Vanyar 视频讲解：What is Palantir Foundry? Architecture, AIP and Ontology | Get Started #1。简介：Understand how Palantir Foundry connects the data layer, the Ontology, applications and AIP. This recorded walkthrough ...",
+      "score": 9,
+      "feature_focus": "完整讲解 Palantir Foundry 架构中数据层、Ontology、AIP 与应用之间的集成关系，涵盖核心产品逻辑",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=fbsnYaGXAco": {
+      "url": "https://www.youtube.com/watch?v=fbsnYaGXAco",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry Automate Tutorial: Build an AIP Logic Alert",
+      "source": "YouTube 英文第三方实操与架构科普 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry Automate Tutorial: Build an AIP Logic Alert。简介：Build a no-code Palantir Foundry automation that grades sales regions with AIP Logic, writes the verdict back to the Ontology, and ...",
+      "score": 9,
+      "feature_focus": "基于无代码方式构建 AIP Logic 警报系统，实现从自然语言到 Ontology 写回的端到端自动化流程",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=rArsV6_wHlw": {
+      "url": "https://www.youtube.com/watch?v=rArsV6_wHlw",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir AIP Agent Tutorial: Ontology Queries & Automate Rules",
+      "source": "YouTube 英文第三方实操与架构科普 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir AIP Agent Tutorial: Ontology Queries & Automate Rules。简介：Learn how to test a Palantir AIP agent and build event-driven Automate rules in Foundry — from natural-language Ontology ...",
+      "score": 9,
+      "feature_focus": "AIP Agent 的事件驱动规则构建与 Ontology 查询能力实战演示，体现 Agent 自主决策与自动化闭环",
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": ""
