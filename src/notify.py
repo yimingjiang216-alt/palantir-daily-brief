@@ -213,21 +213,32 @@ def sync_to_feishu_bitable(items, date_str=None):
     date_str = date_str or datetime.now().strftime("%Y-%m-%d")
     ok_cnt = 0
     for it in items:
+        raw_layer = (it.get("arch_layer") or "L2 本体与动作层").strip()
+        short_layer = raw_layer.split(" (")[0].strip()
+
         mechanics_str = "\n".join(f"• {m}" for m in (it.get("product_mechanics") or []))
         inspiration_str = "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or []))
-        full_detail = (
+        core_concept_str = (it.get("core_concept") or "").strip()
+
+        mechanics_and_scenario = (
             f"🗺️ 架构位置与上下游：\n{it.get('arch_position','')}\n\n"
             f"🔗 关联脉络：\n{it.get('related_history','')}\n\n"
-            f"💡 一、功能本质与通俗解读：\n{it.get('core_concept','')}\n\n"
-            f"🔧 二、产品功能与机制拆解：\n{mechanics_str}\n\n"
-            f"🔄 三、实际业务场景怎么用：\n{it.get('scenario_usage','')}\n\n"
-            f"🎯 四、对我们规划自研 AIP 的参考价值：\n{inspiration_str}\n\n"
+            f"🔧 产品功能与机制拆解：\n{mechanics_str}\n\n"
+            f"🔄 实际业务场景怎么用：\n{it.get('scenario_usage','')}\n\n"
             f"📰 来源渠道：{it.get('source','')}"
+        )
+        full_detail = (
+            f"💡 一、功能本质与通俗解读：\n{core_concept_str}\n\n"
+            f"{mechanics_and_scenario}\n\n"
+            f"🎯 四、对我们规划自研 AIP 的参考价值：\n{inspiration_str}"
         )
         row_payload = {
             "title": (it.get("title") or "").strip(),
-            "arch_layer": (it.get("arch_layer") or "").strip(),
+            "arch_layer": short_layer,
             "date": date_str,
+            "core_concept": core_concept_str,
+            "aip_inspiration": inspiration_str,
+            "mechanics_and_scenario": mechanics_and_scenario,
             "full_detail": full_detail,
             "url": (it.get("url") or "").strip(),
         }
