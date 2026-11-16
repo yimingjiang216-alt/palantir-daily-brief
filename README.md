@@ -6,22 +6,24 @@
 
 ## 一、项目做了什么
 
-### 1. 六路产品内容抓取（`src/fetch.py`）
-不设短期新闻时效截断，围绕「把 Palantir 产品功能与设计逻辑讲清楚」抓取六个渠道：
-- **YouTube 中英文视频（第三方科普/实操 + 官方演示）**：
-  - 搜索中英文实操教程、白板架构拆解与官方 Demo（如 Ontology 建模实操、OSDK 全栈教程、AIP Logic 工作流搭建、Agent 与 Ontology 交互解析等）
-  - 入选精读时，自动拉取视频详情页的**完整章节大纲（`shortDescription`）+ 字幕轨道实录（`captionTracks`）**
+### 1. 八路产品内容抓取（`src/fetch.py`）
+不设短期新闻时效截断，围绕「把 Palantir 产品功能与设计逻辑讲清楚」抓取八大类渠道：
+- **YouTube 三路视频（中文科普/架构拆解 + 英文实操教程 + AIPCon 客户真机 Demo）**：
+  - 搜索中英文实操教程、白板架构拆解与 AIPCon 客户现场投屏演示（如 Ontology 建模实操、OSDK 全栈教程、AIP Logic 与 Workshop 工作流搭建、Agent 与 Ontology 交互解析等）
+  - 入选精读时，自动通过 YouTube InnerTube 接口拉取视频详情页的**完整章节大纲（`shortDescription`）+ 完整口播字幕轨道（`captionTracks`）**
 - **推特（X）产品与架构动态**：
-  - 抓取 `@PalantirTech`、`@chadwahl`（Ontology 架构师）、`@PalantirVision` 关于 DevCon 新特性、Model Studio、Snapshots 评估、MCP 集成的推文
-- **英文技术社区深度专栏**：
-  - `Medium #palantir`、`Dev.to #palantir`、`HackerNews Algolia`（聚焦 Ontology、AIP、OAG 等技术讨论）
-- **中英文产品架构定向搜索**：
-  - 定向检索 `Palantir AIP 架构 / 本体论 / Ontology / workflow`，语法级排除 `-stock -NASDAQ -NYSE -shares`
+  - 抓取 `@PalantirTech`、`@chadwahl`（Ontology 架构师）、`@PalantirVision`、`@PalantirDev`、`@ssankar`（Palantir CTO）关于 DevCon 新特性、Model Studio、Snapshots 评估、OSDK、MCP 集成的推文
+- **中文深度专栏与科技媒体定向源**：
+  - `虎嗅 Palantir 深度搜索`（自带万字中文全文）、`36氪搜索`
+  - 深度科技媒体门禁接入（仅收录提及 `Palantir / Ontology / 本体论` 的文章）：`InfoQ`、`量子位`、`极客公园`、`雷峰网`、`钛媒体`、`少数派`
+- **英文技术社区与商业深度专栏**：
+  - `Dev.to #palantir`、`Medium #palantir` / `#palantir-aip` / `#palantir-foundry`、`Substack 深度长文`、`Towards Data Science Ontology 专栏`、`HackerNews Algolia`
+  - 深度分析媒体门禁接入：`Stratechery`、`SemiAnalysis`、`Interconnects`、`MIT Tech Review`、`TechCrunch AI`、`The Decoder`
 - **Palantir 官方工程博客**：
   - `blog.palantir.com/feed`
 - **开源深度研究与官方文档底座**：
   - GitHub 开源专题 `palantir-aip-study`（6 篇中文深度拆解 Markdown 全文）
-  - Palantir AIP 官方核心文档（`/docs/foundry/aip/*` 12 个核心功能与安全治理模块）
+  - Palantir 官方核心产品文档（覆盖 `/aip/*`、`/ontology/*`、`/logic/*`、`/agent-studio/*`、`/workshop/*`、`/automate/*` 六大核心产品模块共 17 个专题）
 
 **代码级硬过滤（`is_noise`）**：直接剔除纯股价涨跌、财报估值指标（如 Rule of 40、165% 续费率炒作、美股分析）、高管政治选举言论、招聘宣传贴。
 
