@@ -654,10 +654,11 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir OSDK 完整教程：从零搭建后端、AIP 集成与 React 前端。简介：从零搭建一个完整的Palantir Foundry OSDK 集成项目。用Node.js 后端连接真实的Foundry Ontology，读取AIP 流水线生成的AI ...",
       "score": 10,
       "feature_focus": "OSDK 全栈集成教程：基于 Node.js + React 构建与 AIP 集成的后端服务及前端界面",
-      "status": "insufficient_content",
+      "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false
+      "bitable_synced": false,
+      "fetch_fail_count": 0
     },
     "https://www.youtube.com/watch?v=TOXpSnIrXFQ": {
       "url": "https://www.youtube.com/watch?v=TOXpSnIrXFQ",
@@ -703,10 +704,11 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：手把手建Palantir Ontology — 官方文档真实代码 | Functions · Actions · OSDK。简介：跟着Palantir官方文档，一步步建一个真实的Ontology——带TypeScript/Python真实代码。 Step 1: 从数据集设计Object Types ...",
       "score": 10,
       "feature_focus": "手把手实操构建 Ontology：基于官方文档的 Functions、Actions 和 OSDK 的真实代码实现",
-      "status": "insufficient_content",
+      "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false
+      "bitable_synced": false,
+      "fetch_fail_count": 0
     },
     "https://www.youtube.com/watch?v=2lgwr7trSgw": {
       "url": "https://www.youtube.com/watch?v=2lgwr7trSgw",
