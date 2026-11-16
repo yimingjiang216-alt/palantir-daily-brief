@@ -216,13 +216,25 @@ def _text_similarity(a, b):
 def update_candidate_pool(pool, candidates):
     """分批对新候选内容按「产品功能洞察价值」打分入池，并清理历史无效链接。"""
     items_map = pool.setdefault("items", {})
-    # 清理历史遗留的 Google News 跳转空壳与假 #hash 链接
+    invalid_doc_urls = {
+        "https://www.palantir.com/docs/foundry/ontology/action-types-overview",
+        "https://www.palantir.com/docs/foundry/ontology/interface-overview",
+        "https://www.palantir.com/docs/foundry/logic/aip-evals",
+    }
+    # 清理历史遗留的 Google News 跳转空壳、假 #hash 链接及旧 404 文档地址
     stale_keys = [
         u for u in items_map
-        if "news.google.com/rss/articles/" in u or re.search(r"#\d+$", u)
+        if "news.google.com/rss/articles/" in u
+        or re.search(r"#\d+$", u)
+        or u in invalid_doc_urls
     ]
     for k in stale_keys:
         del items_map[k]
+
+    # 若今日抓到的 RSS 包含完整正文（如虎嗅、Medium、Dev.to），同步补充到已在池中的条目运行时缓存
+    for c in candidates:
+        if c["url"] in items_map and c.get("full_text") and len(c["full_text"]) > 800:
+            items_map[c["url"]]["full_text"] = c["full_text"][:10000]
 
     new_cands = [c for c in candidates if c["url"] not in items_map]
 
@@ -281,6 +293,7 @@ def update_candidate_pool(pool, candidates):
                 "title": c["title"],
                 "source": c["source"],
                 "summary": c.get("summary", "")[:800],
+                "full_text": (c.get("full_text") or "")[:10000],
                 "score": sc,
                 "feature_focus": focus or c["title"],
                 "status": status,
@@ -315,9 +328,12 @@ def select_daily_items(pool, count=2):
     unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
 
     verified_shortlist = []
+    ft_cache = {}
     pool_dirty = False
 
     for cand in unread:
+        # 清理可能残留的临时字段
+        cand.pop("_cached_full_text", None)
         cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
 
         # 初筛：与近期已发内容字面高度重合的直接跳过
@@ -335,7 +351,7 @@ def select_daily_items(pool, count=2):
             pool_dirty = True
             continue
 
-        cand["_cached_full_text"] = ft
+        ft_cache[cand["url"]] = ft
         verified_shortlist.append(cand)
         if len(verified_shortlist) >= 8:
             break
@@ -343,8 +359,14 @@ def select_daily_items(pool, count=2):
     if pool_dirty:
         save_pool(pool)
 
+    def _attach_ft(chosen_list):
+        for x in chosen_list:
+            if x["url"] in ft_cache:
+                x["_cached_full_text"] = ft_cache[x["url"]]
+        return chosen_list
+
     if len(verified_shortlist) <= count:
-        return verified_shortlist
+        return _attach_ft(verified_shortlist)
 
     # 由千问对照近期已发历史，从 8 篇实料候选中做跨语言语义去重与互补搭配
     try:
@@ -380,7 +402,7 @@ def select_daily_items(pool, count=2):
                 if len(chosen) >= count:
                     break
             if len(chosen) == count:
-                return chosen
+                return _attach_ft(chosen)
     except Exception as e:
         log.warning(f"LLM 选篇回退规则选篇: {e}")
 
@@ -397,7 +419,7 @@ def select_daily_items(pool, count=2):
                 fallback.append(c)
                 if len(fallback) >= count:
                     break
-    return fallback
+    return _attach_ft(fallback)
 
 
 def synthesize_product_insight(item, recent_sent_focuses):
