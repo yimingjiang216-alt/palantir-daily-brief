@@ -509,36 +509,10 @@
       "summary": "Palantir pairs objects and links with actions, functions and security. What that kinetic half means for teams building agents off Foundry. Continue reading on Medium »",
       "score": 10,
       "feature_focus": "Palantir Ontology 核心机制：对象与链接绑定可执行动作及安全策略，支撑 AI Agent 行动治理",
-      "status": "sent",
+      "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "2026-11-16",
-      "bitable_synced": true,
-      "insight_archive": {
-        "title": "Palantir Ontology：动作与安全绑定的本体设计",
-        "feature_tag": "Ontology与动作建模",
-        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
-        "arch_position": "位于数据接入与管道层之上，承接对象、属性、链接的定义；向下被AI Agent、Workshop操作按钮及外部系统调用，作为所有读写操作的统一入口和权限控制中枢，实现‘可执行’的语义模型。",
-        "related_history": "本篇与此前推送的‘数据本体底座（FDS）’形成递进关系：前者聚焦‘是什么’的建模，本篇则补全‘能做什么’的动作闭环，构成完整的认知-行动双引擎。",
-        "core_concept": "Palantir 的 Ontology 不是静态的‘数据说明书’，而是一个‘带手脚的实体模型’——每个对象不仅有身份信息，还能执行特定动作，并受安全规则约束。就像给一个虚拟员工配了工牌、岗位职责和审批权限，它不仅能看数据，还能按规矩办事。",
-        "product_mechanics": [
-          "『Action Type（动作类型）』：在 Ontology 中定义一个‘重新分配客户’的动作，需指定目标对象（客户）、输入参数（新负责人ID）、触发条件（状态为‘待分配’），并绑定到具体业务流程。当Agent请求执行时，系统只允许走这个预设路径，杜绝随意修改。",
-          "『Function（函数）』：开发者可用Python/TypeScript编写逻辑函数，如‘自动冻结高风险账户’。该函数可访问对象属性、遍历关联链路（如从客户→订单→支付记录），并在满足条件时调用Action Type发起变更，实现复杂决策自动化。",
-          "『Dynamic Security（动态权限）』：每次Agent或用户操作前，系统实时校验其权限。例如，只有‘区域经理’角色才能调用‘暂停发货’动作，即使该用户有数据库写权限，也无法绕过此限制，确保‘谁有权做啥’由模型本身决定。"
-        ],
-        "scenario_usage": "销售主管在Workshop界面点击‘重新分配客户’按钮，系统弹出表单要求选择新负责人。后台Agent调用已注册的‘ReassignCustomer’动作类型，验证当前用户是否具备‘客户管理’权限，同时检查客户状态是否允许变更。若通过，函数自动更新客户归属，并同步至CRM系统，整个过程留痕且不可逆，完成一次合规的业务流转。",
-        "aip_inspiration": [
-          "【通用设计精髓与认知校准】常规认知认为AI Agent只需‘理解数据’即可行动，但Palantir揭示：真正的治理不是事后审计，而是让‘可执行动作’成为本体的一部分。团队应警惕‘自由发挥式提示工程’，必须把‘写权限’纳入产品设计核心。",
-          "【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’（FDS）层级，而非仅在Agent编排层。起步阶段可先借鉴‘动作类型+函数+权限绑定’三件套，优先构建关键业务动作的标准化接口，避免后期陷入‘无控写入’的治理黑洞。"
-        ],
-        "feature_specs": [
-          {
-            "component_name": "Action Type（动作类型）",
-            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
-            "palantir_spec": "配置时需定义动作名称、所属对象类型、输入参数Schema（如新负责人ID）、前置条件（如状态=待分配）、以及可选的函数引用。前端以表单形式呈现，支持拖拽式参数绑定；后台执行时强制校验权限与条件，仅允许通过预设路径写入数据，禁止自由SQL注入。",
-            "our_action": "我方应在‘数据本体底座’模块中引入‘动作类型’组件，明确每个业务操作（如‘审批合同’‘冻结账号’）都需预先定义为可执行动作，包含输入校验与权限规则。在撰写PRD时，直接照搬‘动作类型+函数引用+动态权限’的三元结构，确保所有写操作都有迹可循、有控可管。"
-          }
-        ]
-      }
+      "sent_at": "",
+      "bitable_synced": false
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -1031,36 +1005,10 @@
       "summary": "详解 AIP Logic 如何用块状思维链（Block-based CoT）组合提示词、Ontology 查询、计算函数与结构化输出。",
       "score": 10,
       "feature_focus": "AIP Logic 的块状思维链（Block-based CoT）设计，实现提示词、Ontology 查询、计算函数与结构化输出的无代码编排",
-      "status": "sent",
+      "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "2026-11-16",
-      "bitable_synced": true,
-      "insight_archive": {
-        "title": "块状思维链：无代码编排AI逻辑",
-        "feature_tag": "AIP Logic与Agent编排",
-        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
-        "arch_position": "AIP Logic 位于 Palantir AIP 体系的中枢编排层，向上承接 Ontology 定义的对象与关系、提示词模板与函数输入，向下被 Agent 运行时调用以执行多步骤推理任务，是实现复杂 AI 工作流可配置、可验证的核心枢纽。",
-        "related_history": "本篇与此前推送的『动作与安全绑定的本体设计』形成关键递进：前者定义‘能做什么’（动作权限），后者则解决‘如何一步步做’（流程编排），共同构建起从语义建模到智能执行的完整闭环。",
-        "core_concept": "AIP Logic 就像给 AI 装上了‘乐高积木式流程引擎’——不再靠写代码拼接逻辑，而是通过拖拽可复用的‘功能块’来搭建思考路径。它把提示词、查询、计算、输出结构化等环节拆解成独立模块，让业务专家也能像搭积木一样设计复杂的 AI 分析流程，彻底告别‘黑箱式提示工程’。",
-        "product_mechanics": [
-          "『Blocks（块）』：每个块是一个独立的功能单元，如‘生成提示词’‘查询 Ontology’‘运行 Python 函数’‘格式化输出’，用户在界面中拖拽这些块并连接它们的输入/输出端口，形成一条可视化的思维链，类似低代码工作流但专为 AI 推理优化。",
-          "『Block-based CoT（块状思维链）』：系统自动将多个块按顺序串联成类思维链结构，每一步输出作为下一步输入，支持嵌套和条件分支，例如‘若查询结果为空，则触发备用提示词’，实现动态决策路径，避免传统 RAG 的线性僵化。",
-          "『Staged Writes（分阶段写入）』：在流程末尾设置‘写入目标’块，可选择将最终结果写回 Ontology、数据集或外部系统，且支持分步提交（如先写临时表再审批后正式入库），保障数据一致性与审计可追溯性。"
-        ],
-        "scenario_usage": "某分析师在 AIP Analyst 界面点击‘分析供应链风险’按钮，触发一个预设的 AIP Logic 流程：首先调用‘从 Ontology 查询供应商节点’块获取实体；接着用‘生成风险评估提示词’块构造 LLM 输入；然后调用大模型进行推理；最后通过‘结构化输出块’将结果转化为标准 JSON 格式，并由‘写入风险报告表’块存入数据库。整个过程无需编码，全流程可追踪、可重用、可审计。",
-        "aip_inspiration": [
-          "【通用设计精髓与认知校准】常规认知以为 AI 编排就是‘写 prompt + 调 API’，但 Palantir 的真正突破在于把‘推理过程’本身当作可设计、可测试、可版本化的第一公民。这提醒我们：真正的 AIP 产品力不在于模型多强，而在于能否让非技术者像搭电路一样设计 AI 的思考路径。",
-          "【对标框架落位与起步取舍】该能力应沉淀在‘Agent 编排运行时’层，当前起步阶段不必追求全栈自研，优先借鉴其‘块+连线’的可视化编排范式，直接在现有工作流引擎中增加‘AI 功能块库’，快速实现从‘提示词粘贴’到‘流程化设计’的跃迁。"
-        ],
-        "feature_specs": [
-          {
-            "component_name": "Blocks（块状逻辑单元）",
-            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
-            "palantir_spec": "配置需定义块类型（如 Prompt、Query、Function、Output）、输入参数 Schema 及输出格式；前端通过拖拽面板操作，支持连接多个块的输入/输出端口；后台执行时按依赖顺序调度，支持条件判断与异常捕获，所有中间状态可被 AIP Evals 捕获用于质量验证。",
-            "our_action": "我方应在‘Agent 编排运行时’模块中引入‘可复用功能块’概念，直接照搬其‘块类型分类 + 可视化连线 + 参数 Schema 配置’的设计，尤其要支持将提示词、数据查询、函数调用封装为独立可拖拽组件，显著降低非技术人员设计 AI 流程的门槛。"
-          }
-        ]
-      }
+      "sent_at": "",
+      "bitable_synced": false
     },
     "https://www.palantir.com/docs/foundry/agent-studio/overview": {
       "url": "https://www.palantir.com/docs/foundry/agent-studio/overview",
