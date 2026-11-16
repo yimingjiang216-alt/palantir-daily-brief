@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 16:04:45",
+  "updated_at": "2026-11-16 16:10:36",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -527,6 +527,20 @@
         "aip_inspiration": [
           "【通用设计精髓与认知校准】常规认知中，本体=数据分类，而 Palantir 把本体变成‘可执行的行为契约’——对象不仅是‘是什么’，更是‘能做什么’。这对 AIP 团队的启示是：不要只建‘语义地图’，更要建‘行动路线图’，让数据真正具备‘执行力’与‘约束力’。",
           "【对标框架落位与起步取舍】该能力应沉淀于 L2 本体与动作层，是 AIP 的核心底座。起步阶段不必追求全量建模，可先聚焦关键业务对象（如订单、客户、工单），优先构建‘高频动作+最小权限’组合，快速支撑 Agent 的可信执行。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Action Submission Criteria（动作前置条件与权限锁）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "配置时需定义条件表达式（如‘客户等级=AA’或‘订单金额>10万’），并绑定角色/组权限。前端界面根据条件实时判断按钮是否可用，若不满足则置灰并提示原因；后台执行前进行双重校验，失败则拒绝调用并记录日志。",
+            "our_action": "我方应在数据本体底座模块中增加‘动作条件配置’入口，支持基于字段值与角色的动态按钮控制。直接照搬‘条件表达式 + 权限绑定 + 前端灰显’的交互模式，解决当前‘有动作但无约束’的失控问题。"
+          },
+          {
+            "component_name": "Function-backed Action（代码函数驱动的受控写回）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "每个动作必须绑定一个后端函数（如 Python 脚本或微服务接口），函数执行前需通过安全策略验证（如是否涉及敏感字段）。执行成功后自动生成事件日志，包含调用者、时间、参数及返回结果，供后续审计与 Evals 快照使用。",
+            "our_action": "我方应在本体层引入‘动作-函数映射’配置项，支持将业务动作（如‘提交审批’）绑定到具体后端服务。在设计 PRD 时，强制要求所有可执行动作必须经过函数封装与权限校验，杜绝直接暴露 API 的风险。"
+          }
         ]
       },
       "bitable_synced": true
@@ -738,6 +752,20 @@
         "aip_inspiration": [
           "【通用设计精髓与认知校准】常规直觉认为 AI 动作是‘自由发挥’的，但 Palantir 的做法是‘先建规矩再让 AI 行动’——所有 AI 可执行动作必须提前在语义层注册、绑定权限与逻辑，形成‘动作即服务’的治理闭环。这打破了‘Agent 越灵活越好’的误区，提醒我们：真正的智能在于可控的行动力。",
           "【对标框架落位与起步取舍】该能力应沉淀于‘本体与动作层（L2）’，是 AIP 产品中连接数据与 Agent 的关键枢纽。当前起步阶段，建议优先借鉴其‘动作可定义、可治理、可追溯’的设计范式，而非直接复刻完整 OSDK 架构，重点构建最小可用的 Action Type 注册与权限绑定流程。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Action Submission Criteria（动作前置条件与权限锁）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "配置 Action Type 时需设定前置条件（如目标对象状态为‘待审批’）、访问权限（如仅特定角色可触发），并在前端界面中通过按钮置灰或弹窗提示限制非法操作。系统在执行前自动校验条件是否满足，不满足则拒绝执行并返回错误码，确保动作只能在合法上下文中触发。",
+            "our_action": "我方应在数据本体底座模块中引入‘动作准入规则’配置项，明确每个动作的触发前提与权限边界。目前多数团队只关注‘能做什么’，却忽略了‘什么时候能做’。建议在 PRD 中强制要求每个动作定义必须包含‘生效条件’字段，并在前端实现按钮灰化与提示机制，照搬 Palantir 的‘权限锁’设计。"
+          },
+          {
+            "component_name": "Function-backed Action（代码函数驱动的受控写回）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "每个 Action 必须绑定一个可版本化的 Function（支持 TypeScript/Python），该函数接收标准输入参数（如 object_id、user_id），执行业务逻辑后返回结果。系统在调用时自动注入上下文信息（如时间、用户、来源），并记录函数版本号与执行日志。失败时支持重试与回滚策略。",
+            "our_action": "我方应在本体层增加‘动作-函数绑定’配置能力，允许将业务逻辑封装为独立函数模块，并与动作类型关联。当前多数团队将逻辑写死在前端或流程中，缺乏可复用性。建议在设计时强制要求所有动作必须通过函数执行，且支持版本管理与灰度发布，直接抄作业：函数即服务（Function-as-Service）模式，提升动作的可维护性与可测试性。"
+          }
         ]
       },
       "bitable_synced": true
