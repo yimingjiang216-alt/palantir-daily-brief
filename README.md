@@ -68,6 +68,7 @@ palantir-daily-brief/
 │   ├── brief.py               # 候选池管理、千问产品价值打分、功能点去重、全文洞察提炼
 │   └── notify.py              # 飞书富文本卡片构建、同日防重锁、状态回写
 ├── pool.json                  # 持久化产品洞察候选池与已发状态记录
+├── Palantir产品功能洞察库.md     # 自动按 5 层架构模块分类归档的往期产品功能拆解手册
 ├── 外部定时触发配置.md          # 外部定时触发（API workflow_dispatch）配置说明
 ├── requirements.txt           # Python 依赖
 └── .env.example               # 环境变量示例
