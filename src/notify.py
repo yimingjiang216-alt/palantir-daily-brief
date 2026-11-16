@@ -11,6 +11,7 @@ Palantir AIP 产品洞察 · 飞书推送模块
 """
 
 import os
+import json
 import time
 import base64
 import hashlib
@@ -50,17 +51,26 @@ def _gen_sign(secret, timestamp):
     return base64.b64encode(hmac_code).decode("utf-8")
 
 
-def _build_feishu_post(items, date_str, unread_count=0):
+def _build_feishu_post(
+    items,
+    date_str,
+    unread_count=0,
+    start_idx=1,
+    include_lead=True,
+    include_footer=True,
+    title_suffix="",
+):
     content_lines = []
 
-    daily_lead = (items[0].get("daily_lead") or "").strip() if items else ""
+    daily_lead = (items[0].get("daily_lead") or "").strip() if (items and include_lead) else ""
     if daily_lead:
         content_lines.append([
             {"tag": "text", "text": f"📌 今日主线导读\n  {daily_lead}"}
         ])
         content_lines.append([{"tag": "text", "text": "────────────────────────"}])
 
-    for idx, it in enumerate(items, 1):
+    for offset, it in enumerate(items):
+        idx = start_idx + offset
         title = (it.get("title") or "").strip()
         tag = (it.get("feature_tag") or "AIP 产品洞察").strip()
         arch_layer = (it.get("arch_layer") or "").split(" (")[0].strip()
@@ -73,7 +83,7 @@ def _build_feishu_post(items, date_str, unread_count=0):
         url = (it.get("url") or "").strip()
         source = (it.get("source") or "原文").strip()
 
-        if idx > 1:
+        if offset > 0:
             content_lines.append([{"tag": "text", "text": "────────────────────────"}])
 
         header_badge = f"{arch_layer} · {tag}" if arch_layer else tag
@@ -125,32 +135,48 @@ def _build_feishu_post(items, date_str, unread_count=0):
                 {"tag": "a", "text": f"{source}（点击查看原文）", "href": url},
             ])
 
-    if FEISHU_BITABLE_URL:
-        content_lines.append([{"tag": "text", "text": "────────────────────────"}])
-        content_lines.append([
-            {"tag": "text", "text": "📚 全量架构知识库："},
-            {
-                "tag": "a",
-                "text": "👉 点击打开《Palantir 产品功能洞察库（飞书多维表格 · 按 L1~L5 架构归档）》",
-                "href": FEISHU_BITABLE_URL,
-            },
-        ])
-    elif unread_count > 0:
-        content_lines.append([
-            {"tag": "text", "text": f"\n📚 产品洞察池剩余高分储备：{unread_count} 篇（全部往期拆解已按 5 层架构归档至《Palantir产品功能洞察库.md》）"}
-        ])
+    if include_footer:
+        if FEISHU_BITABLE_URL:
+            content_lines.append([{"tag": "text", "text": "────────────────────────"}])
+            content_lines.append([
+                {"tag": "text", "text": "📚 全量架构知识库："},
+                {
+                    "tag": "a",
+                    "text": "👉 点击打开《Palantir 5层产品功能洞察库（飞书多维表格 · 按 L1~L5 架构归档）》",
+                    "href": FEISHU_BITABLE_URL,
+                },
+            ])
+        elif unread_count > 0:
+            content_lines.append([
+                {"tag": "text", "text": f"\n📚 产品洞察池剩余高分储备：{unread_count} 篇（全部往期拆解已按 5 层架构归档至《Palantir产品功能洞察库.md》）"}
+            ])
 
     return {
         "msg_type": "post",
         "content": {
             "post": {
                 "zh_cn": {
-                    "title": f"Palantir AIP 产品功能洞察 · {date_str}",
+                    "title": f"Palantir AIP 产品功能洞察 · {date_str}{title_suffix}",
                     "content": content_lines,
                 }
             }
         },
     }
+
+
+def _post_feishu_payload(payload):
+    if FEISHU_SECRET:
+        ts = str(int(time.time()))
+        payload["timestamp"] = ts
+        payload["sign"] = _gen_sign(FEISHU_SECRET, ts)
+
+    resp = requests.post(FEISHU_WEBHOOK, json=payload, timeout=20)
+    resp.raise_for_status()
+    res = resp.json()
+    if res.get("code") == 0 or res.get("StatusCode") == 0:
+        return True
+    log.error(f"飞书返回错误: {res}")
+    return False
 
 
 def send_feishu(items, date_str=None, unread_count=0):
@@ -183,20 +209,42 @@ def send_feishu(items, date_str=None, unread_count=0):
         return False
 
     payload = _build_feishu_post(items, date_str, unread_count=unread_count)
-    if FEISHU_SECRET:
-        ts = str(int(time.time()))
-        payload["timestamp"] = ts
-        payload["sign"] = _gen_sign(FEISHU_SECRET, ts)
+    payload_bytes = len(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
 
     try:
-        resp = requests.post(FEISHU_WEBHOOK, json=payload, timeout=20)
-        resp.raise_for_status()
-        res = resp.json()
-        if res.get("code") == 0 or res.get("StatusCode") == 0:
-            log.info(f"✅ 飞书推送成功，共 {len(items)} 篇产品洞察")
+        # 单条 post 卡片不超过 24KB 时直接合并发送；若 5~6 篇内容较长超限则自动拆分为上下两篇发送
+        if payload_bytes <= 24000 or len(items) <= 2:
+            if _post_feishu_payload(payload):
+                log.info(f"✅ 飞书推送成功，共 {len(items)} 篇产品洞察（{payload_bytes} bytes）")
+                return True
+            return False
+
+        mid = (len(items) + 1) // 2
+        part1 = _build_feishu_post(
+            items[:mid],
+            date_str,
+            unread_count=unread_count,
+            start_idx=1,
+            include_lead=True,
+            include_footer=False,
+            title_suffix="（上篇）",
+        )
+        part2 = _build_feishu_post(
+            items[mid:],
+            date_str,
+            unread_count=unread_count,
+            start_idx=mid + 1,
+            include_lead=False,
+            include_footer=True,
+            title_suffix="（下篇）",
+        )
+        ok1 = _post_feishu_payload(part1)
+        time.sleep(1)
+        ok2 = _post_feishu_payload(part2)
+        if ok1 and ok2:
+            log.info(f"✅ 飞书分片推送成功（上下两篇），共 {len(items)} 篇产品洞察")
             return True
-        log.error(f"飞书返回错误: {res}")
-        return False
+        return ok1 or ok2
     except Exception as e:
         log.error(f"飞书推送异常: {str(e)[:150]}")
         return False
