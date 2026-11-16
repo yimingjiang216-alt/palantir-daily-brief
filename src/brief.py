@@ -70,32 +70,36 @@ LAYER_RULES = [
     (
         1,  # L2 本体与动作层
         ("/ontology/", "/action-types/", "/functions/", "/interfaces/", "/object-views/", "01-palantir-aip-ontology.md", "05-ontology-engineering", "06-umodel-vs-palantir"),
-        ("action types", "action type", "object type", "link type", "functions on objects", "object views", "interface", "语义层", "动作类型", "对象绑定动作", "四原语"),
+        ("ontology", "本体", "action types", "action type", "actions", "functions", "object type", "link type", "object views", "interface", "语义层", "动作类型", "对象绑定动作", "四原语"),
     ),
 ]
 
 
-def resolve_arch_layer(item, llm_layer_str=""):
+def resolve_arch_layer(item, llm_layer_str="", insight_title="", feature_tag=""):
     """
-    双重锁定架构层级，确保 100% 对号入座：
+    锁定架构层级：
       1. 第一优先级：检查 URL 是否命中官方文档/专题的精确模块路径；
-      2. 第二优先级：统计标题 + feature_focus 中各层专属产品模块词的命中权重；
-      3. 第三优先级：若无明显专有模块词（如综合案例），才采纳千问输出的层级，并强校验归入 5 个标准枚举值。
+      2. 第二优先级：重点检查提炼后的洞察标题（insight_title）与模块标签（feature_tag）中的核心模块词（权重 x3），
+         再结合原标题与 feature_focus（权重 x1），防止原视频标题顺带提了多个词导致误判；
+      3. 第三优先级：采纳千问输出的层级并标准化为 5 个枚举值之一。
     """
     url_low = (item.get("url") or "").lower()
-    title_focus_low = f"{item.get('title', '')} {item.get('feature_focus', '')}".lower()
+    primary_low = f"{insight_title} {feature_tag}".lower()
+    secondary_low = f"{item.get('title', '')} {item.get('feature_focus', '')}".lower()
 
     # 1. URL 路径强锁定
     for idx, url_pats, _ in LAYER_RULES:
         if any(p in url_low for p in url_pats):
             return ARCH_LAYERS[idx]
 
-    # 2. 标题与功能切面的模块专有词计分锁定（防止正文顺带提了一嘴数据管道就把 L3 判成 L1）
+    # 2. 核心标题（权重3）+ 原始标题切面（权重1）计分
     scores = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     for idx, _, kw_pats in LAYER_RULES:
         for kw in kw_pats:
-            if kw in title_focus_low:
-                scores[idx] += 2
+            if kw in primary_low:
+                scores[idx] += 3
+            if kw in secondary_low:
+                scores[idx] += 1
 
     best_idx = max(scores, key=lambda k: scores[k])
     if scores[best_idx] > 0:
@@ -553,8 +557,13 @@ def synthesize_product_insight(item, recent_sent_focuses):
             "aip_inspiration": ["建议对照原文梳理我方 AIP 对应模块的产品功能边界。"],
         }
 
-    # 用代码级规则 + LLM输出双重锁定架构层级，杜绝串层
-    parsed["arch_layer"] = resolve_arch_layer(item, parsed.get("arch_layer", ""))
+    # 用代码级规则 + 提炼标题 + LLM输出锁定架构层级，杜绝串层
+    parsed["arch_layer"] = resolve_arch_layer(
+        item,
+        llm_layer_str=parsed.get("arch_layer", ""),
+        insight_title=parsed.get("title", ""),
+        feature_tag=parsed.get("feature_tag", ""),
+    )
 
     parsed["url"] = item["url"]
     parsed["source"] = item["source"]
