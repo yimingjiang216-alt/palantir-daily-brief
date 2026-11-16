@@ -101,7 +101,6 @@ X_ACCOUNTS = [
     ("X @PalantirTech (官方产品与DevCon动态)", "PalantirTech"),
     ("X @chadwahl (Palantir Ontology架构师)", "chadwahl"),
     ("X @PalantirVision (AIP与MCP第三方拆解)", "PalantirVision"),
-    ("X @PalantirDev (OSDK与开发者实战)", "PalantirDev"),
     ("X @ssankar (Palantir CTO产品思考)", "ssankar"),
 ]
 
@@ -203,7 +202,7 @@ def fetch_official_docs():
 
 
 def fetch_x_accounts():
-    """通过 r.jina.ai 抓取 X 账号推文，仅保留带真实 /status/ 链接或正文充足的产品推文。"""
+    """通过 r.jina.ai 抓取 X 账号推文，按独立推文列表项切分并保留真实 /status/ 链接。"""
     results = []
     for source_name, handle in X_ACCOUNTS:
         jina_url = f"https://r.jina.ai/https://x.com/{handle}"
@@ -211,37 +210,35 @@ def fetch_x_accounts():
             resp = requests.get(jina_url, headers={"User-Agent": UA}, timeout=25)
             if resp.status_code != 200 or len(resp.text) < 200:
                 continue
-            blocks = re.split(r"\n(?=\[[^\]]+\]\(https://x\.com/)", resp.text)
+            # Jina 渲染 X 时间线时每条推文以 "\n* " 列表项或 "Pinned " 开头
+            blocks = re.split(r"\n\*\s+|\bPinned\s+", resp.text)
             cnt = 0
             for blk in blocks:
-                if len(blk) < 180:
+                m_status = re.search(r"https://x\.com/[A-Za-z0-9_]+/status/(\d+)", blk)
+                if not m_status:
                     continue
-                m_status = re.search(rf"https://x\.com/{handle}/status/(\d+)", blk)
-                clean_txt = _clean_html(blk)
+                tweet_url = m_status.group(0)
+                # 剥除图片、链接与尾部互动数字，只保留推文正文
+                clean_txt = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", blk)
+                clean_txt = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", clean_txt)
+                clean_txt = _clean_html(clean_txt)
                 clean_txt = re.sub(r"https?://\S+", "", clean_txt)
-                clean_txt = re.sub(r"!\[Image[^\]]*\]", "", clean_txt)
                 clean_txt = re.sub(r"\s+", " ", clean_txt).strip()
-                # 若无真实 /status/ 链接且正文不足 380 字符，跳过（修复短推文 #hash 凑数漏洞）
-                if not m_status and len(clean_txt) < 380:
-                    continue
-                if len(clean_txt) < 160 or is_noise(clean_txt):
+
+                if len(clean_txt) < 120 or is_noise(clean_txt):
                     continue
                 if not any(
                     k in clean_txt.lower()
-                    for k in ("ontology", "aip", "agent", "eval", "foundry", "workflow", "model", "mcp", "sdk", "action", "data")
+                    for k in ("ontology", "aip", "agent", "eval", "foundry", "workflow", "model", "mcp", "sdk", "action", "data", "enterprise")
                 ):
                     continue
-                tweet_url = (
-                    f"https://x.com/{handle}/status/{m_status.group(1)}"
-                    if m_status
-                    else f"https://x.com/{handle}"
-                )
+
                 first_sentence = clean_txt[:95].rstrip(".,; ") + "..."
                 results.append({
                     "title": f"@{handle} 产品洞察：{first_sentence}",
                     "url": tweet_url,
                     "summary": clean_txt[:800],
-                    "full_text": clean_txt if len(clean_txt) >= 400 else "",
+                    "full_text": "",  # 入选精读时通过 fetch_full_text 访问 tweet_url 拉取展开全文
                     "source": source_name,
                 })
                 cnt += 1
@@ -329,23 +326,24 @@ def fetch_substack_articles():
         resp = requests.get(search_url, headers={"User-Agent": UA}, timeout=25)
         if resp.status_code != 200:
             return results
-        # 匹配形如 [...](https://xxx.substack.com/p/slug 或 https://customdomain/p/slug) 的文章链接
+        # 先剥除内层嵌套的头像/配图 ![Image...](...)，防止打断外层 [文章标题+摘要](https://.../p/...) 匹配
+        cleaned_md = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", resp.text)
         matches = re.findall(
-            r"\[([^\]]{25,400})\]\((https://[a-zA-Z0-9._-]+/p/[a-zA-Z0-9_-]+)\)",
-            resp.text,
+            r"\[([^\]]{20,600})\]\((https://[a-zA-Z0-9._-]+/p/[a-zA-Z0-9_-]+[^)]*)\)",
+            cleaned_md,
         )
         seen = set()
         for raw_text, link in matches:
+            link = link.split("?")[0].rstrip("/")
             if link in seen:
                 continue
             seen.add(link)
-            clean_t = re.sub(r"!\[Image[^\]]*\]\([^)]*\)", "", raw_text)
-            clean_t = _clean_html(clean_t).strip()
-            if len(clean_t) < 20 or is_noise(clean_t):
+            clean_t = _clean_html(raw_text).strip()
+            if len(clean_t) < 25 or is_noise(clean_t):
                 continue
             title_part = clean_t[:110].strip()
             results.append({
-                "title": title_part,
+                "title": f"[Substack] {title_part}",
                 "url": link,
                 "summary": clean_t[:600],
                 "full_text": "",
