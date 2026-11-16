@@ -45,9 +45,19 @@ def _gen_sign(secret, timestamp):
 def _build_feishu_post(items, date_str, unread_count=0):
     content_lines = []
 
+    daily_lead = (items[0].get("daily_lead") or "").strip() if items else ""
+    if daily_lead:
+        content_lines.append([
+            {"tag": "text", "text": f"📌 今日主线导读\n  {daily_lead}"}
+        ])
+        content_lines.append([{"tag": "text", "text": "────────────────────────"}])
+
     for idx, it in enumerate(items, 1):
         title = (it.get("title") or "").strip()
         tag = (it.get("feature_tag") or "AIP 产品洞察").strip()
+        arch_layer = (it.get("arch_layer") or "").split(" (")[0].strip()
+        arch_pos = (it.get("arch_position") or "").strip()
+        related_hist = (it.get("related_history") or "").strip()
         concept = (it.get("core_concept") or "").strip()
         mechanics = it.get("product_mechanics") or []
         scenario = (it.get("scenario_usage") or "").strip()
@@ -58,9 +68,20 @@ def _build_feishu_post(items, date_str, unread_count=0):
         if idx > 1:
             content_lines.append([{"tag": "text", "text": "────────────────────────"}])
 
+        header_badge = f"{arch_layer} · {tag}" if arch_layer else tag
         content_lines.append([
-            {"tag": "text", "text": f"【洞察 {idx} · {tag}】{title}"}
+            {"tag": "text", "text": f"【洞察 {idx} · {header_badge}】{title}"}
         ])
+
+        if arch_pos:
+            content_lines.append([
+                {"tag": "text", "text": f"🗺️ 架构位置与上下游：{arch_pos}"}
+            ])
+
+        if related_hist:
+            content_lines.append([
+                {"tag": "text", "text": f"🔗 关联脉络：{related_hist}"}
+            ])
 
         if concept:
             content_lines.append([
@@ -98,7 +119,7 @@ def _build_feishu_post(items, date_str, unread_count=0):
 
     if unread_count > 0:
         content_lines.append([
-            {"tag": "text", "text": f"\n📚 产品洞察池当前剩余高分待读储备：{unread_count} 篇"}
+            {"tag": "text", "text": f"\n📚 产品洞察池剩余高分储备：{unread_count} 篇（全部往期拆解已按 5 层架构归档至《Palantir产品功能洞察库.md》）"}
         ])
 
     return {
@@ -123,9 +144,15 @@ def send_feishu(items, date_str=None, unread_count=0):
 
     if not FEISHU_WEBHOOK:
         log.info("FEISHU_WEBHOOK 当前留空，跳过飞书推送（仅在日志打印今日洞察预览）")
+        if items and items[0].get("daily_lead"):
+            print(f"\n📌 今日主线导读：\n  {items[0].get('daily_lead')}")
         for idx, r in enumerate(items, 1):
             print(f"\n{'=' * 66}")
-            print(f"【洞察 {idx} · {r.get('feature_tag')}】{r.get('title')}")
+            print(f"【洞察 {idx} · {r.get('arch_layer','')} · {r.get('feature_tag')}】{r.get('title')}")
+            if r.get("arch_position"):
+                print(f"🗺️ 架构位置与上下游：{r.get('arch_position')}")
+            if r.get("related_history"):
+                print(f"🔗 关联脉络：{r.get('related_history')}")
             print(f"💡 一、功能本质与通俗解读：\n  {r.get('core_concept')}")
             print("🔧 二、产品功能与机制拆解：")
             for m in r.get("product_mechanics", []):
@@ -186,7 +213,7 @@ def main():
 
     sent_ok = send_feishu(items, date_str=today, unread_count=unread_after)
     if sent_ok and not TEST_MODE:
-        mark_items_sent(pool, [it["url"] for it in items])
+        mark_items_sent(pool, [it["url"] for it in items], insights=items)
     elif sent_ok and TEST_MODE:
         log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态）")
     else:
