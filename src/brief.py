@@ -794,7 +794,11 @@ def update_knowledge_base_md(pool):
     log.info(f"已同步更新知识库索引文档: {KB_MD_PATH.name}（共归档 {len(sent_items)} 篇）")
 
 
-def mark_items_sent(pool, urls, insights=None):
+def mark_items_sent(pool, urls, insights=None, bitable_synced=False):
+    """
+    标记已发送状态并归档。
+    bitable_synced=True 时同步写入防重标记，确保下次运行时不会重复往多维表格插入同一篇内容。
+    """
     today = datetime.now().strftime("%Y-%m-%d")
     items_map = pool.get("items", {})
     insight_by_url = {x["url"]: x for x in (insights or []) if x.get("url")}
@@ -803,6 +807,8 @@ def mark_items_sent(pool, urls, insights=None):
         if u in items_map:
             items_map[u]["status"] = "sent"
             items_map[u]["sent_at"] = today
+            if bitable_synced:
+                items_map[u]["bitable_synced"] = True
             if u in insight_by_url:
                 ins = insight_by_url[u]
                 items_map[u]["insight_archive"] = {
