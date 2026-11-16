@@ -202,17 +202,23 @@ def send_feishu(items, date_str=None, unread_count=0):
         return False
 
 
-def sync_to_feishu_bitable(items, date_str=None):
+def sync_to_feishu_bitable(items, date_str=None, pool=None):
     """
     通过飞书多维表格（Bitable）自动化 Webhook，将当日每篇洞察实时写入多维表格新增记录。
-    每篇发送一次 JSON 请求，方便多维表格自动化直接映射为单行结构化字段。
+    自带 URL 级永久防重锁（bitable_synced）：已在多维表格中写入过的文章绝不重复插入。
     """
     if not FEISHU_BITABLE_WEBHOOK or not items:
         return False
 
     date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+    items_map = pool.get("items", {}) if isinstance(pool, dict) else {}
     ok_cnt = 0
     for it in items:
+        u = (it.get("url") or "").strip()
+        if u and u in items_map and items_map[u].get("bitable_synced"):
+            log.info(f"跳过已写入过多维表格的记录（防重复入库）: {it.get('title','')[:30]}")
+            continue
+
         raw_layer = (it.get("arch_layer") or "L2 本体与动作层").strip()
         short_layer = raw_layer.split(" (")[0].strip()
 
@@ -246,6 +252,8 @@ def sync_to_feishu_bitable(items, date_str=None):
             resp = requests.post(FEISHU_BITABLE_WEBHOOK, json=row_payload, timeout=15)
             resp.raise_for_status()
             ok_cnt += 1
+            if u and u in items_map:
+                items_map[u]["bitable_synced"] = True
         except Exception as e:
             log.warning(f"同步飞书多维表格失败 ({it.get('title','')[:25]}): {str(e)[:100]}")
 
@@ -283,7 +291,7 @@ def main():
 
     sent_ok = send_feishu(items, date_str=today, unread_count=unread_after)
     if sent_ok and not TEST_MODE:
-        sync_to_feishu_bitable(items, date_str=today)
+        sync_to_feishu_bitable(items, date_str=today, pool=pool)
         mark_items_sent(pool, [it["url"] for it in items], insights=items)
     elif sent_ok and TEST_MODE:
         log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态）")
