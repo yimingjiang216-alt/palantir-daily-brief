@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 09:08:17",
+  "updated_at": "2026-11-16 10:17:23",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -57,9 +57,36 @@
       "summary": "开源专题《palantir-aip-study》深度拆解章节：Palantir Ontology 工程设计模式：对象、关系与 Action Types 建模实践",
       "score": 10,
       "reason": "深度解析 Ontology 工程设计模式，系统阐述 Object/Property/Link/Action Types 的建模逻辑与实际应用，涵盖元数据治理、跨系统一致性保障及反向写回机制",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-16",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Ontology受控执行机制：AI只申请，平台才执行",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "该机制位于 Palantir Foundry 的语义层核心，向上承接数据底座中的实体与关系定义，向下被 Agent 编排引擎调用以触发受控写操作。它通过 Action 类型的预设校验规则和执行流水线，确保所有业务动作在平台内完成审计、权限检查与跨系统同步。",
+        "related_history": "本篇承接前文『04-三档决策框架』中对路径B/C的选型建议，进一步深化‘如何落地’的工程实现逻辑，是将抽象本体概念转化为可执行能力的关键递进环节。",
+        "core_concept": "这就像给 AI 装上‘执行护栏’：它不能直接动系统，只能提申请；真正的操作由平台‘管家’来执行，每一步都留痕、可查、可回滚。对比传统 RAG 只能问答、普通工作流依赖硬编码，这种设计让 AI 真正成为‘可信的业务执行者’。",
+        "product_mechanics": [
+          "『Action Type』：每个 Action 是一个受控写操作模板，需定义输入 Schema、前置条件（如‘工单状态为待分配’）、是否需要人工审批（HITL），以及目标业务系统的调用方式。例如‘分配漏洞工单’Action 必须校验责任人是否存在且有权限，否则拒绝执行。",
+          "『执行流水线』：从用户意图出发，经 LLM 解析后调用 Action MCP Tool，平台按五步流程执行：① 输入校验 → ② 前置条件判断 → ③ HITL 审批（如有）→ ④ 写入业务系统 → ⑤ 同步更新图谱并记录审计日志，任何一步失败均回滚图变更。",
+          "『语义路由链』：当用户说‘帮我把高危漏洞分给张三’，系统不靠 Prompt 硬塞全量本体，而是先用向量检索找出相关实体（如 Vulnerability、Person）、属性（severity=HIGH）、关系（关联工单），再组装成小范围上下文，引导 LLM 生成合法图查询，避免误操作"
+        ],
+        "scenario_usage": "安全运营人员在 Workshop 中输入自然语言：‘上周未分配的高危漏洞有哪些？’系统启动语义路由链，检索命中‘Vulnerability’实体与‘关联工单’关系，生成 Gremlin 查询语句，经 Schema 校验后执行图查询，返回结果并展示在界面。若后续要‘分配’，则触发 Action 流水线，平台校验权限与状态，最终写入工单系统并同步图谱，全程可审计。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。",
+          "【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Action Type（受控写操作）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "配置时需定义输入参数 Schema（如 {assignee: Person, workOrder: WorkOrder}）、前置条件（如 workOrder.status == 'OPEN'）、是否需 HITL 审批、目标系统连接器。前端通过可视化表单配置，后台执行时强制校验输入合法性，先写业务系统再写图谱，失败则回滚图变更，并生成包含 trace_id、caller、input_payload、exec_status 的完整审计日志。",
+            "our_action": "我方应在『数据本体底座』模块中引入类似『Action Type』的受控操作定义机制，明确其输入校验、前置条件、审批策略与执行顺序。常规做法常缺‘执行流水线’与‘审计日志’，我们应直接照搬 Palantir 的六步执行流程（含回滚逻辑），确保每一次 AI 提出的‘执行请求’都能被平台严格管控，而非直接穿透到业务系统"
+          }
+        ]
+      }
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-alibaba-semantic-runtime.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-alibaba-semantic-runtime.md",
@@ -644,7 +671,8 @@
       "feature_focus": "Document Intelligence 模块从 PDF 提取到部署的完整数据管道构建流程与实战操作",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=zH3lxJrGUTk": {
       "url": "https://www.youtube.com/watch?v=zH3lxJrGUTk",
@@ -658,7 +686,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 0
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=TOXpSnIrXFQ": {
       "url": "https://www.youtube.com/watch?v=TOXpSnIrXFQ",
@@ -708,7 +736,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 0
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=2lgwr7trSgw": {
       "url": "https://www.youtube.com/watch?v=2lgwr7trSgw",
@@ -792,7 +820,8 @@
       "feature_focus": "系统讲解 AIP Logic、Automate 与 AIP Evals 三大组件协同机制，揭示决策层如何实现可控自动化与可解释性评估",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=LZKx4ruEe2Q": {
       "url": "https://www.youtube.com/watch?v=LZKx4ruEe2Q",
@@ -922,10 +951,36 @@
       "summary": "拆解 Palantir 如何利用细粒度安全标记（Markings）沿数据血缘穿透控制 LLM 可访问的上下文。",
       "score": 10,
       "feature_focus": "Markings 细粒度安全标记沿数据血缘穿透控制 LLM 上下文访问权限的实现机制",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "bitable_synced": false
+      "sent_at": "2026-11-16",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Markings权限穿透控制LLM上下文",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "该功能位于 Palantir AIP 的安全决策层，向上承接用户会话中携带的完整数据标记（Markings）信息，向下由 AIP 运行时在每次模型请求前执行实时权限校验，确保任何包含未授权标记的数据都无法进入 LLM 上下文，是整个 AIP 安全链路的最终防线。",
+        "related_history": "本篇与此前推送的『Ontology受控执行机制』形成闭环：前者控制‘能做什么动作’，后者控制‘能看到什么数据’，二者共同构建了从语义到权限的双重护栏，实现对 AI 行为的精细化约束。",
+        "core_concept": "这就像给每个进入大模型的‘对话内容’贴上一张‘保密等级标签’，系统不仅看内容本身有没有敏感词，更要看使用者的‘身份通行证’是否允许访问这些标签。传统 RAG 只管‘查什么’，Palantir 则连‘谁有资格问’都管得死死的。",
+        "product_mechanics": [
+          "『Token级标记校验机制』：每当用户发起 AIP 请求，系统会读取当前 Foundry 会话令牌（token）中携带的所有强制性 Markings（如 A、B、C），并将其与策略配置的允许列表逐项比对。只要令牌中出现一个不在白名单中的标记，哪怕实际查询的数据没有这个标记，请求也会被直接拒绝。",
+          "『非数据依赖型权限判断』：该机制不依赖于请求中具体数据是否带有特定 Markings，而是基于用户会话的权限上下文做判断。例如，一个用户虽然只查了无敏感标记的数据，但其会话令牌包含了未授权的 C 标记，依然会被拦截，防止‘越权访问’的隐性风险。",
+          "『双层策略覆盖机制』：存在全局策略（Enrollment Policy）和模型级策略（Registered Model Override）两层控制。全局策略默认适用于所有模型；而注册模型可自定义更严格的策略，甚至完全绕过全局限制，实现‘按需隔离’的灵活管控。"
+        ],
+        "scenario_usage": "某政府机构分析师在 Foundry 中打开一个含‘机密-国防’标记的项目，其会话令牌自动带上该标记。当他通过 AIP 提问‘分析近期边境部署趋势’时，系统发现其令牌含有未被允许的‘机密-国防’标记，即使问题本身未引用敏感数据，AIP 仍会拒绝响应。此时系统返回错误提示：‘当前会话权限不允许调用 AIP 模型’，有效防止了潜在数据泄露。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规认知认为权限控制只需看‘数据有没有标记’，但 Palantir 的设计揭示：真正的安全在于‘人+数据’的联合风险评估——即用户的会话权限才是决定能否触达模型的关键。这打破了‘数据可见性=访问权’的直觉误区，提醒我们：权限必须前置到请求源头，而非事后审查。",
+          "【对标框架落位与起步取舍】该能力应沉淀在 L5 安全治理层，属于最底层的防护基座。当前起步阶段，不必追求复杂策略体系，但必须在 Agent 编排运行时入口处植入类似‘请求令牌标记校验’的拦截逻辑，优先保障‘谁可以问’的边界清晰，这是 AIP 安全的起点。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Allowed Markings Allowlist（允许标记白名单）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "配置时需在 Control Panel 的 AIP 设置中选择‘仅允许以下标记’，并从系统预设的强制标记列表中至少勾选一个。后台将把用户请求令牌中的所有强制标记与白名单进行集合差集比对，若存在不在白名单中的标记，则立即拒绝请求。该规则适用于交互式使用与自动化工作流，且不依赖数据内容本身是否携带标记。",
+            "our_action": "我方应在『Agent 编排运行时』模块的请求入口处增加‘请求令牌标记校验’组件，明确输入参数为‘允许标记白名单’，前端提供多选框配置界面，后端在触发模型前执行 token 标记与白名单的交集判断。目前多数团队只关注数据层面的脱敏，却忽略了用户会话权限的穿透控制，此点可直接抄作业补上。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/aip-security": {
       "url": "https://www.palantir.com/docs/foundry/aip/aip-security",
@@ -2337,6 +2392,71 @@
       "full_text": "",
       "score": 7,
       "feature_focus": "FDE 模型在 AI 工程师社区中的实践介绍，提及 FDE 的工作方式与技术反馈循环，但未深入 AIP 或 Foundry 的具体功能机制",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=AuB2sB1QmZw": {
+      "url": "https://www.youtube.com/watch?v=AuB2sB1QmZw",
+      "raw_url": "",
+      "title": "[视频 · 最佳拍档] 卡普：你付费的模型，正在用你的数据训练对手 | Palantir | 亚历克斯·卡普 | 沃尔特·艾萨克森 | AI数据主权 | 本体论 | Ontology | AI监控 |财富税 | 人工智能伦理",
+      "source": "YouTube 中文科普与架构拆解 (最佳拍档)",
+      "summary": "YouTube 频道 最佳拍档 视频讲解：卡普：你付费的模型，正在用你的数据训练对手 | Palantir | 亚历克斯·卡普 | 沃尔特·艾萨克森 | AI数据主权 | 本体论 | Ontology | AI监控 |财富税 | 人工智能伦理。简介：Palantir掌门人亚历克斯·卡普在艾萨克森的对谈里，把AI时代最难回避的几件事摊开了：企业花钱买大模型，专有数据却在替对手 ...",
+      "full_text": "",
+      "score": 5,
+      "feature_focus": "AI数据主权与伦理议题的宏观讨论，缺乏Palantir具体产品功能或架构细节",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=mzBDupsPPcs": {
+      "url": "https://www.youtube.com/watch?v=mzBDupsPPcs",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Ontology Governance | Building a Robust Ontology",
+      "source": "YouTube 英文第三方实操与架构科普 (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Ontology Governance | Building a Robust Ontology。简介：In this interview, Chad Wahlquist sits down with Jonas Lang, a Forward Deployed Engineer at Palantir, to walk through the four ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology治理机制与构建健壮本体论的实践方法论",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=pZUc7PzYWdg": {
+      "url": "https://www.youtube.com/watch?v=pZUc7PzYWdg",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Speedrun: Your First End to End Workflow (update)",
+      "source": "YouTube 英文第三方实操与架构科普 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Speedrun: Your First End to End Workflow (update)。简介：In this video, Gena walks through Palantir's free online course titled “Speedrun: Your First End to End Workflow” available at ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Palantir Foundry端到端工作流搭建的实操指南（含免费课程路径）",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=otjTIMSjPvo": {
+      "url": "https://www.youtube.com/watch?v=otjTIMSjPvo",
+      "raw_url": "",
+      "title": "[视频 · Orzen AI] Palantir Deep Dive: Building Your First Application (Beginners Guide)",
+      "source": "YouTube 模块深挖·Action与对象视图 (Orzen AI)",
+      "summary": "YouTube 频道 Orzen AI 视频讲解：Palantir Deep Dive: Building Your First Application (Beginners Guide)。简介：In this deep dive, we build your first operational application in Palantir Foundry using Workshop — step by step and from the ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "在Palantir Foundry中通过Workshop构建首个业务应用的完整流程与交互设计",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
+      "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Using Actions in your OSKD App",
+      "source": "YouTube 模块深挖·Action与对象视图 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Using Actions in your OSKD App。简介：In this video, Gena demonstrates how to vibe-code an OSDK app that uses Ontology Actions. Find the sample data used here: ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "OSDK应用中使用Ontology Actions实现动态操作与对象视图联动的开发实践",
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": ""
