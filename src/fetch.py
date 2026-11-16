@@ -39,11 +39,17 @@ RSS_SOURCES = [
     ),
 ]
 
-# ── 2. 推特 (X) 核心账号（通过 r.jina.ai 渲染抓取产品发布与架构思考）──────────
+# ── 2. 推特 (X) 官方与第三方实战账号（通过 r.jina.ai 渲染抓取产品拆解）──────────
 X_ACCOUNTS = [
     ("X @PalantirTech (官方产品与DevCon动态)", "PalantirTech"),
     ("X @chadwahl (Palantir Ontology架构师)", "chadwahl"),
-    ("X @PalantirVision (AIP与MCP产品拆解)", "PalantirVision"),
+    ("X @PalantirVision (AIP与MCP第三方拆解)", "PalantirVision"),
+]
+
+# ── 2.5 YouTube 中英文第三方科普、架构拆解与实操教程搜索 ────────────────────────
+YOUTUBE_SEARCH_QUERIES = [
+    ("YouTube 中文科普与架构拆解", "Palantir+本体论+OR+AIP+架构+OR+产品解析", "zh-CN,zh;q=0.9,en;q=0.8"),
+    ("YouTube 英文第三方实操与架构科普", "Palantir+AIP+Ontology+tutorial+OR+explained+OR+workflow", "en-US,en;q=0.9"),
 ]
 
 # ── 3. GitHub 开源 Palantir AIP 中文深度研究专题（可直接拉取 Raw Markdown）────
@@ -103,7 +109,7 @@ NOISE_KEYWORDS = [
     "165% retention", "motley fool", "seeking alpha", "zacks", "barron",
     "democrat", "republican", "midterm", "election", "progressive",
     "swedish forest", "early talent hiring", "recruitment session",
-    "hoodies", "windbreaker", "veterans", "s&p 500",
+    "hoodies", "windbreaker", "veterans", "s&p 500", "美股", "股价", "万亿ai公司",
 ]
 
 
@@ -254,6 +260,76 @@ def fetch_x_accounts():
     return results
 
 
+def fetch_youtube_videos():
+    """搜索 YouTube 上第三方与官方关于 Palantir AIP / Ontology 的科普讲解与实操教程视频。"""
+    import json as _json
+
+    results = []
+    for source_name, query, lang in YOUTUBE_SEARCH_QUERIES:
+        url = f"https://www.youtube.com/results?search_query={query}"
+        try:
+            resp = requests.get(
+                url,
+                headers={"User-Agent": UA, "Accept-Language": lang},
+                timeout=20,
+            )
+            if resp.status_code != 200:
+                continue
+            m = re.search(r"var ytInitialData = (\{.*?\});</script>", resp.text)
+            if not m:
+                continue
+            data = _json.loads(m.group(1))
+            videos = []
+
+            def _walk(obj):
+                if isinstance(obj, dict):
+                    if "videoRenderer" in obj:
+                        vr = obj["videoRenderer"]
+                        vid = vr.get("videoId", "")
+                        title = "".join(
+                            x.get("text", "") for x in vr.get("title", {}).get("runs", [])
+                        )
+                        owner = "".join(
+                            x.get("text", "") for x in vr.get("ownerText", {}).get("runs", [])
+                        )
+                        snippets = vr.get("detailedMetadataSnippets", [{}])
+                        desc = (
+                            "".join(
+                                x.get("text", "")
+                                for x in snippets[0].get("snippetText", {}).get("runs", [])
+                            )
+                            if snippets
+                            else ""
+                        )
+                        if vid and title:
+                            videos.append((vid, owner, title, desc))
+                    else:
+                        for v in obj.values():
+                            _walk(v)
+                elif isinstance(obj, list):
+                    for x in obj:
+                        _walk(x)
+
+            _walk(data)
+            cnt = 0
+            for vid, owner, title, desc in videos[:12]:
+                full_title = f"[视频 · {owner}] {title}" if owner else f"[视频] {title}"
+                if is_noise(full_title, desc):
+                    continue
+                results.append({
+                    "title": full_title,
+                    "url": f"https://www.youtube.com/watch?v={vid}",
+                    "summary": f"YouTube 频道 {owner} 视频讲解：{title}。简介：{desc}",
+                    "full_text": "",
+                    "source": f"{source_name} ({owner})" if owner else source_name,
+                })
+                cnt += 1
+            log.info(f"[{source_name}] 有效视频候选 {cnt} 条")
+        except Exception as e:
+            log.warning(f"[{source_name}] 抓取失败: {str(e)[:100]}")
+    return results
+
+
 def fetch_github_study():
     """加载 GitHub 开源 Palantir AIP 深度研究专题章节。"""
     results = []
@@ -309,6 +385,35 @@ def fetch_full_text(item, max_chars=12000):
     if not url:
         return item.get("summary", "")
 
+    # YouTube 视频专属提取：拉取完整视频简介/章节大纲 + 字幕轨道 (captionTracks)
+    if "youtube.com/watch" in url or "youtu.be/" in url:
+        try:
+            import json as _json
+            r = requests.get(
+                url,
+                headers={"User-Agent": UA, "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"},
+                timeout=20,
+            )
+            parts = []
+            m_desc = re.search(r'"shortDescription":"((?:\\.|[^"\\])*)"', r.text)
+            if m_desc:
+                desc = _json.loads(f'"{m_desc.group(1)}"')
+                if desc:
+                    parts.append(f"【视频完整简介与章节大纲】\n{desc}")
+            m_cap = re.search(r'"captionTracks":(\[\{.*?\}\])', r.text)
+            if m_cap:
+                tracks = _json.loads(m_cap.group(1))
+                if tracks and tracks[0].get("baseUrl"):
+                    rc = requests.get(tracks[0]["baseUrl"], headers={"User-Agent": UA}, timeout=15)
+                    lines = re.findall(r"<text[^>]*>(.*?)</text>", rc.text)
+                    transcript = _clean_html(" ".join(lines))
+                    if transcript:
+                        parts.append(f"【视频字幕实录】\n{transcript}")
+            if parts:
+                return "\n\n".join(parts)[:max_chars]
+        except Exception as e:
+            log.warning(f"YouTube 视频详情/字幕提取失败 ({url}): {str(e)[:80]}")
+
     # 1. 尝试 Jina Reader 提取干净 Markdown
     try:
         jina_url = f"https://r.jina.ai/{url}"
@@ -338,8 +443,9 @@ def fetch_all_candidates():
     # 1. GitHub 深度研究章节 & 官方文档核心模块
     all_items.extend(fetch_github_study())
     all_items.extend(fetch_official_docs())
-    # 2. 推特 (X) 核心账号产品动态与架构思考
+    # 2. 推特 (X) 核心账号产品动态与架构思考 + YouTube 中英文科普/实操视频
     all_items.extend(fetch_x_accounts())
+    all_items.extend(fetch_youtube_videos())
     # 3. RSS 深度源（官方博客、Dev.to、Medium、精准架构搜索）
     for name, url in RSS_SOURCES:
         all_items.extend(fetch_rss_source(name, url))
