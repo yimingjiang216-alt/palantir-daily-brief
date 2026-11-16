@@ -23,7 +23,7 @@ import sys
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from brief import generate_brief, load_pool, mark_items_sent
+from brief import generate_brief, load_pool, mark_items_sent, save_pool
 
 log = logging.getLogger(__name__)
 
@@ -301,12 +301,18 @@ def main():
 
     sent_ok = send_feishu(items, date_str=today, unread_count=unread_after)
     if sent_ok and not TEST_MODE:
+        # 多维表格写入独立于群发送结果：即使群发送失败也已写入的行要落盘防重
         sync_to_feishu_bitable(items, date_str=today, pool=pool)
         mark_items_sent(pool, [it["url"] for it in items], insights=items)
-    elif sent_ok and TEST_MODE:
-        log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态）")
+    elif TEST_MODE and sent_ok:
+        log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态、不写多维表格）")
     else:
-        log.info("本次未推送飞书，文章保持 unread 状态留在池中，待配置 FEISHU_WEBHOOK 后发送")
+        # 群发送失败：同步回写 bitable_synced 等状态，避免已入库内容下次重复插入
+        try:
+            save_pool(pool)
+        except Exception as e:
+            log.warning(f"保存池状态失败: {str(e)[:100]}")
+        log.info("本次未推送飞书，文章保持 unread 状态留在池中，明日重新尝试")
 
 
 if __name__ == "__main__":
