@@ -31,7 +31,10 @@ FEISHU_WEBHOOK_TEST = os.environ.get("FEISHU_WEBHOOK_TEST", "").strip()
 FEISHU_WEBHOOK = FEISHU_WEBHOOK_TEST or os.environ.get("FEISHU_WEBHOOK", "").strip()
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "").strip()
 FEISHU_BITABLE_WEBHOOK = os.environ.get("FEISHU_BITABLE_WEBHOOK", "").strip()
-FEISHU_BITABLE_URL = os.environ.get("FEISHU_BITABLE_URL", "").strip()
+FEISHU_BITABLE_URL = os.environ.get(
+    "FEISHU_BITABLE_URL",
+    "https://iwpirwbutbu.feishu.cn/wiki/HgMJwBdkliKFOEkuNOPcRN03n5e?table=tblwrzm93a3XYFvU&view=vewwzfjuqv",
+).strip()
 TEST_MODE = bool(FEISHU_WEBHOOK_TEST)
 FORCE_RUN = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
 
