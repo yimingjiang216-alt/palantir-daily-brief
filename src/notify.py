@@ -30,10 +30,7 @@ log = logging.getLogger(__name__)
 FEISHU_WEBHOOK_TEST = os.environ.get("FEISHU_WEBHOOK_TEST", "").strip()
 FEISHU_WEBHOOK = FEISHU_WEBHOOK_TEST or os.environ.get("FEISHU_WEBHOOK", "").strip()
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "").strip()
-FEISHU_BITABLE_WEBHOOK = os.environ.get(
-    "FEISHU_BITABLE_WEBHOOK",
-    "https://iwpirwbutbu.feishu.cn/base/automation/webhook/event/BeetaPYsewMLvAhNu5YcuSB2nVb",
-).strip()
+FEISHU_BITABLE_WEBHOOK = os.environ.get("FEISHU_BITABLE_WEBHOOK", "").strip()
 FEISHU_BITABLE_URL = os.environ.get(
     "FEISHU_BITABLE_URL",
     "https://iwpirwbutbu.feishu.cn/wiki/HgMJwBdkliKFOEkuNOPcRN03n5e",
