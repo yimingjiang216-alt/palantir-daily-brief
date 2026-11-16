@@ -1,9 +1,6 @@
 name: Palantir AIP 产品深度洞察
 
 on:
-  schedule:
-    # UTC 01:00 = 北京时间 09:00，每周一至周五运行（作为外部 cron 的兜底）
-    - cron: '0 1 * * 1-5'
   workflow_dispatch:
     inputs:
       feishu_webhook_test:
