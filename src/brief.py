@@ -73,6 +73,24 @@ SCORE_PROMPT = """你是服务于公司自研 AIP（AI Platform）产品团队�
 ]
 """
 
+# ── 阶段一（补充）：千问跨期语义去重与互补选篇 Prompt ──────────────────────────
+SELECT_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
+请从以下已验证有完整正文的高分候选池中，为今天挑选出最值得精读的 {count} 篇内容。
+
+## 近期已推送过的内容（请避开相同的功能点，即使中英文表述不同也不要重复讲同一基础概念）
+{recent_sent_text}
+
+## 今日高分待选池
+{candidates_text}
+
+## 挑选原则
+1. **跨期语义去重**：与近期已推送过的功能切面不重复。
+2. **同日互补搭配**：选出的 {count} 篇之间视角互补（例如：1 篇偏核心架构/理念深度长文 + 1 篇偏具体功能模块实操视频/案例拆解），且来自不同渠道。
+3. **直击产品功能**：优先选把 Palantir 的产品功能、Ontology 建模、AIP Logic 编排、OSDK 或客户工作流讲得最透彻的。
+
+请严格输出选中的序号 JSON 数组（如 `[1, 3]`），不要任何额外文字：
+"""
+
 # ── 阶段二：面向产品团队的单篇全文产品洞察提炼 Prompt ──────────────────────────
 DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产品专家。
 产品团队正在规划公司自身的 AIP，需要每天吸收 Palantir 在产品功能设计上的精华。
@@ -196,8 +214,16 @@ def _text_similarity(a, b):
 
 
 def update_candidate_pool(pool, candidates):
-    """分批对新候选内容按「产品功能洞察价值」打分入池。"""
+    """分批对新候选内容按「产品功能洞察价值」打分入池，并清理历史无效链接。"""
     items_map = pool.setdefault("items", {})
+    # 清理历史遗留的 Google News 跳转空壳与假 #hash 链接
+    stale_keys = [
+        u for u in items_map
+        if "news.google.com/rss/articles/" in u or re.search(r"#\d+$", u)
+    ]
+    for k in stale_keys:
+        del items_map[k]
+
     new_cands = [c for c in candidates if c["url"] not in items_map]
 
     if not new_cands:
@@ -273,10 +299,9 @@ def update_candidate_pool(pool, candidates):
 def select_daily_items(pool, count=2):
     """
     从池中挑选今日要发的 1~2 篇产品洞察：
-      1. 按分数从高到低排
-      2. 与最近已发的 15 篇进行功能切面（feature_focus）去重，避免连续几天讲同一功能点
-      3. 同日入选的 2 篇之间要求功能切面不重复、尽量来源互补
-      4. 预拉取全文校验：有效正文必须 >= 350 字符（防止重定向空壳或无字幕短内容导致模型对着标题硬编）
+      1. 按分数从高到低排，先用字面相似度做初筛
+      2. 预拉取全文校验：有效正文必须 >= 400 字符（防止重定向空壳、无字幕视频或过短推文导致硬编），选出前 8 篇实料候选
+      3. 调用千问（SELECT_PROMPT）对照近期已发历史做「跨期语义去重 + 同日互补搭配」，选出最终的 count 篇
     """
     items_map = pool.get("items", {})
     unread = [v for v in items_map.values() if v.get("status") == "unread"]
@@ -289,44 +314,90 @@ def select_daily_items(pool, count=2):
 
     unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
 
-    selected = []
+    verified_shortlist = []
     pool_dirty = False
 
     for cand in unread:
         cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
 
-        # 与近期已发内容比对功能点重合度
+        # 初筛：与近期已发内容字面高度重合的直接跳过
         if any(
             _text_similarity(cand_focus, f"{s.get('title', '')} {s.get('feature_focus', '')}") > 0.55
             for s in recent_sent
         ):
             continue
 
-        # 与今日已选的第 1 篇比对，避免同日两篇讲同一个点，且优先不同来源互补
-        if selected:
-            first_focus = f"{selected[0].get('title', '')} {selected[0].get('feature_focus', '')}"
-            if _text_similarity(cand_focus, first_focus) > 0.45:
-                continue
-            if len(unread) > 4 and cand.get("source") == selected[0].get("source"):
-                continue
-
-        # 校验能否抓到充足正文（>= 350 字符），避免空壳链接或过短推文
+        # 校验能否抓到充足正文（>= 400 字符），避免空壳链接或过短推文
         ft = fetch_full_text(cand, max_chars=12000)
-        if not ft or len(ft.strip()) < 350:
+        if not ft or len(ft.strip()) < 400:
             log.info(f"跳过正文不足({len(ft or '')}字)的候选: {cand['title'][:45]}")
             cand["status"] = "insufficient_content"
             pool_dirty = True
             continue
 
         cand["_cached_full_text"] = ft
-        selected.append(cand)
-        if len(selected) >= count:
+        verified_shortlist.append(cand)
+        if len(verified_shortlist) >= 8:
             break
 
     if pool_dirty:
         save_pool(pool)
 
-    return selected
+    if len(verified_shortlist) <= count:
+        return verified_shortlist
+
+    # 由千问对照近期已发历史，从 8 篇实料候选中做跨语言语义去重与互补搭配
+    try:
+        if recent_sent:
+            recent_lines = "\n".join(
+                f"- [{s.get('sent_at','')}] {s.get('title','')}（切面：{s.get('feature_focus','')}）"
+                for s in recent_sent
+            )
+        else:
+            recent_lines = "（暂无历史已发记录，今天是第一期，请优先选最能帮团队建立全局架构认知 + 实操互补的 2 篇）"
+
+        cand_lines = "\n".join(
+            f"[{i}] ({c.get('score')}分 | {c.get('source')}) {c.get('title')}\n"
+            f"    功能切面：{c.get('feature_focus')}"
+            for i, c in enumerate(verified_shortlist, 1)
+        )
+        sel_raw = call_llm(
+            SELECT_PROMPT.format(
+                count=count,
+                recent_sent_text=recent_lines,
+                candidates_text=cand_lines,
+            ),
+            max_tokens=200,
+        )
+        picked_indices = _parse_json_from_llm(sel_raw)
+        if isinstance(picked_indices, list):
+            chosen = []
+            for idx in picked_indices:
+                if isinstance(idx, int) and 1 <= idx <= len(verified_shortlist):
+                    c = verified_shortlist[idx - 1]
+                    if c not in chosen:
+                        chosen.append(c)
+                if len(chosen) >= count:
+                    break
+            if len(chosen) == count:
+                return chosen
+    except Exception as e:
+        log.warning(f"LLM 选篇回退规则选篇: {e}")
+
+    # 规则兜底：优先选不同来源的前 count 篇
+    fallback = [verified_shortlist[0]]
+    for c in verified_shortlist[1:]:
+        if c.get("source") != fallback[0].get("source"):
+            fallback.append(c)
+            if len(fallback) >= count:
+                break
+    if len(fallback) < count:
+        for c in verified_shortlist[1:]:
+            if c not in fallback:
+                fallback.append(c)
+                if len(fallback) >= count:
+                    break
+    return fallback
 
 
 def synthesize_product_insight(item, recent_sent_focuses):
