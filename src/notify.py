@@ -30,6 +30,8 @@ log = logging.getLogger(__name__)
 FEISHU_WEBHOOK_TEST = os.environ.get("FEISHU_WEBHOOK_TEST", "").strip()
 FEISHU_WEBHOOK = FEISHU_WEBHOOK_TEST or os.environ.get("FEISHU_WEBHOOK", "").strip()
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "").strip()
+FEISHU_BITABLE_WEBHOOK = os.environ.get("FEISHU_BITABLE_WEBHOOK", "").strip()
+FEISHU_BITABLE_URL = os.environ.get("FEISHU_BITABLE_URL", "").strip()
 TEST_MODE = bool(FEISHU_WEBHOOK_TEST)
 FORCE_RUN = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
 
@@ -117,7 +119,17 @@ def _build_feishu_post(items, date_str, unread_count=0):
                 {"tag": "a", "text": f"{source}（点击查看原文）", "href": url},
             ])
 
-    if unread_count > 0:
+    if FEISHU_BITABLE_URL:
+        content_lines.append([{"tag": "text", "text": "────────────────────────"}])
+        content_lines.append([
+            {"tag": "text", "text": "📚 全量架构知识库："},
+            {
+                "tag": "a",
+                "text": "👉 点击打开《Palantir 产品功能洞察库（飞书多维表格 · 按 L1~L5 架构归档）》",
+                "href": FEISHU_BITABLE_URL,
+            },
+        ])
+    elif unread_count > 0:
         content_lines.append([
             {"tag": "text", "text": f"\n📚 产品洞察池剩余高分储备：{unread_count} 篇（全部往期拆解已按 5 层架构归档至《Palantir产品功能洞察库.md》）"}
         ])
@@ -184,6 +196,43 @@ def send_feishu(items, date_str=None, unread_count=0):
         return False
 
 
+def sync_to_feishu_bitable(items, date_str=None):
+    """
+    通过飞书多维表格（Bitable）自动化 Webhook，将当日每篇洞察实时写入多维表格新增记录。
+    每篇发送一次 JSON 请求，方便多维表格自动化直接映射为单行结构化字段。
+    """
+    if not FEISHU_BITABLE_WEBHOOK or not items:
+        return False
+
+    date_str = date_str or datetime.now().strftime("%Y-%m-%d")
+    ok_cnt = 0
+    for it in items:
+        row_payload = {
+            "date": date_str,
+            "arch_layer": (it.get("arch_layer") or "").strip(),
+            "feature_tag": (it.get("feature_tag") or "").strip(),
+            "title": (it.get("title") or "").strip(),
+            "arch_position": (it.get("arch_position") or "").strip(),
+            "related_history": (it.get("related_history") or "").strip(),
+            "core_concept": (it.get("core_concept") or "").strip(),
+            "product_mechanics": "\n".join(f"• {m}" for m in (it.get("product_mechanics") or [])),
+            "scenario_usage": (it.get("scenario_usage") or "").strip(),
+            "aip_inspiration": "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or [])),
+            "source": (it.get("source") or "").strip(),
+            "url": (it.get("url") or "").strip(),
+        }
+        try:
+            resp = requests.post(FEISHU_BITABLE_WEBHOOK, json=row_payload, timeout=15)
+            resp.raise_for_status()
+            ok_cnt += 1
+        except Exception as e:
+            log.warning(f"同步飞书多维表格失败 ({it.get('title','')[:25]}): {str(e)[:100]}")
+
+    if ok_cnt:
+        log.info(f"✅ 已实时同步 {ok_cnt}/{len(items)} 条记录至飞书多维表格")
+    return ok_cnt > 0
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
@@ -213,6 +262,7 @@ def main():
 
     sent_ok = send_feishu(items, date_str=today, unread_count=unread_after)
     if sent_ok and not TEST_MODE:
+        sync_to_feishu_bitable(items, date_str=today)
         mark_items_sent(pool, [it["url"] for it in items], insights=items)
     elif sent_ok and TEST_MODE:
         log.info("测试群推送成功（TEST_MODE 下不消耗正式池 unread 状态）")
