@@ -432,8 +432,17 @@ def select_daily_items(pool, count=2):
     verified_shortlist = []
     ft_cache = {}
     pool_dirty = False
+    # 全局抓取时间预算：避免 8 篇候选全部超时导致 workflow 超时（预留 LLM 提炼时间）
+    deadline = time.time() + 220
 
     for cand in unread:
+        if len(verified_shortlist) >= 8:
+            break
+        # 时间预算兜底：超时后只要有 2 篇以上实料就停止继续拉取
+        if time.time() > deadline and len(verified_shortlist) >= count:
+            log.warning(f"正文抓取已达时间预算上限，用现有 {len(verified_shortlist)} 篇实料候选继续选篇")
+            break
+
         # 清理可能残留的临时字段
         cand.pop("_cached_full_text", None)
         cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
@@ -446,12 +455,28 @@ def select_daily_items(pool, count=2):
             continue
 
         # 校验能否抓到充足正文（>= 400 字符），避免空壳链接或过短推文
-        ft = fetch_full_text(cand, max_chars=12000)
+        try:
+            ft = fetch_full_text(cand, max_chars=12000)
+        except Exception as e:
+            log.warning(f"正文抓取异常，本日跳过（不淘汰）: {cand['title'][:40]} | {str(e)[:80]}")
+            continue
+
         if not ft or len(ft.strip()) < 400:
-            log.info(f"跳过正文不足({len(ft or '')}字)的候选: {cand['title'][:45]}")
-            cand["status"] = "insufficient_content"
+            # 累加失败次数：连续 3 次抓不到才判定为永久无正文，避免网络抖动误杀好文章
+            fail_cnt = int(cand.get("fetch_fail_count", 0)) + 1
+            log.info(f"跳过正文不足({len(ft or '')}字)的候选 [第{fail_cnt}次]: {cand['title'][:40]}")
+            if fail_cnt >= 3:
+                cand["status"] = "insufficient_content"
+                log.info(f"  连续 {fail_cnt} 次无正文，标记为 insufficient_content 永久淘汰")
+            else:
+                cand["fetch_fail_count"] = fail_cnt
             pool_dirty = True
             continue
+
+        # 抓取成功，重置失败计数
+        if cand.get("fetch_fail_count"):
+            cand.pop("fetch_fail_count", None)
+            pool_dirty = True
 
         ft_cache[cand["url"]] = ft
         verified_shortlist.append(cand)
@@ -535,7 +560,9 @@ def synthesize_product_insight(item, recent_sent_focuses):
     if recent_sent_focuses:
         recent_sent_context = (
             "## 近期已推送过的功能点（本次请侧重拆解本文独有的产品功能细节与新视角，避免重复泛泛科普）\n"
-            + "\n".join(f"- {f}" for f in recent_sent_focuses[:8])
+            + "\n".join(f"- {f}" for f in recent_sent_focuses[:10])
+            + "\n\n**重要约束**：如果上方出现「本篇请勿再提炼以下已用组件」，说明同一天已推送的另一篇已拆解过该组件。"
+            "此时 `feature_specs` 必须换一个本文涉及的、与上述组件**不同的**具体功能组件，绝不能重复输出同名或同义组件。"
         )
     else:
         recent_sent_context = ""
@@ -648,12 +675,19 @@ def generate_brief(mark_sent=False):
     ]
 
     results = []
+    used_components = []  # 同批次已提炼的原子功能组件名，强制第 2 篇不再重复提炼同一组件
     for it in selected_raw:
-        insight = synthesize_product_insight(it, recent_focuses)
+        insight = synthesize_product_insight(it, recent_focuses + [
+            f"【本篇请勿再提炼以下已用组件】{c}" for c in used_components
+        ])
         results.append(insight)
         recent_focuses.insert(
             0, f"[今日同批] {insight.get('title','')}（{it.get('feature_focus','')}）"
         )
+        for sp in (insight.get("feature_specs") or []):
+            name = (sp.get("component_name") or "").strip()
+            if name:
+                used_components.append(name)
 
     daily_lead = generate_daily_lead(results)
     for r in results:
