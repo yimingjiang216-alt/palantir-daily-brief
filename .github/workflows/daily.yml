@@ -43,6 +43,8 @@ jobs:
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          FEISHU_BITABLE_WEBHOOK: ${{ secrets.FEISHU_BITABLE_WEBHOOK }}
+          FEISHU_BITABLE_URL: ${{ secrets.FEISHU_BITABLE_URL }}
           FEISHU_WEBHOOK_TEST: ${{ github.event.inputs.feishu_webhook_test }}
           FORCE_RUN: ${{ github.event.inputs.force_run }}
         run: |
