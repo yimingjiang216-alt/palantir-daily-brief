@@ -273,9 +273,10 @@ def update_candidate_pool(pool, candidates):
 def select_daily_items(pool, count=2):
     """
     从池中挑选今日要发的 1~2 篇产品洞察：
-      1. 按分数从高到低排（分数相同时，基础架构/全局解读优先于局部细节）
+      1. 按分数从高到低排
       2. 与最近已发的 15 篇进行功能切面（feature_focus）去重，避免连续几天讲同一功能点
       3. 同日入选的 2 篇之间要求功能切面不重复、尽量来源互补
+      4. 预拉取全文校验：有效正文必须 >= 350 字符（防止重定向空壳或无字幕短内容导致模型对着标题硬编）
     """
     items_map = pool.get("items", {})
     unread = [v for v in items_map.values() if v.get("status") == "unread"]
@@ -289,6 +290,8 @@ def select_daily_items(pool, count=2):
     unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
 
     selected = []
+    pool_dirty = False
+
     for cand in unread:
         cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
 
@@ -307,23 +310,21 @@ def select_daily_items(pool, count=2):
             if len(unread) > 4 and cand.get("source") == selected[0].get("source"):
                 continue
 
+        # 校验能否抓到充足正文（>= 350 字符），避免空壳链接或过短推文
+        ft = fetch_full_text(cand, max_chars=12000)
+        if not ft or len(ft.strip()) < 350:
+            log.info(f"跳过正文不足({len(ft or '')}字)的候选: {cand['title'][:45]}")
+            cand["status"] = "insufficient_content"
+            pool_dirty = True
+            continue
+
+        cand["_cached_full_text"] = ft
         selected.append(cand)
         if len(selected) >= count:
             break
 
-    # 若因为不同来源限制没选够，放宽来源限制补齐
-    if len(selected) < count:
-        for cand in unread:
-            if cand in selected:
-                continue
-            cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
-            if selected and _text_similarity(
-                cand_focus, f"{selected[0].get('title', '')} {selected[0].get('feature_focus', '')}"
-            ) > 0.45:
-                continue
-            selected.append(cand)
-            if len(selected) >= count:
-                break
+    if pool_dirty:
+        save_pool(pool)
 
     return selected
 
@@ -331,8 +332,8 @@ def select_daily_items(pool, count=2):
 def synthesize_product_insight(item, recent_sent_focuses):
     """拉取单篇高分资料全文，生成面向产品团队的结构化产品功能洞察。"""
     focus = item.get("feature_focus") or item.get("reason") or item["title"]
-    log.info(f"正在拉取全文并提炼产品洞察: [{item.get('score')}分] {item['title'][:50]}...")
-    full_text = fetch_full_text(item, max_chars=12000)
+    log.info(f"正在提炼产品洞察: [{item.get('score')}分] {item['title'][:50]}...")
+    full_text = item.pop("_cached_full_text", None) or fetch_full_text(item, max_chars=12000)
     if not full_text or len(full_text) < 100:
         full_text = item.get("summary", item["title"])
 
