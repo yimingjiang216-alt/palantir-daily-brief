@@ -117,7 +117,9 @@ LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/co
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen-flash")
 LLM_KEY = os.environ.get("LLM_API_KEY", "")
 
-DAILY_COUNT = int(os.environ.get("DAILY_COUNT", "2"))
+DAILY_MIN_COUNT = int(os.environ.get("DAILY_MIN_COUNT", "2"))
+DAILY_MAX_COUNT = int(os.environ.get("DAILY_MAX_COUNT", "5"))
+DAILY_COUNT = int(os.environ.get("DAILY_COUNT", "3"))
 SCORE_CHUNK_SIZE = 15
 MAX_CHUNKS_PER_RUN = 5
 
@@ -154,7 +156,7 @@ SCORE_PROMPT = """你是服务于公司自研 AIP（AI Platform）产品团队�
 
 # ── 阶段一（补充）：千问跨期语义去重与互补选篇 Prompt ──────────────────────────
 SELECT_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
-请从以下已验证有完整正文的高分候选池中，为今天挑选出最值得精读的 {count} 篇内容。
+请从以下已验证有完整正文的高分候选池中，为今天挑选出最值得精读的 {min_count}~{max_count} 篇内容。
 
 ## 近期已推送过的内容（请避开相同的功能点，即使中英文表述不同也不要重复讲同一基础概念）
 {recent_sent_text}
@@ -163,11 +165,12 @@ SELECT_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
 {candidates_text}
 
 ## 挑选原则
-1. **跨期语义去重**：与近期已推送过的功能切面不重复。
-2. **同日互补搭配**：选出的 {count} 篇之间视角互补（例如：1 篇偏核心架构/理念深度长文 + 1 篇偏具体功能模块实操视频/案例拆解），且来自不同渠道。
-3. **直击产品功能**：优先选把 Palantir 的产品功能、Ontology 建模、AIP Logic 编排、OSDK 或客户工作流讲得最透彻的。
+1. **质量优先、动态定篇（{min_count}~{max_count} 篇）**：如果是体量厚重、把核心架构或关键模块讲得极透的万字深度报告/核心长文，精选 2~3 篇即可（重在吃透）；如果有多篇针对不同具体功能模块、视频实操或业务场景的优质拆解，可搭配选出 3~5 篇。
+2. **跨期语义去重**：与近期已推送过的功能切面不重复。
+3. **跨架构层与多视角互补**：选出的内容应尽量覆盖不同的 Palantir 架构层（L1 数据管道 / L2 本体与动作 / L3 Agent 编排与评测 / L4 交互应用与 OSDK / L5 安全治理与落地），兼顾架构原理、官方文档机制与实操案例，且来自不同渠道。
+4. **直击产品功能**：优先选把 Palantir 的产品功能、Ontology 建模、AIP Logic 编排、AIP Evals、OSDK、Workshop 或客户工作流讲得最透彻的。
 
-请严格输出选中的序号 JSON 数组（如 `[1, 3]`），不要任何额外文字：
+请严格输出选中的序号 JSON 数组（长度在 {min_count} 到 {max_count} 之间，如 `[1, 3, 5]`），不要任何额外文字：
 """
 
 # ── 阶段二：面向产品团队的单篇全文产品洞察提炼 Prompt ──────────────────────────
@@ -228,8 +231,8 @@ DAILY_LEAD_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
 
 {items_summary}
 
-请写一段 **2句话（70~120字）的「今日主线导读」**：
-一句话点明今天这两篇内容围绕的核心产品命题是什么；第二句话讲清这两篇之间是如何互补或递进的（例如：第1篇从架构上讲清为什么需要某机制，第2篇展示在代码/界面里怎么具体搭出来），帮产品经理带着问题意识往下读。
+请写一段 **2~3句话（90~150字）的「今日主线导读」**：
+第一句话点明今天这 {count} 篇内容共同围绕的核心产品命题或架构跨度是什么；后面一两句话讲清这 {count} 篇之间是如何按架构层级（L1~L5）或「原理 → 模块机制 → 实操落地」递进互补的，帮产品经理带着全局视角往下读。
 直接输出导读纯文本，不要标题或引号：
 """
 
@@ -411,12 +414,12 @@ def update_candidate_pool(pool, candidates):
     )
 
 
-def select_daily_items(pool, count=2):
+def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUNT):
     """
-    从池中挑选今日要发的 1~2 篇产品洞察：
-      1. 按分数从高到低排，先用字面相似度做初筛
-      2. 预拉取全文校验：有效正文必须 >= 400 字符（防止重定向空壳、无字幕视频或过短推文导致硬编），选出前 8 篇实料候选
-      3. 调用千问（SELECT_PROMPT）对照近期已发历史做「跨期语义去重 + 同日互补搭配」，选出最终的 count 篇
+    从池中挑选今日要发的 2~5 篇产品洞察：
+      1. 按分数从高到低排，先用字面相似度做初筛，并按 L1~L5 架构层做均衡采样（单层初筛上限 4 篇，防止全挤在 L2）
+      2. 预拉取全文校验：有效正文必须 >= 400 字符，选出前 12 篇实料候选
+      3. 调用千问（SELECT_PROMPT）对照近期已发历史做「跨期语义去重 + 跨架构层互补搭配」，动态选出 2~5 篇
     """
     items_map = pool.get("items", {})
     unread = [v for v in items_map.values() if v.get("status") == "unread"]
@@ -425,44 +428,37 @@ def select_daily_items(pool, count=2):
 
     sent_items = [v for v in items_map.values() if v.get("status") == "sent"]
     sent_items.sort(key=lambda x: x.get("sent_at", ""), reverse=True)
-    recent_sent = sent_items[:15]
+    recent_sent = sent_items[:20]
 
     unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
 
+    shortlist_cap = 12
     verified_shortlist = []
+    layer_counts = {}
+    deferred_candidates = []
     ft_cache = {}
     pool_dirty = False
-    # 全局抓取时间预算：避免 8 篇候选全部超时导致 workflow 超时（预留 LLM 提炼时间）
-    deadline = time.time() + 220
+    # 全局抓取时间预算：预留充足 LLM 提炼时间
+    deadline = time.time() + 260
 
-    for cand in unread:
-        if len(verified_shortlist) >= 8:
-            break
-        # 时间预算兜底：超时后只要有 2 篇以上实料就停止继续拉取
-        if time.time() > deadline and len(verified_shortlist) >= count:
-            log.warning(f"正文抓取已达时间预算上限，用现有 {len(verified_shortlist)} 篇实料候选继续选篇")
-            break
-
-        # 清理可能残留的临时字段
+    def _try_verify(cand):
+        nonlocal pool_dirty
         cand.pop("_cached_full_text", None)
         cand_focus = f"{cand.get('title', '')} {cand.get('feature_focus', '')}"
 
-        # 初筛：与近期已发内容字面高度重合的直接跳过
         if any(
             _text_similarity(cand_focus, f"{s.get('title', '')} {s.get('feature_focus', '')}") > 0.55
             for s in recent_sent
         ):
-            continue
+            return False
 
-        # 校验能否抓到充足正文（>= 400 字符），避免空壳链接或过短推文
         try:
             ft = fetch_full_text(cand, max_chars=12000)
         except Exception as e:
             log.warning(f"正文抓取异常，本日跳过（不淘汰）: {cand['title'][:40]} | {str(e)[:80]}")
-            continue
+            return False
 
         if not ft or len(ft.strip()) < 400:
-            # 累加失败次数：连续 3 次抓不到才判定为永久无正文，避免网络抖动误杀好文章
             fail_cnt = int(cand.get("fetch_fail_count", 0)) + 1
             log.info(f"跳过正文不足({len(ft or '')}字)的候选 [第{fail_cnt}次]: {cand['title'][:40]}")
             if fail_cnt >= 3:
@@ -471,17 +467,38 @@ def select_daily_items(pool, count=2):
             else:
                 cand["fetch_fail_count"] = fail_cnt
             pool_dirty = True
-            continue
+            return False
 
-        # 抓取成功，重置失败计数
         if cand.get("fetch_fail_count"):
             cand.pop("fetch_fail_count", None)
             pool_dirty = True
 
         ft_cache[cand["url"]] = ft
         verified_shortlist.append(cand)
-        if len(verified_shortlist) >= 8:
+        return True
+
+    for cand in unread:
+        if len(verified_shortlist) >= shortlist_cap:
             break
+        if time.time() > deadline and len(verified_shortlist) >= min_count:
+            log.warning(f"正文抓取已达时间预算上限，用现有 {len(verified_shortlist)} 篇实料候选继续选篇")
+            break
+
+        est_layer = resolve_arch_layer(cand).split(" (")[0]
+        if layer_counts.get(est_layer, 0) >= 4:
+            deferred_candidates.append(cand)
+            continue
+
+        if _try_verify(cand):
+            layer_counts[est_layer] = layer_counts.get(est_layer, 0) + 1
+
+    # 若跨层均衡后不足 shortlist_cap，从暂缓高分候选中补齐
+    for cand in deferred_candidates:
+        if len(verified_shortlist) >= shortlist_cap:
+            break
+        if time.time() > deadline and len(verified_shortlist) >= min_count:
+            break
+        _try_verify(cand)
 
     if pool_dirty:
         save_pool(pool)
@@ -492,10 +509,11 @@ def select_daily_items(pool, count=2):
                 x["_cached_full_text"] = ft_cache[x["url"]]
         return chosen_list
 
-    if len(verified_shortlist) <= count:
+    if len(verified_shortlist) <= min_count:
         return _attach_ft(verified_shortlist)
 
-    # 由千问对照近期已发历史，从 8 篇实料候选中做跨语言语义去重与互补搭配
+    # 由千问对照近期已发历史，从 12 篇实料候选中挑选 3~6 篇跨层互补内容
+    chosen = []
     try:
         if recent_sent:
             recent_lines = "\n".join(
@@ -503,50 +521,59 @@ def select_daily_items(pool, count=2):
                 for s in recent_sent
             )
         else:
-            recent_lines = "（暂无历史已发记录，今天是第一期，请优先选最能帮团队建立全局架构认知 + 实操互补的 2 篇）"
+            recent_lines = (
+                f"（暂无历史已发记录，今天是第一期，请从不同架构层挑选最能帮团队建立全局架构认知 + 实操互补的 {min_count}~{max_count} 篇）"
+            )
 
         cand_lines = "\n".join(
-            f"[{i}] ({c.get('score')}分 | {c.get('source')}) {c.get('title')}\n"
+            f"[{i}] ({c.get('score')}分 | {resolve_arch_layer(c).split(' (')[0]} | {c.get('source')}) {c.get('title')}\n"
             f"    功能切面：{c.get('feature_focus')}"
             for i, c in enumerate(verified_shortlist, 1)
         )
         sel_raw = call_llm(
             SELECT_PROMPT.format(
-                count=count,
+                min_count=min_count,
+                max_count=max_count,
                 recent_sent_text=recent_lines,
                 candidates_text=cand_lines,
             ),
-            max_tokens=200,
+            max_tokens=250,
         )
         picked_indices = _parse_json_from_llm(sel_raw)
         if isinstance(picked_indices, list):
-            chosen = []
             for idx in picked_indices:
                 if isinstance(idx, int) and 1 <= idx <= len(verified_shortlist):
                     c = verified_shortlist[idx - 1]
                     if c not in chosen:
                         chosen.append(c)
-                if len(chosen) >= count:
+                if len(chosen) >= max_count:
                     break
-            if len(chosen) == count:
+            if len(chosen) >= min_count:
                 return _attach_ft(chosen)
     except Exception as e:
         log.warning(f"LLM 选篇回退规则选篇: {e}")
 
-    # 规则兜底：优先选不同来源的前 count 篇
-    fallback = [verified_shortlist[0]]
-    for c in verified_shortlist[1:]:
-        if c.get("source") != fallback[0].get("source"):
-            fallback.append(c)
-            if len(fallback) >= count:
-                break
-    if len(fallback) < count:
-        for c in verified_shortlist[1:]:
-            if c not in fallback:
-                fallback.append(c)
-                if len(fallback) >= count:
-                    break
-    return _attach_ft(fallback)
+    # 规则补齐/兜底：优先按不同架构层与不同来源补足到 target_count（默认 4 篇，介于 min_count~max_count）
+    target_count = min(max(DAILY_COUNT, min_count), max_count, len(verified_shortlist))
+    used_layers = {resolve_arch_layer(x).split(" (")[0] for x in chosen}
+    used_sources = {x.get("source") for x in chosen}
+
+    for c in verified_shortlist:
+        if len(chosen) >= target_count:
+            break
+        layer = resolve_arch_layer(c).split(" (")[0]
+        if c not in chosen and (layer not in used_layers or c.get("source") not in used_sources):
+            chosen.append(c)
+            used_layers.add(layer)
+            used_sources.add(c.get("source"))
+
+    for c in verified_shortlist:
+        if len(chosen) >= target_count:
+            break
+        if c not in chosen:
+            chosen.append(c)
+
+    return _attach_ft(chosen)
 
 
 def synthesize_product_insight(item, recent_sent_focuses):
@@ -657,12 +684,12 @@ def generate_daily_lead(results):
 
 
 def generate_brief(mark_sent=False):
-    """主流程：抓取候选 -> 打分入池 -> 选今日 Top 1~2 篇 -> 拉全文提炼产品功能洞察 + 今日导读。"""
+    """主流程：抓取候选 -> 打分入池 -> 选今日 Top 2~5 篇 -> 拉全文提炼产品功能洞察 + 今日导读。"""
     pool = load_pool()
     candidates = fetch_all_candidates()
     update_candidate_pool(pool, candidates)
 
-    selected_raw = select_daily_items(pool, count=DAILY_COUNT)
+    selected_raw = select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUNT)
     if not selected_raw:
         log.warning("候选池中已无未读高分文章！")
         return [], pool
