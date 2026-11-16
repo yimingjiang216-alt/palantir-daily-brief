@@ -30,10 +30,13 @@ log = logging.getLogger(__name__)
 FEISHU_WEBHOOK_TEST = os.environ.get("FEISHU_WEBHOOK_TEST", "").strip()
 FEISHU_WEBHOOK = FEISHU_WEBHOOK_TEST or os.environ.get("FEISHU_WEBHOOK", "").strip()
 FEISHU_SECRET = os.environ.get("FEISHU_SECRET", "").strip()
-FEISHU_BITABLE_WEBHOOK = os.environ.get("FEISHU_BITABLE_WEBHOOK", "").strip()
+FEISHU_BITABLE_WEBHOOK = os.environ.get(
+    "FEISHU_BITABLE_WEBHOOK",
+    "https://iwpirwbutbu.feishu.cn/base/automation/webhook/event/BeetaPYsewMLvAhNu5YcuSB2nVb",
+).strip()
 FEISHU_BITABLE_URL = os.environ.get(
     "FEISHU_BITABLE_URL",
-    "https://iwpirwbutbu.feishu.cn/wiki/HgMJwBdkliKFOEkuNOPcRN03n5e?table=tblwrzm93a3XYFvU&view=vewwzfjuqv",
+    "https://iwpirwbutbu.feishu.cn/wiki/HgMJwBdkliKFOEkuNOPcRN03n5e",
 ).strip()
 TEST_MODE = bool(FEISHU_WEBHOOK_TEST)
 FORCE_RUN = os.environ.get("FORCE_RUN", "").strip().lower() in ("1", "true", "yes")
@@ -210,17 +213,27 @@ def sync_to_feishu_bitable(items, date_str=None):
     date_str = date_str or datetime.now().strftime("%Y-%m-%d")
     ok_cnt = 0
     for it in items:
+        mechanics_str = "\n".join(f"• {m}" for m in (it.get("product_mechanics") or []))
+        inspiration_str = "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or []))
+        full_detail = (
+            f"🗺️ 架构位置与上下游：\n{it.get('arch_position','')}\n\n"
+            f"💡 一、功能本质与通俗解读：\n{it.get('core_concept','')}\n\n"
+            f"🔧 二、产品功能与机制拆解：\n{mechanics_str}\n\n"
+            f"🔄 三、实际业务场景怎么用：\n{it.get('scenario_usage','')}\n\n"
+            f"🎯 四、对我们规划自研 AIP 的参考价值：\n{inspiration_str}"
+        )
         row_payload = {
             "date": date_str,
             "arch_layer": (it.get("arch_layer") or "").strip(),
             "feature_tag": (it.get("feature_tag") or "").strip(),
             "title": (it.get("title") or "").strip(),
+            "full_detail": full_detail,
             "arch_position": (it.get("arch_position") or "").strip(),
             "related_history": (it.get("related_history") or "").strip(),
             "core_concept": (it.get("core_concept") or "").strip(),
-            "product_mechanics": "\n".join(f"• {m}" for m in (it.get("product_mechanics") or [])),
+            "product_mechanics": mechanics_str,
             "scenario_usage": (it.get("scenario_usage") or "").strip(),
-            "aip_inspiration": "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or [])),
+            "aip_inspiration": inspiration_str,
             "source": (it.get("source") or "").strip(),
             "url": (it.get("url") or "").strip(),
         }
