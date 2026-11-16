@@ -204,8 +204,9 @@ def send_feishu(items, date_str=None, unread_count=0):
 
 def sync_to_feishu_bitable(items, date_str=None, pool=None):
     """
-    通过飞书多维表格（Bitable）自动化 Webhook，将当日每篇洞察实时写入多维表格新增记录。
-    自带 URL 级永久防重锁（bitable_synced）：已在多维表格中写入过的文章绝不重复插入。
+    通过飞书多维表格（Bitable）自动化 Webhook，将从文章中拆解出的「Palantir 原子级产品功能组件规格 & 我方对标动作」写入多维表格。
+    与群日报完全互补：群日报讲文章脉络与案例，多维表格只沉淀可直接供产品经理写 PRD 抄作业的「功能组件字典」。
+    自带 URL 级永久防重锁（bitable_synced）：已入库过的文章绝不重复插入。
     """
     if not FEISHU_BITABLE_WEBHOOK or not items:
         return False
@@ -213,52 +214,61 @@ def sync_to_feishu_bitable(items, date_str=None, pool=None):
     date_str = date_str or datetime.now().strftime("%Y-%m-%d")
     items_map = pool.get("items", {}) if isinstance(pool, dict) else {}
     ok_cnt = 0
+    total_specs = 0
+
     for it in items:
         u = (it.get("url") or "").strip()
         if u and u in items_map and items_map[u].get("bitable_synced"):
             log.info(f"跳过已写入过多维表格的记录（防重复入库）: {it.get('title','')[:30]}")
             continue
 
-        raw_layer = (it.get("arch_layer") or "L2 本体与动作层").strip()
-        short_layer = raw_layer.split(" (")[0].strip()
+        specs = it.get("feature_specs") or []
+        if not specs:
+            raw_layer = (it.get("arch_layer") or "L2 本体与动作层").strip()
+            specs = [
+                {
+                    "component_name": (it.get("title") or "").strip(),
+                    "arch_layer": raw_layer,
+                    "palantir_spec": "\n".join(f"• {m}" for m in (it.get("product_mechanics") or [])),
+                    "our_action": "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or [])),
+                }
+            ]
 
-        mechanics_str = "\n".join(f"• {m}" for m in (it.get("product_mechanics") or []))
-        inspiration_str = "\n".join(f"★ {t}" for t in (it.get("aip_inspiration") or []))
-        core_concept_str = (it.get("core_concept") or "").strip()
+        item_ok = True
+        for sp in specs:
+            total_specs += 1
+            comp_name = (sp.get("component_name") or it.get("title") or "").strip()
+            sp_layer = (sp.get("arch_layer") or it.get("arch_layer") or "L2 本体与动作层").split(" (")[0].strip()
+            palantir_spec = (sp.get("palantir_spec") or "").strip()
+            our_action = (sp.get("our_action") or "").strip()
 
-        mechanics_and_scenario = (
-            f"🗺️ 架构位置与上下游：\n{it.get('arch_position','')}\n\n"
-            f"🔗 关联脉络：\n{it.get('related_history','')}\n\n"
-            f"🔧 产品功能与机制拆解：\n{mechanics_str}\n\n"
-            f"🔄 实际业务场景怎么用：\n{it.get('scenario_usage','')}\n\n"
-            f"📰 来源渠道：{it.get('source','')}"
-        )
-        full_detail = (
-            f"💡 一、功能本质与通俗解读：\n{core_concept_str}\n\n"
-            f"{mechanics_and_scenario}\n\n"
-            f"🎯 四、对我们规划自研 AIP 的参考价值：\n{inspiration_str}"
-        )
-        row_payload = {
-            "title": (it.get("title") or "").strip(),
-            "arch_layer": short_layer,
-            "date": date_str,
-            "core_concept": core_concept_str,
-            "aip_inspiration": inspiration_str,
-            "mechanics_and_scenario": mechanics_and_scenario,
-            "full_detail": full_detail,
-            "url": (it.get("url") or "").strip(),
-        }
-        try:
-            resp = requests.post(FEISHU_BITABLE_WEBHOOK, json=row_payload, timeout=15)
-            resp.raise_for_status()
-            ok_cnt += 1
-            if u and u in items_map:
-                items_map[u]["bitable_synced"] = True
-        except Exception as e:
-            log.warning(f"同步飞书多维表格失败 ({it.get('title','')[:25]}): {str(e)[:100]}")
+            full_spec_card = (
+                f"🔧 【Palantir 产品功能规格（输入/交互/规则）】\n{palantir_spec}\n\n"
+                f"🎯 【我方平台落位与 PRD 抄作业动作】\n{our_action}\n\n"
+                f"📖 提炼自：{it.get('title','')}（{it.get('source','')}）"
+            )
+            row_payload = {
+                "title": comp_name,
+                "arch_layer": sp_layer,
+                "date": date_str,
+                "core_concept": palantir_spec,
+                "aip_inspiration": our_action,
+                "full_detail": full_spec_card,
+                "url": u,
+            }
+            try:
+                resp = requests.post(FEISHU_BITABLE_WEBHOOK, json=row_payload, timeout=15)
+                resp.raise_for_status()
+                ok_cnt += 1
+            except Exception as e:
+                item_ok = False
+                log.warning(f"同步飞书多维表格功能规格失败 ({comp_name[:25]}): {str(e)[:100]}")
+
+        if item_ok and u and u in items_map:
+            items_map[u]["bitable_synced"] = True
 
     if ok_cnt:
-        log.info(f"✅ 已实时同步 {ok_cnt}/{len(items)} 条记录至飞书多维表格")
+        log.info(f"✅ 已实时沉淀 {ok_cnt}/{total_specs} 个原子产品功能规格至飞书多维表格")
     return ok_cnt > 0
 
 
