@@ -165,12 +165,14 @@ SELECT_PROMPT = """你是服务于公司自研 AIP 产品团队的主编。
 {candidates_text}
 
 ## 挑选原则
-1. **质量优先、动态定篇（{min_count}~{max_count} 篇）**：如果是体量厚重、把核心架构或关键模块讲得极透的万字深度报告/核心长文，精选 2~3 篇即可（重在吃透）；如果有多篇针对不同具体功能模块、视频实操或业务场景的优质拆解，可搭配选出 3~5 篇。
+1. **重磅质量日 2~3 篇，常规碎片日 4~5 篇（核心铁律）**：
+   - **只要选中的内容里包含 9~10 分的重磅深度长文/完整实操教程（正文 >= 3500 字），当天严格只选 2~3 篇**（极长或 10 分硬核大作选 2 篇，跨层互补选 3 篇），让团队把硬核报告真正吃透，绝不贪多凑数！
+   - 只有当待选池普遍是短篇功能更新、推文或单点短文档（正文较短）时，才选 4~5 篇组合推送。
 2. **跨期语义去重**：与近期已推送过的功能切面不重复。
-3. **跨架构层与多视角互补**：选出的内容应尽量覆盖不同的 Palantir 架构层（L1 数据管道 / L2 本体与动作 / L3 Agent 编排与评测 / L4 交互应用与 OSDK / L5 安全治理与落地），兼顾架构原理、官方文档机制与实操案例，且来自不同渠道。
+3. **跨架构层与多视角互补**：选出的内容应覆盖不同的 Palantir 架构层（L1 数据管道 / L2 本体与动作 / L3 Agent 编排与评测 / L4 交互应用与 OSDK / L5 安全治理与落地），兼顾架构原理、官方文档机制与实操案例，且来自不同渠道。
 4. **直击产品功能**：优先选把 Palantir 的产品功能、Ontology 建模、AIP Logic 编排、AIP Evals、OSDK、Workshop 或客户工作流讲得最透彻的。
 
-请严格输出选中的序号 JSON 数组（长度在 {min_count} 到 {max_count} 之间，如 `[1, 3, 5]`），不要任何额外文字：
+请严格输出选中的序号 JSON 数组（重磅质量日输出 2~3 个序号如 `[1, 3]` 或 `[1, 3, 5]`，短篇日最多 5 个），不要任何额外文字：
 """
 
 # ── 阶段二：面向产品团队的单篇全文产品洞察提炼 Prompt ──────────────────────────
@@ -512,7 +514,40 @@ def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUN
     if len(verified_shortlist) <= min_count:
         return _attach_ft(verified_shortlist)
 
-    # 由千问对照近期已发历史，从 12 篇实料候选中挑选 3~6 篇跨层互补内容
+    def _cap_by_quality(selected_list):
+        """
+        根据选中文章的质量与正文字数动态收敛篇数：
+        - 若前 2 篇均为 10 分重磅大作且正文字数充足（合计 >= 10000 字），精简为 2 篇；
+        - 若前 3 篇中至少有 2 篇 >= 9 分的高质量深度内容（或前 3 篇正文合计 >= 9000 字），严格控制在 2~3 篇；
+        - 仅当内容普遍偏短、分数中等时才放宽至 4~5 篇。
+        """
+        if len(selected_list) <= 3:
+            if (
+                len(selected_list) == 3
+                and all(x.get("score", 0) >= 10 for x in selected_list[:2])
+                and sum(len(ft_cache.get(x["url"], "")) for x in selected_list[:2]) >= 12000
+            ):
+                return selected_list[:2]
+            return selected_list
+
+        top3 = selected_list[:3]
+        high_score_cnt = sum(1 for x in top3 if x.get("score", 0) >= 9)
+        top3_chars = sum(len(ft_cache.get(x["url"], "")) for x in top3)
+        top2_chars = sum(len(ft_cache.get(x["url"], "")) for x in selected_list[:2])
+
+        if all(x.get("score", 0) >= 10 for x in selected_list[:2]) and top2_chars >= 12000:
+            log.info(f"今日命中 2 篇 10 分万字重磅报告（共 {top2_chars} 字），精读篇数收敛为 2 篇")
+            return selected_list[:2]
+
+        if high_score_cnt >= 2 or top3_chars >= 9000:
+            log.info(
+                f"今日命中高质量深度报告（前3篇中 {high_score_cnt} 篇>=9分，共 {top3_chars} 字），精读篇数收敛为 3 篇"
+            )
+            return selected_list[:3]
+
+        return selected_list[:max_count]
+
+    # 由千问对照近期已发历史，从 12 篇实料候选中挑选 2~5 篇跨层互补内容
     chosen = []
     try:
         if recent_sent:
@@ -522,11 +557,11 @@ def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUN
             )
         else:
             recent_lines = (
-                f"（暂无历史已发记录，今天是第一期，请从不同架构层挑选最能帮团队建立全局架构认知 + 实操互补的 {min_count}~{max_count} 篇）"
+                "（暂无历史已发记录，今天是第一期，若候选中有 9~10 分深度长文/完整实操，请精选跨架构层互补的 2~3 篇）"
             )
 
         cand_lines = "\n".join(
-            f"[{i}] ({c.get('score')}分 | {resolve_arch_layer(c).split(' (')[0]} | {c.get('source')}) {c.get('title')}\n"
+            f"[{i}] ({c.get('score')}分 | 正文{len(ft_cache.get(c['url'], ''))}字 | {resolve_arch_layer(c).split(' (')[0]} | {c.get('source')}) {c.get('title')}\n"
             f"    功能切面：{c.get('feature_focus')}"
             for i, c in enumerate(verified_shortlist, 1)
         )
@@ -549,11 +584,11 @@ def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUN
                 if len(chosen) >= max_count:
                     break
             if len(chosen) >= min_count:
-                return _attach_ft(chosen)
+                return _attach_ft(_cap_by_quality(chosen))
     except Exception as e:
         log.warning(f"LLM 选篇回退规则选篇: {e}")
 
-    # 规则补齐/兜底：优先按不同架构层与不同来源补足到 target_count（默认 4 篇，介于 min_count~max_count）
+    # 规则补齐/兜底：优先按不同架构层与不同来源补足到 target_count（默认 3 篇）
     target_count = min(max(DAILY_COUNT, min_count), max_count, len(verified_shortlist))
     used_layers = {resolve_arch_layer(x).split(" (")[0] for x in chosen}
     used_sources = {x.get("source") for x in chosen}
@@ -573,7 +608,7 @@ def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUN
         if c not in chosen:
             chosen.append(c)
 
-    return _attach_ft(chosen)
+    return _attach_ft(_cap_by_quality(chosen))
 
 
 def synthesize_product_insight(item, recent_sent_focuses):
