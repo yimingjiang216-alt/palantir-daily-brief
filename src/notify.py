@@ -222,7 +222,14 @@ def sync_to_feishu_bitable(items, date_str=None):
             f"🔄 三、实际业务场景怎么用：\n{it.get('scenario_usage','')}\n\n"
             f"🎯 四、对我们规划自研 AIP 的参考价值：\n{inspiration_str}"
         )
+        doc_block = (
+            f"【{date_str} · {it.get('arch_layer','')}】{it.get('title','')}\n"
+            f"────────────────────────\n"
+            f"{full_detail}\n\n"
+            f"🔗 原文来源：{it.get('source','')} ({it.get('url','')})"
+        )
         row_payload = {
+            "doc_block": doc_block,
             "date": date_str,
             "arch_layer": (it.get("arch_layer") or "").strip(),
             "feature_tag": (it.get("feature_tag") or "").strip(),
