@@ -1,175 +1,135 @@
-# Palantir AIP 产品洞察日报
+# palantir-daily-brief
 
-给公司自研 AIP 产品团队用的每日读物。团队在规划自己的 AIP 平台，但对 Palantir 的产品功能理解不够，这个项目每天自动整理 2 篇讲透 Palantir 产品功能的深度内容，发到飞书群，并把要点沉淀成一张功能规格表。
+面向自研 AIP 产品团队的 Palantir 产品功能每日拆解与知识库沉淀工具。
+每日自动抓取中英文图文与视频资源，筛选评分后挑选 **2~5 篇**跨架构层内容进行全文拆解，同步推送飞书群日报并写入飞书多维表格。
 
-## 它每天做什么
+---
 
-1. 抓取中英文图文与视频内容源
-2. 打分筛选，存入候选池
-3. 从池中选 2 篇当天要读的
-4. 提炼成结构化洞察
-5. 发飞书群 + 写飞书多维表格
-6. 回写状态
+## 一、系统架构与处理流程
 
-每天 09:00（北京时间）自动运行一次，不需要人工干预。
-
-## 工作流程
-
-```
-定时触发 (09:00)
-    │
-    ├─ 同日防重检查 ── 今天已发过？──> 直接退出
-    │
-    ├─ 抓取内容源（八类）
-    │     YouTube / X / 中文专栏 / 英文专栏
-    │     Palantir 官方博客 / 官方文档 / GitHub 研究
-    │     噪音过滤：股价、财报、政治、周边商品
-    │
-    ├─ 千问打分入池（0~10 分）
-    │     ≥7 分 → 待发队列
-    │     <7 分 → 永久淘汰
-    │     URL 去重：评过的不会再评
-    │
-    ├─ 选稿
-    │     按分数排序，逐篇验证正文是否真实可读
-    │     YouTube 走 InnerTube 拉字幕
-    │     网页剔除 404 / 验证码页 / 跳转壳
-    │     凑够 8 篇实料候选后，由千问选 2 篇
-    │     要求：跨期不撞车、同日两篇角度互补
-    │
-    ├─ 提炼洞察
-    │     定位架构层级（L1~L5）
-    │     四层结构：本质 / 机制 / 场景 / 自研参考
-    │     提取一个原子级功能组件规格
-    │     生成今日主线导读
-    │
-    ├─ 推送
-    │     飞书群 1 条日报卡片
-    │     多维表格静默写入 2 条功能规格
-    │
-    └─ 回写 pool.json，提交到仓库
-```
-
-## 两个产物，各管一件事
-
-群日报和多维表格不是同一份内容的两个副本，职责不同。
-
-**飞书群日报** —— 讲透一篇文章，读完能理解这个功能为什么这么设计。适合早上通勤花三五分钟读完。
-
-**飞书多维表格** —— 不存文章，只存从文章里拆出来的**功能组件规格**。每一行是一个具体功能：输入参数是什么、界面怎么交互、后台怎么校验，以及对应我们自己的平台该怎么做。适合写 PRD 时直接翻。
-
-举个例子，同一篇讲 Action Types 的文章：
-
-| | 群日报 | 多维表格 |
+| 阶段 | 模块 | 处理逻辑 |
 | :--- | :--- | :--- |
-| 内容 | 为什么 Palantir 要把动作绑在本体上、解决了什么痛点、客户怎么用 | `Action Type（动作类型）`：需要定义对象类型、参数 Schema、返回结构、绑定的 Function、权限策略 |
-| 用途 | 建立产品直觉 | 照着写设计文档 |
+| **1. 定时触发** | `.github/workflows/daily.yml` | 每日 `09:00`（北京时间）由外部调度器调用 GitHub API `workflow_dispatch` 触发，启动前先校验 `pool.json` 同日防重锁（`sent_at == today`）。 |
+| **2. 多源抓取** | `src/fetch.py` | 轮询 8 类中英文图文与视频渠道，执行 URL 归一化去重，并通过 `is_noise()` 过滤股价、财报、政治、招聘等非产品内容。 |
+| **3. 评分入池** | `src/brief.py` → `update_candidate_pool()` | 仅对未入池的新 URL 按 15 条/批调用 `qwen-flash` 打分（0~10 分）：`>=7` 分标为 `unread` 入池排队，`<7` 分标为 `rejected` 永久跳过。 |
+| **4. 选稿校验** | `src/brief.py` → `select_daily_items()` | 按分数排序并对 L1~L5 架构层做均衡采样，预拉取正文（YouTube 提取 InnerTube 字幕与章节，网页剔除 404/Cloudflare），凑齐 12 篇 `>=400` 字的候选后，由模型结合近期已发记录挑出 **2~5 篇**跨层互补内容。 |
+| **5. 深度拆解** | `src/brief.py` → `synthesize_product_insight()` | 基于最高 12,000 字原文提炼四部分结构化洞察，按 URL 规则与模块权重词表校准 L1~L5 架构层，并提取每篇对应的原子级产品功能组件规格（同批次强制组件名去重）。 |
+| **6. 双端分发** | `src/notify.py` | ① 发送飞书群富文本日报（超 24KB 自动拆分为上下篇）；② 调用多维表格自动化 Webhook 静默新增 2~5 条功能组件规格记录。 |
+| **7. 状态归档** | `src/brief.py` → `mark_items_sent()` | 将当日条目更新为 `sent`、`bitable_synced=True`，生成按五层架构分类的 `Palantir产品功能洞察库.md`，并自动提交回 GitHub 仓库。 |
 
-## 架构分层
+---
 
-内容按 Palantir 的五层产品架构归类，每条都会标注层级，方便对应到自己团队的分工。
+## 二、数据源列表
 
-| 层级 | 对应 Palantir 模块 | 对应我们 |
+| 渠道类别 | 具体来源 | 抓取方式与提取内容 |
 | :--- | :--- | :--- |
-| `L1 数据接入与管道层` | Data Connection、Pipeline Builder | 数据底座 |
-| `L2 本体与动作层` | Ontology、Object Views、Action Types、Functions | FDS |
-| `L3 Agent 编排与评测层` | AIP Logic、Agent Studio、AIP Evals | Agent 平台 |
-| `L4 交互应用与开发层` | Workshop、OSDK、Automate | 应用层 |
-| `L5 安全治理与工程落地` | Markings、权限控制、FDE 模式 | 治理与交付 |
+| **官方产品文档** | Palantir Foundry / AIP Docs（21 个核心模块） | 覆盖 Ontology、Action Types、Functions、Interfaces、Object Views、Permissioning、OSDK、AIP Logic、AIP Evals、Agent Studio、Workshop、Automate |
+| **开源专题研究** | GitHub `palantir-aip-study`（6 篇中文架构章节） | 直拉仓库原始 Markdown 全文 |
+| **YouTube 视频** | 中文科普（跟贝贝一起学习等）+ 英文实操 + 周一至周五按 5 大模块轮换检索 | 搜索页提取视频元数据，选中后通过 InnerTube Android 接口拉取完整简介章节与口播字幕轨道 |
+| **X (Twitter)** | `@PalantirTech`、`@chadwahl`、`@PalantirVision`、`@ssankar` | Jina Reader 拉取时间线并按单条推文切分，提取真实 `/status/` 链接与正文 |
+| **Substack 专栏** | 按模块关键词轮换检索 Palantir / Ontology / AIP 深度长文 | 提取 `/p/` 专栏正文 |
+| **官方与技术社区** | `blog.palantir.com`、`Dev.to #palantir`、`Medium` 三标签、`Towards Data Science` | RSS 订阅解析，优先保留 `content:encoded` 完整长文 |
+| **中文科技媒体** | 虎嗅 Palantir 专栏、36氪、InfoQ、量子位、极客公园、雷峰网、钛媒体、少数派 | RSS 订阅 + 关键词过滤 |
+| **HackerNews** | Algolia API（`Palantir AIP` / `Palantir Ontology` / `Palantir Foundry`） | 提取高互动讨论帖及外链正文 |
 
-层级判定做了硬校验：先看 URL 是否命中官方文档路径，再看标题里的模块专有词，最后才参考模型判断。避免把 L3 的内容标成 L1。
+---
 
-## 目录结构
+## 三、五层架构坐标（L1 ~ L5）
 
-```
+所有日报条目与多维表格组件均归入以下 5 个标准架构层（由 `resolve_arch_layer()` 按「官方文档 URL 路径 → 标题模块专有词 3 倍权重 → 模型兜底」三级规则判定）：
+
+| 架构层级 | 覆盖的 Palantir 核心模块 | 对应自研 AIP 方向 |
+| :--- | :--- | :--- |
+| `L1 数据接入与管道层` | Data Connection、Pipeline Builder、Sync / Connectors | 数据接入与治理底座 |
+| `L2 本体与动作层` | Ontology、Object Types、Link Types、Object Views、Action Types、Functions | 数据与本体底座（AIP-FDS） |
+| `L3 Agent 编排与评测层` | AIP Logic、Agent Studio、AIP Evals、LLM 工具调用与护栏 | Agent 编排与运行时（AIP-Agent） |
+| `L4 交互应用与开发层` | Workshop、OSDK、Automate、Slate、前端组件与事件绑定 | 应用构建与开发套件 |
+| `L5 安全治理与工程落地` | Markings 权限控制、PBAC/RBAC、Apollo 部署、FDE 驻场交付模式 | 安全治理与运行部署（AIP-Stage） |
+
+---
+
+## 四、双端输出结构
+
+### 1. 飞书群日报（面向每日阅读）
+- **📌 今日主线导读**：2~3 句话串联当日 2~5 篇内容的核心产品命题与跨层递进关系。
+- **单篇拆解结构（每日 2~5 篇）**：
+  - `🗺️ 架构位置与上下游`：所属 L1~L5 层级及与上下游模块的调用关系
+  - `🔗 关联脉络`：与往期或同批模块的呼应关系
+  - `💡 一、功能本质与通俗解读`：还原该功能解决的核心问题与机制本质（80% 重心）
+  - `🔧 二、产品功能与机制拆解`：3 条具体产品机制、配置项或交互细节
+  - `🔄 三、实际业务场景怎么用`：从触发、界面交互、工具调用到写回的完整闭环
+  - `🎯 四、对我们规划自研 AIP 的参考价值`：`【通用设计精髓与认知校准】` + `【对标框架落位与起步取舍】`（20% 重心）
+- **📚 底部知识库入口**：直达飞书多维表格《Palantir 5层产品功能洞察库》。
+
+### 2. 飞书多维表格（面向 PRD 功能组件检索）
+多维表格通过自动化工作流 Webhook 接收 JSON 并执行「新增记录」（不发群消息），每篇文章沉淀 1 条不重复的原子功能组件规格：
+
+| 多维表格列名 | 字段类型 | Webhook JSON 键名 | 写入内容说明 |
+| :--- | :--- | :--- | :--- |
+| `功能组件` | 文本（主列） | `title` | 原子级功能组件名（如 `Action Type（动作类型）`、`Blocks（块状逻辑单元）`） |
+| `架构层级` | 单选（L1~L5） | `arch_layer` | 精确匹配 `L1 数据接入与管道层` ~ `L5 安全治理与工程落地` 五个单选值 |
+| `产品设计规格` | 多行文本 | `core_concept` | `🔧 【产品设计规格】`：输入参数/Schema、前端交互方式、后台执行与校验规则 |
+| `自研对标参考` | 多行文本 | `aip_inspiration` | `🎯 【自研对标参考】`：对应自研模块落位、常规做法盲区与可直接借鉴的 PRD 功能点 |
+| `规格详情` | 多行文本 | `full_detail` | 组件完整规格、业务场景闭环与来源文章汇总 |
+| `推送日期` | 文本 | `date` | `YYYY-MM-DD` |
+| `原文链接` | 超链接/文本 | `url` | 原始资料 URL |
+| `我方采纳评估` | 单选 | — | 留空由产品团队人工评审（如 `🔥 必抄核心机制` / `📌 纳入排期参考`） |
+
+---
+
+## 五、目录结构
+
+```text
 palantir-daily-brief/
-├── .github/workflows/daily.yml     GitHub Actions 工作流
+├── .github/workflows/
+│   └── daily.yml                  # GitHub Actions 工作流（支持 workflow_dispatch 触发与状态回写）
 ├── src/
-│   ├── fetch.py                    内容抓取与全文提取
-│   ├── brief.py                    打分、选稿、提炼、归档
-│   └── notify.py                   飞书推送与多维表格写入
-├── pool.json                       候选池（含评分与状态）
-├── Palantir产品功能洞察库.md         按架构层级归档的历史拆解
-├── 外部定时触发配置.md              定时触发配置说明
-├── requirements.txt
-├── .env.example
+│   ├── fetch.py                   # 八路内容源抓取、噪音过滤、YouTube 字幕与网页正文提取
+│   ├── brief.py                   # 候选池评分、跨层均衡选稿（2~5篇）、全文拆解、五层架构归档
+│   └── notify.py                  # 飞书群富文本推送（含超长自动分片）+ 多维表格 Webhook 同步
+├── pool.json                      # 候选池与已发状态持久化存储
+├── Palantir产品功能洞察库.md         # 按 L1~L5 自动生成的 Markdown 知识库索引
+├── 外部定时触发配置.md              # cron-job.org 外部定时触发配置说明
+├── requirements.txt               # Python 依赖
+├── .env.example                   # 本地环境变量模板
 └── README.md
 ```
 
-## 配置
+---
 
-### GitHub Secrets
+## 六、部署与运行配置
 
-在仓库 `Settings → Secrets and variables → Actions` 里配置：
+### 1. GitHub Actions Secrets
+在仓库 `Settings -> Secrets and variables -> Actions` 中配置以下密钥：
 
-| 名称 | 必填 | 说明 |
-| :--- | :--- | :--- |
+| 变量名 | 必填 | 默认值 / 说明 |
+| :--- | :---: | :--- |
 | `LLM_API_KEY` | 是 | 阿里云百炼 DashScope API Key |
-| `LLM_BASE_URL` | 否 | 默认 `https://dashscope.aliyuncs.com/compatible-mode/v1` |
-| `LLM_MODEL` | 否 | 默认 `qwen-flash` |
-| `FEISHU_WEBHOOK` | 是 | 飞书群自定义机器人 Webhook |
-| `FEISHU_SECRET` | 否 | 机器人开启签名校验时才需要 |
-| `FEISHU_BITABLE_WEBHOOK` | 否 | 多维表格自动化工作流 Webhook |
-| `FEISHU_BITABLE_URL` | 否 | 附在日报底部的多维表格链接 |
+| `LLM_BASE_URL` | 否 | `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| `LLM_MODEL` | 否 | `qwen-flash` |
+| `FEISHU_WEBHOOK` | 是 | 飞书群自定义机器人 Webhook（留空则仅打印日志，不消耗 `unread` 队列） |
+| `FEISHU_SECRET` | 否 | 飞书机器人签名密钥（未开启签名校验可留空） |
+| `FEISHU_BITABLE_WEBHOOK` | 否 | 飞书多维表格「新增记录」自动化工作流 Webhook |
+| `FEISHU_BITABLE_URL` | 否 | 附在群日报底部的飞书多维表格知识库链接 |
+| `DAILY_MIN_COUNT` | 否 | 每日最少精选篇数，默认 `2`（重磅深度长文精读 2~3 篇） |
+| `DAILY_MAX_COUNT` | 否 | 每日最多精选篇数，默认 `5`（多模块互补拆解最多 5 篇） |
 
-`FEISHU_WEBHOOK` 留空时不会发消息，只把预览打到日志里，也不消耗待发队列——可以在没有正式群的时候先观察运行情况。
+### 2. 外部定时触发（`cron-job.org`）
+- **请求地址**：`https://api.github.com/repos/yimingjiang216-alt/palantir-daily-brief/actions/workflows/daily.yml/dispatches`
+- **请求方法**：`POST`
+- **执行时间**：每日 `09:00`（`Asia/Shanghai`）
+- **请求头**：
+  - `Accept: application/vnd.github+json`
+  - `Authorization: Bearer <GitHub PAT (repo + workflow)>`
+  - `Content-Type: application/json`
+- **请求体**：`{"ref":"main"}`
 
-### 定时触发
-
-GitHub Actions 自带的 `schedule` 经常延迟几小时，所以改用外部调度器在 09:00 调 GitHub API 触发 `workflow_dispatch`。配置方法见 [外部定时触发配置.md](外部定时触发配置.md)。
-
-代码里没有加内置 cron，避免和外部触发打架。即使真撞上了，同日防重锁也会拦住第二次。
-
-### 飞书多维表格
-
-需要在多维表格里建一个自动化流程：
-
-- 触发条件：收到 Webhook 请求
-- 执行动作：新增记录（**不要**选「发送消息」，否则会把数据推到群里）
-- 字段绑定：
-
-| 表格列 | 对应字段 |
-| :--- | :--- |
-| 功能组件 | `title` |
-| 架构层级（单选 L1~L5） | `arch_layer` |
-| 产品设计规格 | `core_concept` |
-| 自研对标参考 | `aip_inspiration` |
-| 规格详情 | `full_detail` |
-| 推送日期 | `date` |
-| 原文链接 | `url` |
-
-`arch_layer` 传的是 `L2 本体与动作层` 这样的完整字符串，表格里的单选选项必须一字不差才能自动匹配。
-
-## 手动运行
-
-在仓库 `Actions → Palantir AIP 产品深度洞察 → Run workflow` 可以手动触发，有两个可选参数：
-
-- `feishu_webhook_test`：填一个测试群 Webhook，只发测试群，不消耗正式队列，不写多维表格
-- `force_run`：填 `true` 可以跳过同日防重锁，当天加发一期
-
-本地调试：
-
-```bash
-cp .env.example .env    # 填好各项配置
-python src/notify.py
-```
-
-## 几个设计上的取舍
-
-**为什么用候选池，不每天现抓现发**
-抓取加打分要调十几个源、跑几十次模型评分，很慢。把这些活提前做完，每天运行时只剩「选稿 + 提炼」两步，快得多。池子里随时有 100 多篇储备，够发两个月。
-
-**为什么正文不足就直接跳过**
-模型对着一个标题也能编出一篇像模像样的分析，但那是幻觉。所以宁可跳过这篇换下一篇，也不让模型无中生有。连续 3 次抓不到才判定为永久无正文，避免网络抖动误杀。
-
-**为什么两篇要来自不同角度**
-同一天读两篇讲同一个概念的文章没有增量。选稿时会把当天第一篇的组件名传给第二篇，强制换一个角度。
-
-**为什么用硬规则判断架构层级**
-完全交给模型判断会出现「明明讲 AIP Logic 却标成 L1」的情况。现在的做法是先看 URL 路径、再看模块专有词，最后才参考模型，并且只允许输出五个标准值。
-
-## 已知限制
-
-- **内容偏 L2**：Palantir 对外讲 Ontology 的材料最多，待发池里 L2 占一半以上。长期看推送会偏向本体层。
-- **境外源偶发超时**：本机访问 YouTube、Medium 等源不稳定。GitHub Actions 机房网络更好，单源失败也不影响整体。
-- **多维表格只能新增**：应用只有读写权限，改字段、删记录、删视图需要手动操作或另开权限。
+### 3. 手动触发与本地调试
+- **GitHub Actions 手动运行**：进入 `Actions -> Palantir AIP 产品深度洞察 -> Run workflow`，支持两个可选参数：
+  - `feishu_webhook_test`：填入测试群 Webhook 时仅向测试群发送，不修改 `pool.json` 状态、不写多维表格。
+  - `force_run`：填 `true` 时忽略当日已发防重锁，强制加发一期。
+- **本地运行**：
+  ```bash
+  pip install -r requirements.txt
+  python src/notify.py
+  ```
