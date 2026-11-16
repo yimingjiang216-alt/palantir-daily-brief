@@ -85,12 +85,16 @@ OFFICIAL_AIP_DOCS = [
     ("AIP 官方文档：多模型接入（BYOM）与模型路由管理", "https://www.palantir.com/docs/foundry/aip/bring-your-own-model", "说明如何接入开源或自托管大模型，并与平台内置模型统一调度。"),
     # Ontology 本体与动作层
     ("Ontology 官方文档：核心概念与数字孪生架构", "https://www.palantir.com/docs/foundry/ontology/overview", "详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。"),
-    ("Ontology 官方文档：Action Types（动作类型）与业务写回", "https://www.palantir.com/docs/foundry/ontology/action-types-overview", "拆解 Action Types 如何定义参数校验、权限规则、副作用与 Webhook 写回外部 ERP/业务系统。"),
+    ("Ontology 官方文档：Action Types（动作类型）与业务闭环", "https://www.palantir.com/docs/foundry/action-types/overview", "拆解 Action Types 如何定义参数校验、权限规则、副作用与业务操作写回。"),
+    ("Ontology 官方文档：Action Webhooks 反向写回外部业务系统", "https://www.palantir.com/docs/foundry/action-types/webhooks", "详解如何通过 Action Webhooks 将 Ontology 内的决策动作实时同步写回外部 ERP、SAP、CRM 等系统。"),
     ("Ontology 官方文档：Functions on Objects（对象函数与计算模型）", "https://www.palantir.com/docs/foundry/functions/overview", "说明如何用 TypeScript/Python 编写直接读取和修改 Ontology 对象的业务规则与小模型逻辑。"),
-    ("Ontology 官方文档：Interfaces（本体接口抽象与多态建模）", "https://www.palantir.com/docs/foundry/ontology/interface-overview", "详解如何用 Interface 抽象不同业务实体（如不同型号设备或不同类型工单）的共性属性与统一动作。"),
+    ("Ontology 官方文档：Interfaces（本体接口抽象与多态建模）", "https://www.palantir.com/docs/foundry/interfaces/interface-overview", "详解如何用 Interface 抽象不同业务实体（如不同型号设备或不同类型工单）的共性属性与统一动作。"),
+    ("Ontology 官方文档：Object Views（对象全景视图与操作中枢）", "https://www.palantir.com/docs/foundry/object-views/overview", "介绍如何把单个业务实体的属性、关联对象、图表与可执行 Action 聚合在统一的交互面板中。"),
+    ("Ontology 官方文档：Object Permissioning（对象与属性级权限控制）", "https://www.palantir.com/docs/foundry/object-permissioning/overview", "详解如何在 Ontology 对象、属性与链接级别配置多数据源安全策略与细粒度访问控制。"),
+    ("Ontology SDK (OSDK) 官方文档：在外部应用中调用本体与动作", "https://www.palantir.com/docs/foundry/ontology-sdk/overview", "拆解 OSDK 如何将企业 Ontology 的对象查询、Action 触发与 AI 函数封装为标准 SDK 供自定义前端或微服务调用。"),
     # AIP Logic / Agent Studio / Evals / Workshop / Automate
     ("AIP Logic 官方文档：无代码编排大模型与本体工具链", "https://www.palantir.com/docs/foundry/logic/overview", "详解 AIP Logic 如何用块状思维链（Block-based CoT）组合提示词、Ontology 查询、计算函数与结构化输出。"),
-    ("AIP Evals 官方文档：大模型与 Agent 自动化评测基准", "https://www.palantir.com/docs/foundry/logic/aip-evals", "拆解如何构建测试用例集、对比不同模型/Prompt 版本的准确率、耗时与成本，防止生产环境退化。"),
+    ("AIP Evals 官方文档：大模型与 Agent 自动化评测基准", "https://www.palantir.com/docs/foundry/aip-evals/overview", "拆解如何构建测试用例集、对比不同模型/Prompt 版本的准确率、耗时与成本，防止生产环境退化。"),
     ("Agent Studio 官方文档：构建与配置企业级交互式 Agent", "https://www.palantir.com/docs/foundry/agent-studio/overview", "介绍如何在 Agent Studio 中为 Agent 配置 Ontology 上下文检索、Action 工具调用权限与人工确认护栏。"),
     ("Workshop 官方文档：构建人机协同的操作应用界面", "https://www.palantir.com/docs/foundry/workshop/overview", "详解 Workshop 如何将 Ontology 对象视图、AIP Logic 推荐结果与 Action 执行按钮组装成一线业务员的操作台。"),
     ("Automate 官方文档：事件驱动的自动化监测与动作触发", "https://www.palantir.com/docs/foundry/automate/overview", "解析 Automate 如何监听 Ontology 对象状态变化或定时条件，自动唤醒 AIP Logic 并触发业务动作。"),
@@ -537,12 +541,21 @@ def fetch_full_text(item, max_chars=12000):
             return yt_text
 
     # 1. 尝试 Jina Reader 提取干净 Markdown
+    bad_markers = (
+        "Title: Google News",
+        "Page Not Found",
+        "404 Not Found",
+        "Warning: Target URL returned error",
+        "Just a moment...",
+        "Verifying you are human",
+        "Attention Required! | Cloudflare",
+    )
     try:
         jina_url = f"https://r.jina.ai/{url}"
         r = requests.get(jina_url, headers={"User-Agent": UA}, timeout=25)
         if r.status_code == 200 and len(r.text) > 450:
-            # 过滤掉纯登录墙或跳转壳
-            if "Title: Google News" not in r.text[:200]:
+            head_slice = r.text[:600]
+            if not any(m in head_slice for m in bad_markers):
                 return r.text[:max_chars]
     except Exception:
         pass
@@ -552,7 +565,7 @@ def fetch_full_text(item, max_chars=12000):
         r = requests.get(url, headers={"User-Agent": UA}, timeout=20)
         if r.status_code == 200:
             txt = _clean_html(r.text)
-            if len(txt) > 450:
+            if len(txt) > 450 and not any(m in txt[:400] for m in bad_markers):
                 return txt[:max_chars]
     except Exception:
         pass
