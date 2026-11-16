@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 16:40:58",
+  "updated_at": "2026-11-16 09:08:17",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -509,10 +509,36 @@
       "summary": "Palantir pairs objects and links with actions, functions and security. What that kinetic half means for teams building agents off Foundry. Continue reading on Medium »",
       "score": 10,
       "feature_focus": "Palantir Ontology 核心机制：对象与链接绑定可执行动作及安全策略，支撑 AI Agent 行动治理",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "bitable_synced": false
+      "sent_at": "2026-11-16",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Palantir Ontology：动作与安全绑定的本体设计",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "位于数据接入与管道层之上，承接对象、属性、链接的定义；向下被AI Agent、Workshop操作按钮及外部系统调用，作为所有读写操作的统一入口和权限控制中枢，实现‘可执行’的语义模型。",
+        "related_history": "本篇与此前推送的‘数据本体底座（FDS）’形成递进关系：前者聚焦‘是什么’的建模，本篇则补全‘能做什么’的动作闭环，构成完整的认知-行动双引擎。",
+        "core_concept": "Palantir 的 Ontology 不是静态的‘数据说明书’，而是一个‘带手脚的实体模型’——每个对象不仅有身份信息，还能执行特定动作，并受安全规则约束。就像给一个虚拟员工配了工牌、岗位职责和审批权限，它不仅能看数据，还能按规矩办事。",
+        "product_mechanics": [
+          "『Action Type（动作类型）』：在 Ontology 中定义一个‘重新分配客户’的动作，需指定目标对象（客户）、输入参数（新负责人ID）、触发条件（状态为‘待分配’），并绑定到具体业务流程。当Agent请求执行时，系统只允许走这个预设路径，杜绝随意修改。",
+          "『Function（函数）』：开发者可用Python/TypeScript编写逻辑函数，如‘自动冻结高风险账户’。该函数可访问对象属性、遍历关联链路（如从客户→订单→支付记录），并在满足条件时调用Action Type发起变更，实现复杂决策自动化。",
+          "『Dynamic Security（动态权限）』：每次Agent或用户操作前，系统实时校验其权限。例如，只有‘区域经理’角色才能调用‘暂停发货’动作，即使该用户有数据库写权限，也无法绕过此限制，确保‘谁有权做啥’由模型本身决定。"
+        ],
+        "scenario_usage": "销售主管在Workshop界面点击‘重新分配客户’按钮，系统弹出表单要求选择新负责人。后台Agent调用已注册的‘ReassignCustomer’动作类型，验证当前用户是否具备‘客户管理’权限，同时检查客户状态是否允许变更。若通过，函数自动更新客户归属，并同步至CRM系统，整个过程留痕且不可逆，完成一次合规的业务流转。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规认知认为AI Agent只需‘理解数据’即可行动，但Palantir揭示：真正的治理不是事后审计，而是让‘可执行动作’成为本体的一部分。团队应警惕‘自由发挥式提示工程’，必须把‘写权限’纳入产品设计核心。",
+          "【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’（FDS）层级，而非仅在Agent编排层。起步阶段可先借鉴‘动作类型+函数+权限绑定’三件套，优先构建关键业务动作的标准化接口，避免后期陷入‘无控写入’的治理黑洞。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Action Type（动作类型）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "配置时需定义动作名称、所属对象类型、输入参数Schema（如新负责人ID）、前置条件（如状态=待分配）、以及可选的函数引用。前端以表单形式呈现，支持拖拽式参数绑定；后台执行时强制校验权限与条件，仅允许通过预设路径写入数据，禁止自由SQL注入。",
+            "our_action": "我方应在‘数据本体底座’模块中引入‘动作类型’组件，明确每个业务操作（如‘审批合同’‘冻结账号’）都需预先定义为可执行动作，包含输入校验与权限规则。在撰写PRD时，直接照搬‘动作类型+函数引用+动态权限’的三元结构，确保所有写操作都有迹可循、有控可管。"
+          }
+        ]
+      }
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -654,7 +680,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir OSDK 完整教程：从零搭建后端、AIP 集成与 React 前端。简介：从零搭建一个完整的Palantir Foundry OSDK 集成项目。用Node.js 后端连接真实的Foundry Ontology，读取AIP 流水线生成的AI ...",
       "score": 10,
       "feature_focus": "OSDK 全栈集成教程：基于 Node.js + React 构建与 AIP 集成的后端服务及前端界面",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false
@@ -703,7 +729,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：手把手建Palantir Ontology — 官方文档真实代码 | Functions · Actions · OSDK。简介：跟着Palantir官方文档，一步步建一个真实的Ontology——带TypeScript/Python真实代码。 Step 1: 从数据集设计Object Types ...",
       "score": 10,
       "feature_focus": "手把手实操构建 Ontology：基于官方文档的 Functions、Actions 和 OSDK 的真实代码实现",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false
@@ -1005,9 +1031,36 @@
       "summary": "详解 AIP Logic 如何用块状思维链（Block-based CoT）组合提示词、Ontology 查询、计算函数与结构化输出。",
       "score": 10,
       "feature_focus": "AIP Logic 的块状思维链（Block-based CoT）设计，实现提示词、Ontology 查询、计算函数与结构化输出的无代码编排",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-16",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "块状思维链：无代码编排AI逻辑",
+        "feature_tag": "AIP Logic与Agent编排",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "AIP Logic 位于 Palantir AIP 体系的中枢编排层，向上承接 Ontology 定义的对象与关系、提示词模板与函数输入，向下被 Agent 运行时调用以执行多步骤推理任务，是实现复杂 AI 工作流可配置、可验证的核心枢纽。",
+        "related_history": "本篇与此前推送的『动作与安全绑定的本体设计』形成关键递进：前者定义‘能做什么’（动作权限），后者则解决‘如何一步步做’（流程编排），共同构建起从语义建模到智能执行的完整闭环。",
+        "core_concept": "AIP Logic 就像给 AI 装上了‘乐高积木式流程引擎’——不再靠写代码拼接逻辑，而是通过拖拽可复用的‘功能块’来搭建思考路径。它把提示词、查询、计算、输出结构化等环节拆解成独立模块，让业务专家也能像搭积木一样设计复杂的 AI 分析流程，彻底告别‘黑箱式提示工程’。",
+        "product_mechanics": [
+          "『Blocks（块）』：每个块是一个独立的功能单元，如‘生成提示词’‘查询 Ontology’‘运行 Python 函数’‘格式化输出’，用户在界面中拖拽这些块并连接它们的输入/输出端口，形成一条可视化的思维链，类似低代码工作流但专为 AI 推理优化。",
+          "『Block-based CoT（块状思维链）』：系统自动将多个块按顺序串联成类思维链结构，每一步输出作为下一步输入，支持嵌套和条件分支，例如‘若查询结果为空，则触发备用提示词’，实现动态决策路径，避免传统 RAG 的线性僵化。",
+          "『Staged Writes（分阶段写入）』：在流程末尾设置‘写入目标’块，可选择将最终结果写回 Ontology、数据集或外部系统，且支持分步提交（如先写临时表再审批后正式入库），保障数据一致性与审计可追溯性。"
+        ],
+        "scenario_usage": "某分析师在 AIP Analyst 界面点击‘分析供应链风险’按钮，触发一个预设的 AIP Logic 流程：首先调用‘从 Ontology 查询供应商节点’块获取实体；接着用‘生成风险评估提示词’块构造 LLM 输入；然后调用大模型进行推理；最后通过‘结构化输出块’将结果转化为标准 JSON 格式，并由‘写入风险报告表’块存入数据库。整个过程无需编码，全流程可追踪、可重用、可审计。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规认知以为 AI 编排就是‘写 prompt + 调 API’，但 Palantir 的真正突破在于把‘推理过程’本身当作可设计、可测试、可版本化的第一公民。这提醒我们：真正的 AIP 产品力不在于模型多强，而在于能否让非技术者像搭电路一样设计 AI 的思考路径。",
+          "【对标框架落位与起步取舍】该能力应沉淀在‘Agent 编排运行时’层，当前起步阶段不必追求全栈自研，优先借鉴其‘块+连线’的可视化编排范式，直接在现有工作流引擎中增加‘AI 功能块库’，快速实现从‘提示词粘贴’到‘流程化设计’的跃迁。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Blocks（块状逻辑单元）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "配置需定义块类型（如 Prompt、Query、Function、Output）、输入参数 Schema 及输出格式；前端通过拖拽面板操作，支持连接多个块的输入/输出端口；后台执行时按依赖顺序调度，支持条件判断与异常捕获，所有中间状态可被 AIP Evals 捕获用于质量验证。",
+            "our_action": "我方应在‘Agent 编排运行时’模块中引入‘可复用功能块’概念，直接照搬其‘块类型分类 + 可视化连线 + 参数 Schema 配置’的设计，尤其要支持将提示词、数据查询、函数调用封装为独立可拖拽组件，显著降低非技术人员设计 AI 流程的门槛。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/agent-studio/overview": {
       "url": "https://www.palantir.com/docs/foundry/agent-studio/overview",
@@ -2074,6 +2127,266 @@
       "full_text": "",
       "score": 8,
       "feature_focus": "Palantir AIP 在 RAG/OAG 场景下的数据工具链构建与集成实践",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://x.com/ssankar/status/2120682251763744840": {
+      "url": "https://x.com/ssankar/status/2120682251763744840",
+      "raw_url": "",
+      "title": "@ssankar 产品洞察：Who bEAnefits? Why are old stories that were not even covered up all that well become sudden in...",
+      "source": "X @ssankar (Palantir CTO产品思考)",
+      "summary": "Who bEAnefits? Why are old stories that were not even covered up all that well become sudden international and geopolitical news? The timing is suspicious, so worth asking: who benefits and why now? If Jensen, the premier champion of open models, is taken out then anyone who wants AI closed, Quote The Wall Street Journal @WSJ Breaking: Nvidia’s board is preparing to oust CEO Jensen Huang after he had two extramarital affairs, including one with a suspected Chinese spy. on.wsj.com/4jcpr01 96 710 107K",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "高管政治表态与AI生态竞争的舆论分析，无具体产品功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=MEQMwRJ8AyE": {
+      "url": "https://www.youtube.com/watch?v=MEQMwRJ8AyE",
+      "raw_url": "",
+      "title": "[视频 · 跟贝贝一起学习] Palantir AIP Agent实战：自然语言查询Ontology全流程",
+      "source": "YouTube 中文科普与架构拆解 (跟贝贝一起学习)",
+      "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir AIP Agent实战：自然语言查询Ontology全流程。简介：Palantir AIP Agent 怎么把自然语言变成针对Ontology 的结构化SQL 查询？这期实战教程带你从Agent 测试界面一路做到Automate ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Agent 将自然语言转化为结构化 SQL 查询的全流程实现机制",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=wP5g8uXvPbg": {
+      "url": "https://www.youtube.com/watch?v=wP5g8uXvPbg",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Deep Dive: Creating Your First Ontology",
+      "source": "YouTube 英文第三方实操与架构科普 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Deep Dive: Creating Your First Ontology。简介：In this tutorial, Gena walks through Palantir's free online course titled “Deep Dive: Build your first Ontology” from ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "在 Palantir Foundry 中从零构建首个 Ontology 的完整实践路径",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=SOjesN3OnOU": {
+      "url": "https://www.youtube.com/watch?v=SOjesN3OnOU",
+      "raw_url": "",
+      "title": "[视频 · Michael Lau] Ontology Objects: Actions Overview",
+      "source": "YouTube 模块深挖·Action与对象视图 (Michael Lau)",
+      "summary": "YouTube 频道 Michael Lau 视频讲解：Ontology Objects: Actions Overview。简介：I give a brief overview of configurable actions in Ontology Manager using a notional example provided in the \"Deepdive: Your first ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology Manager 中可配置 Actions 的设计原理与使用范例",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=RZ1GF6m5Bpw": {
+      "url": "https://www.youtube.com/watch?v=RZ1GF6m5Bpw",
+      "raw_url": "",
+      "title": "[视频 · Palantir Developers] Functions | Getting Started",
+      "source": "YouTube 模块深挖·Action与对象视图 (Palantir Developers)",
+      "summary": "YouTube 频道 Palantir Developers 视频讲解：Functions | Getting Started。简介：Have you ever wondered how to perform complex interactions with your Ontology in real-time? Functions in Foundry enables ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Foundry Functions 实现实时复杂交互的核心能力与开发流程",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=EN2h2cApkx4": {
+      "url": "https://www.youtube.com/watch?v=EN2h2cApkx4",
+      "raw_url": "",
+      "title": "[视频 · The Foundry Engineer ] How to Add Actions to Your Palantir Foundry Workshop App #FoundryTutorial #Foundrycourse",
+      "source": "YouTube 模块深挖·Action与对象视图 (The Foundry Engineer )",
+      "summary": "YouTube 频道 The Foundry Engineer  视频讲解：How to Add Actions to Your Palantir Foundry Workshop App #FoundryTutorial #Foundrycourse。简介：FoundryTutorial Foundry Tutorial #Foundrycourse #Foundry course Here is an optimized, high-converting YouTube video ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "在 Workshop App 中为 Ontology 添加 Action 的实操步骤与集成方法",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=v4vJgI_M3Jw": {
+      "url": "https://www.youtube.com/watch?v=v4vJgI_M3Jw",
+      "raw_url": "",
+      "title": "[视频 · Palantir Developers] Functions | How to Locate and Edit Objects from your Ontology in Foundry",
+      "source": "YouTube 模块深挖·Action与对象视图 (Palantir Developers)",
+      "summary": "YouTube 频道 Palantir Developers 视频讲解：Functions | How to Locate and Edit Objects from your Ontology in Foundry。简介：Have you ever wanted to make complex edits to your Ontology? Maybe to set a value on multiple objects, edit the links between ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "通过 Functions 对 Ontology 中多个对象进行批量编辑与链接修改的技术实现",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=OMrxBVZpQ1U": {
+      "url": "https://www.youtube.com/watch?v=OMrxBVZpQ1U",
+      "raw_url": "",
+      "title": "[视频 · Orzen AI] Palantir Speedrun: Build Your First Ontology Function",
+      "source": "YouTube 模块深挖·Action与对象视图 (Orzen AI)",
+      "summary": "YouTube 频道 Orzen AI 视频讲解：Palantir Speedrun: Build Your First Ontology Function。简介：In this speedrun, you'll build your first Ontology Function in Palantir Foundry—from writing the code to using it in Workshop for a ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "快速构建并部署第一个 Ontology Function 的端到端开发流程",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=J9EbWFfsfqc": {
+      "url": "https://www.youtube.com/watch?v=J9EbWFfsfqc",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Lesson 6: Links, Actions & Object Explorer | Palantir Hands-On Bootcamp",
+      "source": "YouTube 模块深挖·Action与对象视图 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Lesson 6: Links, Actions & Object Explorer | Palantir Hands-On Bootcamp。简介：In this lesson, you will bring your Ontology to life by creating links between object types, building actions with validation rules, and ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "在 Ontology 中创建对象间链接、定义动作及设置验证规则的实战教学",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=kxuMrGlWIps": {
+      "url": "https://www.youtube.com/watch?v=kxuMrGlWIps",
+      "raw_url": "",
+      "title": "[视频 · Palantir Developers] Functions | Unit Testing Functions on Objects in Palantir Foundry",
+      "source": "YouTube 模块深挖·Action与对象视图 (Palantir Developers)",
+      "summary": "YouTube 频道 Palantir Developers 视频讲解：Functions | Unit Testing Functions on Objects in Palantir Foundry。简介：Have you ever pushed changes to a Foundry code base which resulted in unexpected side effects? Have manual code reviews ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "在 Foundry 中对 Ontology Functions 进行单元测试以保障代码变更安全性的机制",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=vLcJPI1-aJ8": {
+      "url": "https://www.youtube.com/watch?v=vLcJPI1-aJ8",
+      "raw_url": "",
+      "title": "[视频 · Vikasteach] Palantir Foundry | TypeScript Action Types in Ontology",
+      "source": "YouTube 模块深挖·Action与对象视图 (Vikasteach)",
+      "summary": "YouTube 频道 Vikasteach 视频讲解：Palantir Foundry | TypeScript Action Types in Ontology。简介：Palantir Foundry, Ontology, AIP Logic, Automation, Workshop Hello, This is Vikas Yadav Senior Software & Data Engineer, 8+ ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "在 Ontology 中使用 TypeScript 定义 Action 类型的类型安全与工程实践",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=lRWZEZxR264": {
+      "url": "https://www.youtube.com/watch?v=lRWZEZxR264",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry: Links, Actions & Object Explorer (Lesson 7)",
+      "source": "YouTube 模块深挖·Action与对象视图 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry: Links, Actions & Object Explorer (Lesson 7)。简介：Lesson 7: Links, Actions & Object Explorer Connect your object types with link types, build action types with validation rules, and ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "通过链接、动作与对象探索器实现 Ontology 可视化建模与动态交互",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Puh_dv91NAY": {
+      "url": "https://www.youtube.com/watch?v=Puh_dv91NAY",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry: Create Object Types Step by Step (Lesson 6)",
+      "source": "YouTube 模块深挖·Action与对象视图 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry: Create Object Types Step by Step (Lesson 6)。简介：Lesson 6: Creating Object Types Create three Ontology object types — Property, Work Order, and Technician — by mapping your ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "分步创建 Property、Work Order、Technician 等 Object Types 的建模方法",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=b-oxw_CP8p8": {
+      "url": "https://www.youtube.com/watch?v=b-oxw_CP8p8",
+      "raw_url": "",
+      "title": "[视频 · Data Forge] Ontology Manager EXPLAINED: Object, Link & Action Types | Palantir Foundry Tutorial | dataforge",
+      "source": "YouTube 模块深挖·Action与对象视图 (Data Forge)",
+      "summary": "YouTube 频道 Data Forge 视频讲解：Ontology Manager EXPLAINED: Object, Link & Action Types | Palantir Foundry Tutorial | dataforge。简介：Ontology Manager is the heart of Palantir Foundry — and it's also where most beginners mess up. In this video, I break down ...",
+      "full_text": "",
+      "score": 10,
+      "feature_focus": "全面拆解 Ontology Manager 中 Object、Link 与 Action Types 的核心架构与设计逻辑",
+      "status": "unread",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://tedmabrey.substack.com/p/sorry-that-isnt-an-fde": {
+      "url": "https://tedmabrey.substack.com/p/sorry-that-isnt-an-fde",
+      "raw_url": "",
+      "title": "[Substack] Ted’s Substack Sorry, that isn't an FDE The replicants take the form but not the function, and miss the soul O",
+      "source": "Substack 深度专栏",
+      "summary": "Ted’s Substack Sorry, that isn't an FDE The replicants take the form but not the function, and miss the soul One of Palantir’s secrets in the Zero to One sense of the word has been the FDE. We were criticized for a very long time for this approach to building and delivering software. This criticism was annoying in the moment but in a full accounting quite valuable for Palantir. The criticism created a chilling effect and resulting conformity in how software…",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "关于 FDE 模式哲学意义的抽象论述，缺乏具体产品功能或模块实现细节",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://priyankavergadia.substack.com/p/the-fde-interview-loop-explained": {
+      "url": "https://priyankavergadia.substack.com/p/the-fde-interview-loop-explained",
+      "raw_url": "",
+      "title": "[Substack] Cloud Girl The FDE Interview Loop, Explained: With Real FDE Interview Questions Five rounds, one skill: turnin",
+      "source": "Substack 深度专栏",
+      "summary": "Cloud Girl The FDE Interview Loop, Explained: With Real FDE Interview Questions Five rounds, one skill: turning a messy customer problem into working software. Real prompts from Palantir, OpenAI and Google loops, worked answers with code, and a four-week prep plan. Forward deployed engineer job postings rose more than 1,000% between January and August 2026 compared with the same months a year earlier, according to Lightcast data reported by Fortune. Tech postings overall grew 13% over the same stretch, and the median advertised FDE salary sits above",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "Palantir Forward Deployed Engineer（FDE）招聘流程与面试题型解析，侧重人才选拔标准而非产品功能设计",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://michaeljburry.substack.com/p/palantirs-new-clothes-foundry-aip": {
+      "url": "https://michaeljburry.substack.com/p/palantirs-new-clothes-foundry-aip",
+      "raw_url": "",
+      "title": "[Substack] Cassandra Unchained Palantir’s New Clothes: Foundry, AIP, & the Failure of Reason “You think it is helpful hav",
+      "source": "Substack 深度专栏",
+      "summary": "Cassandra Unchained Palantir’s New Clothes: Foundry, AIP, & the Failure of Reason “You think it is helpful having a fluorescent green praying mantis coming into their offices telling them about German philosophy?",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "对 Palantir 产品演进的哲学化批判，聚焦公司文化与意识形态争议，无具体产品功能或模块设计分析",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://newsletter.agentengineering.co/p/decoding-fde-part-2-debug-the-definition": {
+      "url": "https://newsletter.agentengineering.co/p/decoding-fde-part-2-debug-the-definition",
+      "raw_url": "",
+      "title": "[Substack] Agentic Engineering Decoding FDE (Part 2): Debug the definition Why FDE looks like consulting and software out",
+      "source": "Substack 深度专栏",
+      "summary": "Agentic Engineering Decoding FDE (Part 2): Debug the definition Why FDE looks like consulting and software outsourcing and why the feedback loop says otherwise Editor’s note",
+      "full_text": "",
+      "score": 5,
+      "feature_focus": "对 FDE 模式本质的讨论，涉及其与咨询/外包的相似性，缺乏对 AIP、Foundry 等核心产品功能的技术拆解",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://smtsmtpostmodern.substack.com/p/palantir-flunks-out-of-the-frankfurt": {
+      "url": "https://smtsmtpostmodern.substack.com/p/palantir-flunks-out-of-the-frankfurt",
+      "raw_url": "",
+      "title": "[Substack] Weird Fishes Palantir Flunks Out of The Frankfurt School Alex Karp’s dissertation, the Palantir manifesto, and",
+      "source": "Substack 深度专栏",
+      "summary": "Weird Fishes Palantir Flunks Out of The Frankfurt School Alex Karp’s dissertation, the Palantir manifesto, and the language of technofascism “Some statements have a drive-relieving effect, and not despite, but because of their obvious irrationality.”",
+      "full_text": "",
+      "score": 3,
+      "feature_focus": "对 Alex Karp 思想体系与 Palantir 文化哲学的批判性评论，内容偏政治哲学与语言学分析，无产品功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://fdepod.substack.com/p/fde-101": {
+      "url": "https://fdepod.substack.com/p/fde-101",
+      "raw_url": "",
+      "title": "[Substack] FDE Pod by Kevin Bai FDE 101 Last month I stood on a stage at the AI Engineer World’s Fair and gave a talk on",
+      "source": "Substack 深度专栏",
+      "summary": "FDE Pod by Kevin Bai FDE 101 Last month I stood on a stage at the AI Engineer World’s Fair and gave a talk on forward deployed engineering to a thousand AI engineers.",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "FDE 模型在 AI 工程师社区中的实践介绍，提及 FDE 的工作方式与技术反馈循环，但未深入 AIP 或 Foundry 的具体功能机制",
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": ""
