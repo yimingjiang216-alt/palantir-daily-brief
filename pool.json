@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 13:55:15",
+  "updated_at": "2026-11-16 14:16:25",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -508,9 +508,27 @@
       "summary": "Palantir pairs objects and links with actions, functions and security. What that kinetic half means for teams building agents off Foundry. Continue reading on Medium »",
       "score": 10,
       "feature_focus": "Palantir Ontology 核心机制：对象与链接绑定可执行动作及安全策略，支撑 AI Agent 行动治理",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-16",
+      "insight_archive": {
+        "title": "对象绑定动作：AI Agent的行动护栏",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "该功能位于Palantir Foundry的L2层，向上承接L1数据接入后形成的结构化对象与关系，向下被L3 Agent编排层调用以驱动可执行动作。例如，当一个‘采购订单’对象被创建时，其关联的‘审批’‘发货’等动作会自动绑定权限与流程规则，供Agent安全调用。",
+        "related_history": "本篇内容延续了此前关于‘对象视图’与‘动态链接’的设计理念，形成从‘数据建模’到‘动作可执行性’的完整闭环，是构建智能代理能力的关键跃迁。",
+        "core_concept": "Palantir Ontology 不是简单的语义标签库，而是一个‘带脚的数据库’——每个对象不仅有定义，还自带‘能做什么’和‘谁可以做’的规则。就像给每张身份证配了一把专属钥匙，只有持证人才能打开对应业务门。这解决了传统RAG或工作流中‘知道但不能动’的痛点。",
+        "product_mechanics": [
+          "『对象-动作绑定』：在系统中定义一个‘客户合同’对象时，可直接为其添加‘生成付款提醒’‘触发法务审核’等动作，并设定仅限‘财务主管’角色调用。用户在界面点击该合同，即可看到可选操作按钮，背后由后台验证权限并执行。",
+          "『动作与安全策略耦合』：每个动作不仅是一段代码，还内嵌了访问控制（如只允许特定部门调用）、审计日志记录和执行前的合规检查。例如，‘修改预算’动作需同时通过身份认证、审批流和敏感标记扫描，防止越权操作。",
+          "『链路可追溯性』：所有动作的执行路径都记录在对象的‘行为轨迹’中，类似电子日记。比如某次‘发起采购’操作，系统会留存‘谁在何时、基于哪个合同、调用了什么接口、结果如何’的完整链路，支持事后复盘与问责。"
+        ],
+        "scenario_usage": "一名供应链经理在Foundry的Workshop中查看一个‘延迟交付’的订单对象，系统自动展示‘联系供应商’‘申请加急物流’‘更新客户通知’三个可选动作。他点击‘申请加急物流’，系统立即验证其权限，并调用内部物流调度API，生成工单推送给相关团队。整个过程无需手动写代码或跳转多个系统，且所有操作留痕可查。",
+        "aip_inspiration": [
+          "自研AIP应将‘动作’作为本体的核心属性，而非附加功能。在设计对象模型时，强制要求每个实体必须声明可执行操作及其权限边界，避免出现‘知道但无法行动’的智能盲区。",
+          "借鉴‘动作即服务’的架构思想，将常见业务操作封装为可被Agent调用的标准化函数，并内置权限、日志、重试等治理能力，提升Agent的可信度与工程化水平。"
+        ]
+      }
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -700,9 +718,27 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：手把手建Palantir Ontology — 官方文档真实代码 | Functions · Actions · OSDK。简介：跟着Palantir官方文档，一步步建一个真实的Ontology——带TypeScript/Python真实代码。 Step 1: 从数据集设计Object Types ...",
       "score": 10,
       "feature_focus": "手把手实操构建 Ontology：基于官方文档的 Functions、Actions 和 OSDK 的真实代码实现",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-16",
+      "insight_archive": {
+        "title": "Action Types：AI动作的可治理执行引擎",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "该功能位于L2本体与动作层，向上承接已定义的Object Type和Link Type数据模型，向下被L3 Agent编排层调用以执行具体操作，如触发审批、更新状态或调用外部系统接口，形成从语义对象到可执行动作的闭环。",
+        "related_history": "本篇与此前推送的‘对象绑定动作’形成递进关系：前者是‘能做什么’的静态配置，本篇则深入揭示‘如何做’的动态执行机制，共同构成AI Agent行动护栏的核心支撑体系。",
+        "core_concept": "可以把Action Types理解为AI Agent的‘合法操作清单’——就像医院里护士只能按授权执行特定医嘱，而不是自由发挥。它解决了传统RAG或Agent在无约束下乱操作的风险，确保每一步动作都基于预设规则、有迹可循、可审计。",
+        "product_mechanics": [
+          "『Action Type 定义』：在Palantir Ontology中，每个Action Type需明确关联一个Object Type（如‘订单’）和一个可执行函数（Function），并设置前置条件（如‘订单状态=待发货’），只有满足条件时才能被触发，避免误操作。",
+          "『Function 逻辑封装』：通过TypeScript/Python编写实际业务逻辑（如发送邮件、调用ERP接口），这些函数被注册为独立模块，支持版本管理与测试，确保动作执行的可靠性与可复用性。",
+          "『动作执行上下文』：当用户在Workshop点击‘发货’按钮时，系统自动验证当前订单是否符合该Action Type的条件，并调用对应的Function，同时记录操作日志与执行结果，实现‘谁在何时对何物做了什么’的全链路追踪。"
+        ],
+        "scenario_usage": "销售经理在Palantir Workshop中查看一个‘待发货订单’，点击‘标记为已发货’按钮。系统检查该动作是否属于已注册的‘MarkAsShipped’ Action Type，确认订单状态合规后，自动调用后台Function向ERP系统发送出库指令，并在日志中记录操作人、时间及结果，完成从界面交互到外部系统联动的完整闭环。",
+        "aip_inspiration": [
+          "自研AIP应建立‘动作类型化’设计范式，将所有可执行操作抽象为可配置、可校验、可审计的Action Type，避免直接暴露原始API，提升AI行为的安全边界。",
+          "借鉴其Function模块的双语言支持（TS/Python）与版本化管理机制，可在AIP中构建统一的‘动作逻辑仓库’，支持团队协作开发与灰度发布，降低集成风险。"
+        ]
+      }
     },
     "https://www.youtube.com/watch?v=2lgwr7trSgw": {
       "url": "https://www.youtube.com/watch?v=2lgwr7trSgw",
@@ -1915,7 +1951,8 @@
       "feature_focus": "聚焦 Jensen 某位高管个人动态与公司叙事，未涉及 Palantir 产品功能、架构或工作流设计",
       "status": "rejected",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "full_text": "(Photo by Benjamin Fanjoy/Getty Images) Welcome back to This Week in Stratechery! As a reminder, each week, every Friday, we’re sending out this overview of content in the Stratechery bundle; highlighted links are free for everyone . Additionally, you have complete control over what we send to you. If you don’t want to receive This Week in Stratechery emails (there is no podcast), please uncheck the box in your delivery settings . On that note, here were a few of our favorites this week. The Shocking Demise of Jensen Huang. This week’s coverage was dominated, unsurprisingly, by the shocking and sudden end of Jensen Huang’s 32 year tenure as CEO of Nvidia. The end came on Thursday morning, and just a few hours later, we recorded a Sharp Tech episode recounting Huang’s legendary history, figuring out what happened, and looked forward to what this might mean for Nvidia, the tech industry, and America going forward. Also see Andrew’s view from DC, Jensen Huang Was Always Going to Lose , and listen to Wednesday’s episode of Sharp China about the geopolitical angle, and Thursday’s Dithering about both the parallels and differences between Steve Jobs and Apple. — Ben Thompson Enterprise, Consumer and Intel. The more things change, the more they stay the same: Intel remains on the back foot in the AI era, and the foundry dreams continue to flounder. On the heels of disappointing earnings and 2027 guidance that promises yet more letdowns, Ben’s Update on Wednesday examined the state of America’s would-be national champion by drawing comparisons to AMD, an Intel peer that’s red-hot right now. To understand why one company is capitalizing on skyrocketing enterprise demand while the other confronts flatlining consumer sales, the answer starts with chips chiplets and leads to more profound questions about culture, Intel’s nature, and its bifurcated strategy for the long-term (and, for subscribers, look forward to more on this topic in Sunday’s Sharp Tech mailbag episode). — Andrew Sharp And Then There’s Professional Basketball. As a palate cleanser after a week of Jensen drama, this week’s Greatest of All Talk was a look at the top and bottom of the NBA after the first three weeks. On the euphoric side of the ledger we have Warriors fans (pre-Steph injury), Lakers fans, Spurs fans, and on the other end spectrum there is nothing positive to say in Brooklyn, a familiar malaise in Cleveland, and precisely one silver lining in Salt Lake City. All of it was a great time; we also hit Adam’s experience with the NBA in Mexico City last weekend, the hardest working players in NBA history, and an anxiety-inducing conversation about the number one pick, AJ Dybantsa. — AS Presented by Agentic commerce purchases with Link, Stripe’s digital wallet that works surprisingly well for agents, grew 38x in September. The catalyst was consumer agents like Muse and Instinct. Filling out a web form is not a value-add activity for anyone. No one chooses to fill out web forms in their spare time. That’s why these agents have been particularly useful. I’ve written about how these platforms are giving ordinary people an AI agent with a computer, enabling agents to do genuinely useful things on our behalf. When one of those things is spending money, it needs a wallet that knows what it is, and isn’t, allowed to do. Stripe has learned that’s really about deciding how much freedom to give it. You might approve one purchase, or give it $500 for flights this week, and let it figure out the rest. The wallet’s job is to keep it within those lines while handling everything between “go buy this” and the purchase actually happening. That’s what Stripe is building with Link: You approve what it spends, it can come back to you if the final price changes, and eligible purchases can even come with protection if the agent makes a mistake. You can use Link on Muse, Instinct, as well as many other of the agents you might use already. Stratechery Articles and Updates Jensen Huang’s Affair, The Culper Report, Huang’s Righteousness — Nvidia CEO Jensen Huang admitted to an affair with a Chinese spy, and that might not be the end of his troubles. I hope he survives, but his influence will never be the same. The Jensen Huang Story Gets Worse, Washington vs. New York, Silicon Valley — The Jensen Huang story got worse for him on Monday; the real risk for Huang is governance, even more than national security. Who benefits? Intel Earnings, AMD Earnings, Intel and AMD’s Divergence — Intel and AMD’s diverging earnings point to fundamental historical differences, and make me wonder if Intel needs to find a new (old) path. An Interview With Roblox CEO David Baszucki About Aggregating Play — An interview with Roblox CEO David Baszucki about how AI is transforming game creation, and why that opens up huge opportunities to both enable developers and make Roblox both an Aggregator and a platform. Sharp Text by Andrew Sharp Jensen Huang Was Always Going to Lose — Jensen Huang spent four years substituting his own judgment for that of the U.S. government. His downfall was inevitable, and probably isn’t over. Dithering with Ben Thompson and Daring Fireball’s John Gruber The Jensen Huang Affair Jensen Fired Asianometry with Jon Yu How Cisco Got Bullwhipped Indonesia’s Mega Rice Failure Sharp China with Andrew Sharp and Sinocism’s Bill Bishop Jensen Huang Likely Out at Nvidia; The Megaspeed Maelstrom in D.C.; APEC in Seven Days; Legislation That May Come Next Greatest of All Talk Agony and Ecstasy After Three Weeks, The “Earn Their Ice” All-Stars, Difficult Conversations About AJ and Season Ticket Holder Decorum Sharp Tech with Andrew Sharp and Ben Thompson Subscriber Mail: Twitter, Microsoft, Bending Spoons, Movie Reviews Nvidia After Jensen Huang, What Huang Meant to the AI Ecosystem, Washington Gets Its Revenge This week’s Stratechery video is on AI on the Ballot ."
     },
     "https://semianalysis.com/2025/09/08/huawei-ascend-production-ramp": {
       "url": "https://semianalysis.com/2025/09/08/huawei-ascend-production-ramp",
