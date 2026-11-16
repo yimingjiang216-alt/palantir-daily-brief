@@ -108,11 +108,25 @@ X_ACCOUNTS = [
     ("X @ssankar (Palantir CTO产品思考)", "ssankar"),
 ]
 
-# ── 4. YouTube 三路搜索（中文第三方科普/实操 + 英文实操教程 + AIPCon 真机 Demo）──
-YOUTUBE_SEARCH_QUERIES = [
+# ── 4. YouTube 基础搜索 + 按工作日轮换的细分模块搜索（防长期运行内容枯竭）──────
+YOUTUBE_BASE_QUERIES = [
     ("YouTube 中文科普与架构拆解", "Palantir+本体论+OR+AIP+架构+OR+产品解析", "zh-CN,zh;q=0.9,en;q=0.8"),
     ("YouTube 英文第三方实操与架构科普", "Palantir+AIP+Ontology+tutorial+OR+explained+OR+workflow", "en-US,en;q=0.9"),
-    ("YouTube AIPCon 客户真机Demo与Workshop实操", "Palantir+AIPCon+demo+OR+Workshop+AIP+Logic+walkthrough", "en-US,en;q=0.9"),
+]
+
+# 周一至周五按 Palantir 五大产品模块轮换深挖细分视频
+YOUTUBE_WEEKDAY_QUERIES = {
+    0: ("YouTube 模块深挖·Action与对象视图", "Palantir+Action+Types+OR+Object+Views+OR+Functions+tutorial", "en-US,en;q=0.9"),
+    1: ("YouTube 模块深挖·AIP Logic与Agent编排", "Palantir+AIP+Logic+OR+Agent+Studio+walkthrough+OR+demo", "en-US,en;q=0.9"),
+    2: ("YouTube 模块深挖·Workshop与OSDK开发", "Palantir+Workshop+tutorial+OR+Ontology+SDK+OSDK+application", "en-US,en;q=0.9"),
+    3: ("YouTube 模块深挖·AIP Evals评测与权限治理", "Palantir+AIP+Evals+OR+Markings+security+OR+governance", "en-US,en;q=0.9"),
+    4: ("YouTube 模块深挖·AIPCon客户真机Demo", "Palantir+AIPCon+customer+demo+OR+Bootcamp+use+case", "en-US,en;q=0.9"),
+}
+
+SUBSTACK_ROTATING_QUERIES = [
+    "Palantir%20Ontology",
+    "Palantir%20AIP",
+    "Palantir%20Foundry%20FDE",
 ]
 
 # ── 5. 专属聚焦 Palantir / Ontology 的 RSS 订阅源 ────────────────────────────
@@ -255,9 +269,15 @@ def fetch_x_accounts():
 
 
 def fetch_youtube_videos():
-    """搜索 YouTube 中英文第三方科普、实操教程与 AIPCon 真机演示视频。"""
+    """搜索 YouTube 中英文第三方科普、实操教程与按工作日轮换的细分产品模块视频。"""
+    from datetime import datetime as _dt
+
+    weekday_idx = _dt.now().weekday()
+    rotating_q = YOUTUBE_WEEKDAY_QUERIES.get(weekday_idx, YOUTUBE_WEEKDAY_QUERIES[4])
+    active_queries = YOUTUBE_BASE_QUERIES + [rotating_q]
+
     results = []
-    for source_name, query, lang in YOUTUBE_SEARCH_QUERIES:
+    for source_name, query, lang in active_queries:
         url = f"https://www.youtube.com/results?search_query={query}"
         try:
             resp = requests.get(
@@ -323,9 +343,12 @@ def fetch_youtube_videos():
 
 
 def fetch_substack_articles():
-    """通过 Jina 抓取 Substack 上关于 Palantir Ontology / AIP 的深度专栏长文。"""
+    """通过 Jina 抓取 Substack 上关于 Palantir Ontology / AIP / FDE 的深度专栏长文（按日轮换搜索词）。"""
+    from datetime import datetime as _dt
+
     results = []
-    search_url = "https://r.jina.ai/https://substack.com/search/Palantir%20Ontology"
+    q = SUBSTACK_ROTATING_QUERIES[_dt.now().timetuple().tm_yday % len(SUBSTACK_ROTATING_QUERIES)]
+    search_url = f"https://r.jina.ai/https://substack.com/search/{q}"
     try:
         resp = requests.get(search_url, headers={"User-Agent": UA}, timeout=25)
         if resp.status_code != 200:
