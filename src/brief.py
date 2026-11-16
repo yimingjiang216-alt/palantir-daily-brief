@@ -44,6 +44,71 @@ ARCH_LAYERS = [
     "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
 ]
 
+# 每一层的专属产品模块强特征词（用于代码级对号入座校验，防止大模型把 L3 错分到 L1）
+LAYER_RULES = [
+    # (架构层索引, URL强匹配片段, 标题/功能切面强特征词)
+    (
+        0,  # L1 数据接入与管道层
+        ("/data-connection/", "/pipeline-builder/", "/transforms/"),
+        ("pipeline builder", "data connection", "数据接入", "数据清洗", "数据管道", "etl", "协议适配", "多源数据"),
+    ),
+    (
+        2,  # L3 Agent 编排与评测层
+        ("/logic/", "/agent-studio/", "/aip-evals/", "/aip/agent-stack"),
+        ("aip logic", "agent studio", "aip evals", "evals", "agent stack", "model studio", "trace curation", "snapshots", "mcp", "agent 编排", "agent编排", "智能体编排", "自动化评测"),
+    ),
+    (
+        3,  # L4 交互应用与开发层
+        ("/workshop/", "/ontology-sdk/", "/automate/"),
+        ("workshop", "osdk", "ontology sdk", "automate", "前端应用", "交互界面", "应用构建"),
+    ),
+    (
+        4,  # L5 安全治理与工程落地
+        ("/control-llm-data-access-with-markings", "/aip-security", "/ethics-governance", "/object-permissioning/", "02-fde-model.md", "04-action-guide"),
+        ("markings", "aip-security", "permissioning", "ethics", "fde", "前线部署工程师", "驻场", "权限穿透", "安全护栏", "合规审计", "apollo", "为什么palantir", "学palantir"),
+    ),
+    (
+        1,  # L2 本体与动作层
+        ("/ontology/", "/action-types/", "/functions/", "/interfaces/", "/object-views/", "01-palantir-aip-ontology.md", "05-ontology-engineering", "06-umodel-vs-palantir"),
+        ("action types", "action type", "object type", "link type", "functions on objects", "object views", "interface", "语义层", "动作类型", "对象绑定动作", "四原语"),
+    ),
+]
+
+
+def resolve_arch_layer(item, llm_layer_str=""):
+    """
+    双重锁定架构层级，确保 100% 对号入座：
+      1. 第一优先级：检查 URL 是否命中官方文档/专题的精确模块路径；
+      2. 第二优先级：统计标题 + feature_focus 中各层专属产品模块词的命中权重；
+      3. 第三优先级：若无明显专有模块词（如综合案例），才采纳千问输出的层级，并强校验归入 5 个标准枚举值。
+    """
+    url_low = (item.get("url") or "").lower()
+    title_focus_low = f"{item.get('title', '')} {item.get('feature_focus', '')}".lower()
+
+    # 1. URL 路径强锁定
+    for idx, url_pats, _ in LAYER_RULES:
+        if any(p in url_low for p in url_pats):
+            return ARCH_LAYERS[idx]
+
+    # 2. 标题与功能切面的模块专有词计分锁定（防止正文顺带提了一嘴数据管道就把 L3 判成 L1）
+    scores = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    for idx, _, kw_pats in LAYER_RULES:
+        for kw in kw_pats:
+            if kw in title_focus_low:
+                scores[idx] += 2
+
+    best_idx = max(scores, key=lambda k: scores[k])
+    if scores[best_idx] > 0:
+        return ARCH_LAYERS[best_idx]
+
+    # 3. 兜底参考千问输出并标准化为 5 个枚举之一
+    if llm_layer_str in ARCH_LAYERS:
+        return llm_layer_str
+    for idx, layer_name in enumerate(ARCH_LAYERS):
+        if f"l{idx+1}" in (llm_layer_str or "").lower():
+            return layer_name
+    return ARCH_LAYERS[1]
+
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen-flash")
 LLM_KEY = os.environ.get("LLM_API_KEY", "")
@@ -488,19 +553,8 @@ def synthesize_product_insight(item, recent_sent_focuses):
             "aip_inspiration": ["建议对照原文梳理我方 AIP 对应模块的产品功能边界。"],
         }
 
-    if parsed.get("arch_layer") not in ARCH_LAYERS:
-        # 根据标签自动归入最接近的标准架构层
-        tag_blob = f"{parsed.get('feature_tag','')} {parsed.get('arch_layer','')} {item['title']}".lower()
-        if any(k in tag_blob for k in ("pipeline", "连接", "数据接入", "etl", "l1")):
-            parsed["arch_layer"] = ARCH_LAYERS[0]
-        elif any(k in tag_blob for k in ("logic", "agent", "eval", "编排", "评测", "l3")):
-            parsed["arch_layer"] = ARCH_LAYERS[2]
-        elif any(k in tag_blob for k in ("workshop", "osdk", "sdk", "automate", "前端", "应用", "l4")):
-            parsed["arch_layer"] = ARCH_LAYERS[3]
-        elif any(k in tag_blob for k in ("marking", "security", "权限", "安全", "fde", "治理", "l5")):
-            parsed["arch_layer"] = ARCH_LAYERS[4]
-        else:
-            parsed["arch_layer"] = ARCH_LAYERS[1]
+    # 用代码级规则 + LLM输出双重锁定架构层级，杜绝串层
+    parsed["arch_layer"] = resolve_arch_layer(item, parsed.get("arch_layer", ""))
 
     parsed["url"] = item["url"]
     parsed["source"] = item["source"]
