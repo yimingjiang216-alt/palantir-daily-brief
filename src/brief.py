@@ -737,10 +737,18 @@ def generate_brief(mark_sent=False):
     ]
 
     results = []
-    used_components = []  # 同批次已提炼的原子功能组件名，强制第 2 篇不再重复提炼同一组件
+    # 预加载往期已入库多维表格的功能组件名 + 同批次已提炼组件名，跨期&同日双重防重
+    used_components = []
+    for v in sent_items:
+        arch = v.get("insight_archive") or {}
+        for sp in (arch.get("feature_specs") or []):
+            cname = (sp.get("component_name") or "").strip()
+            if cname and cname not in used_components:
+                used_components.append(cname)
+
     for it in selected_raw:
         insight = synthesize_product_insight(it, recent_focuses + [
-            f"【本篇请勿再提炼以下已用组件】{c}" for c in used_components
+            f"【本篇请勿再提炼以下已用组件】{c}" for c in used_components[-25:]
         ])
         results.append(insight)
         recent_focuses.insert(
