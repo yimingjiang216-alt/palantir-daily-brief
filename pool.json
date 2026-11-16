@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 14:34:14",
+  "updated_at": "2026-11-16 16:04:45",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -528,7 +528,8 @@
           "【通用设计精髓与认知校准】常规认知中，本体=数据分类，而 Palantir 把本体变成‘可执行的行为契约’——对象不仅是‘是什么’，更是‘能做什么’。这对 AIP 团队的启示是：不要只建‘语义地图’，更要建‘行动路线图’，让数据真正具备‘执行力’与‘约束力’。",
           "【对标框架落位与起步取舍】该能力应沉淀于 L2 本体与动作层，是 AIP 的核心底座。起步阶段不必追求全量建模，可先聚焦关键业务对象（如订单、客户、工单），优先构建‘高频动作+最小权限’组合，快速支撑 Agent 的可信执行。"
         ]
-      }
+      },
+      "bitable_synced": true
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -738,7 +739,8 @@
           "【通用设计精髓与认知校准】常规直觉认为 AI 动作是‘自由发挥’的，但 Palantir 的做法是‘先建规矩再让 AI 行动’——所有 AI 可执行动作必须提前在语义层注册、绑定权限与逻辑，形成‘动作即服务’的治理闭环。这打破了‘Agent 越灵活越好’的误区，提醒我们：真正的智能在于可控的行动力。",
           "【对标框架落位与起步取舍】该能力应沉淀于‘本体与动作层（L2）’，是 AIP 产品中连接数据与 Agent 的关键枢纽。当前起步阶段，建议优先借鉴其‘动作可定义、可治理、可追溯’的设计范式，而非直接复刻完整 OSDK 架构，重点构建最小可用的 Action Type 注册与权限绑定流程。"
         ]
-      }
+      },
+      "bitable_synced": true
     },
     "https://www.youtube.com/watch?v=2lgwr7trSgw": {
       "url": "https://www.youtube.com/watch?v=2lgwr7trSgw",
