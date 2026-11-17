@@ -12,7 +12,7 @@ Palantir AIP 产品功能每日抓取、拆解与飞书推送脚本。
 | **1. 同日防重检查** | `src/notify.py` → `main()` | 启动时读取 `pool.json`，若已存在 `status == "sent"` 且 `sent_at == 当天日期` 的记录（且未开启 `FORCE_RUN`），直接退出。 |
 | **2. 多源抓取与过滤** | `src/fetch.py` → `fetch_all_candidates()` | 轮询 8 类渠道，对 URL 做归一化去重，并通过 `is_noise()` 过滤股价、财报、政治、招聘等非产品内容。 |
 | **3. 评分入池** | `src/brief.py` → `update_candidate_pool()` | 跳过已在 `pool.json` 中的 URL；对新条目按 15 条/批调用大模型打分（0~10 分）并提取 `feature_focus`：`>= 7` 分标为 `unread` 入池，`< 7` 分标为 `rejected` 跳过。 |
-| **4. 正文校验与选稿** | `src/brief.py` → `select_daily_items()` | 按分数排序并对 L1~L5 架构层做均衡采样（单层初筛上限 4 篇），调用 `fetch_full_text()` 校验正文 `>= 400` 字（连续 3 次抓不到才标为 `insufficient_content`）；凑够 12 篇候选后，结合近期已发记录选出 2~5 篇（若前 2~3 篇为 9~10 分长文，由 `_cap_by_quality()` 收敛为 2~3 篇）。 |
+| **4. 正文校验与选稿** | `src/brief.py` → `select_daily_items()` | 按分数从高到低遍历未读池，同属一个架构层的候选最多取 4 篇进入初筛。每篇调用 `fetch_full_text()` 拉取正文，不足 400 字则跳过并累加 `fetch_fail_count`，累计 3 次才将状态改为 `insufficient_content`；抓取成功则清零该计数。凑够 12 篇有效候选后，把近期 20 篇已发记录和当前架构层一并交给模型，由模型输出选中的序号数组。若模型给出的序号数少于 `DAILY_MIN_COUNT`（默认 2），按「优先不同架构层、再优先不同来源」的顺序补齐至 `DAILY_COUNT`（默认 3）。最后经 `_cap_by_quality()` 收敛：前 2 篇均为 10 分且正文合计 12000 字以上时只留 2 篇；前 3 篇中至少 2 篇达到 9 分，或前 3 篇正文合计 9000 字以上时只留 3 篇；其余情况保留模型给出的原数量，最多不超过 `DAILY_MAX_COUNT`（默认 5）。 |
 | **5. 全文拆解与组件提取** | `src/brief.py` → `synthesize_product_insight()` | 基于最高 12,000 字原文生成四段式拆解，按 `resolve_arch_layer()` 判定所属 L1~L5 架构层，提取 1 条不与往期及同批重复的原子功能组件规格（`feature_specs`），并由 `generate_daily_lead()` 生成今日导读。 |
 | **6. 飞书推送与写表** | `src/notify.py` → `send_feishu()` / `sync_to_feishu_bitable()` | ① 发送飞书群 `post` 富文本消息（JSON 超过 24KB 时自动拆为上下两篇发送）；② 调用飞书多维表格自动化 Webhook 写入组件规格记录。 |
 | **7. 状态回写归档** | `src/brief.py` → `mark_items_sent()` | 将当日条目更新为 `status="sent"`、`bitable_synced=True`，重新生成 `Palantir产品功能洞察库.md`，由 GitHub Actions 提交回仓库。 |
