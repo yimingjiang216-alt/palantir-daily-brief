@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-16 10:17:23",
+  "updated_at": "2026-11-17 01:05:08",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -539,7 +539,8 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false
+      "bitable_synced": false,
+      "fetch_fail_count": 1
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -672,7 +673,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=zH3lxJrGUTk": {
       "url": "https://www.youtube.com/watch?v=zH3lxJrGUTk",
@@ -686,7 +687,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=TOXpSnIrXFQ": {
       "url": "https://www.youtube.com/watch?v=TOXpSnIrXFQ",
@@ -722,7 +723,8 @@
       "feature_focus": "四大核心平台（Gotham, Foundry, Apollo, AIP）的技术架构全景解析，涵盖数据治理与 AI 融合路径",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=IWdN1Uv-FN0": {
       "url": "https://www.youtube.com/watch?v=IWdN1Uv-FN0",
@@ -736,7 +738,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=2lgwr7trSgw": {
       "url": "https://www.youtube.com/watch?v=2lgwr7trSgw",
@@ -821,7 +823,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=LZKx4ruEe2Q": {
       "url": "https://www.youtube.com/watch?v=LZKx4ruEe2Q",
@@ -881,7 +883,8 @@
       "feature_focus": "Palantir FDE 驻场机制与 Bootcamp 协同推动 Ontology 快速构建及产品化闭环",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-for-domestic-ai.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-for-domestic-ai.md",
@@ -893,7 +896,8 @@
       "feature_focus": "国内企业自研 AIP 时对 Palantir 语义底座、Action 闭环与人机协同旋钮的架构借鉴策略",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-vs-palantir-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-vs-palantir-ontology.md",
@@ -990,9 +994,36 @@
       "summary": "阐述大模型输入输出安全边界、敏感信息防泄漏、权限继承与零数据留存机制。",
       "score": 10,
       "feature_focus": "AIP 安全架构中的数据护栏设计：输入输出边界、敏感信息防泄漏与零数据留存机制",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-17",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP数据护栏：零留存与防泄漏机制",
+        "feature_tag": "安全治理与工程落地",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "该机制位于 AIP 安全架构的最外层，向上承接来自 L3 Agent 编排与运行时的输入数据流（如用户提问、上下文提示），向下通过强制拦截与即时销毁策略，确保所有传入第三方模型的服务请求在完成响应后不留下任何持久化痕迹。它作为核心防护屏障，被所有外部调用入口（如 Workshop 按钮、API 接口）所依赖。",
+        "related_history": "本篇内容与此前推送的『Markings 细粒度安全标记』形成纵深互补：前者控制‘谁能看到什么’，本篇则解决‘数据是否会被留下’的问题，共同构成从访问到留存的完整闭环安全链路，是安全体系的关键收尾环节。",
+        "core_concept": "这就像一个‘数据防火墙+自焚装置’——所有进入大模型的请求，都像快递包裹一样被严格安检后送入，但一旦完成任务，包裹连同快递单就立刻在原地销毁，不留任何副本或日志。它解决的是客户最担心的‘我输入的数据会不会被偷偷存下来’这一根本性信任问题。",
+        "product_mechanics": [
+          "『零数据留存机制』：当用户通过 AIP 提交一个包含敏感信息的查询（如客户身份证号+交易记录），系统会在发送至第三方模型前进行加密封装，并在模型返回结果后立即清除所有临时缓存与传输日志。即使模型服务端出现故障或被攻击，也无法获取原始数据。",
+          "『输入输出边界隔离』：所有输入（prompt）和输出（completion）均在 AIP 内部构建为独立的、生命周期极短的内存通道，不写入任何磁盘或数据库。例如，一次生成报告的流程中，原始数据仅存在于短暂的内存堆栈中，完成后即被垃圾回收，无法通过调试或日志回溯复现。",
+          "『技术+合同双保险』：Palantir 不仅在技术上实现数据即时丢弃，还要求第三方服务商签署法律协议，明确禁止其存储、分析或使用客户数据。若违反，将触发违约赔偿条款，形成‘技术断电 + 法律追责’双重威慑。"
+        ],
+        "scenario_usage": "某银行风控人员在 AIP 工作台输入：‘分析客户张三最近三个月的交易行为是否存在洗钱风险’，其中包含姓名、账户号等敏感字段。系统自动识别并注入安全护栏：数据经加密封装后传给 Azure OpenAI，模型返回摘要后，整个对话上下文立即从内存中清除。最终只保留结构化结论（如‘高风险’标签）供人工审核，原始数据从未落地，也未被任何第三方留存。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规认知认为‘只要权限控制好就行’，但 Palantir 的真实做法是：**即使权限开放，也要保证数据不能留存**。这打破了‘可用即等于可存’的直觉陷阱，提醒我们：真正的数据安全不是‘管住人’，而是‘让数据无处可留’，这是对隐私保护的极致升级。",
+          "【对标框架落位与起步取舍】该能力应沉淀于 L5 安全治理层，当前起步阶段不必追求全链路自研，但必须在 Agent 编排运行时（L3）与部署底座（L4）之间建立‘数据不留存’的强制契约。建议优先在 API 网关层引入‘一次性输入-即时销毁’模式，直接抄作业：所有对外调用必须配置‘无持久化’开关。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "零数据留存机制（Zero Data Retention）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "配置该机制需在 AIP 服务接入配置中启用『数据不留存』开关，系统自动强制执行：所有输入/输出数据在内存中以加密通道传输，生命周期不超过 10 秒；后台通过内存快照扫描与日志审计规则，实时检测是否有非授权持久化行为。前端界面提供‘已启用零留存’状态标识，且不可关闭。任何尝试写入磁盘或日志的行为将被立即中断并告警。",
+            "our_action": "我方应在 Agent 编排运行时模块中增加『数据不留存』配置项，作为默认必选策略。当前多数团队只做权限控制，却忽略了数据残留风险。我们可直接照搬：在所有对外调用接口中强制嵌入‘一次性内存通道’逻辑，确保输入数据在生成结果后自动释放，绝不落地。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/aip-observability": {
       "url": "https://www.palantir.com/docs/foundry/aip/aip-observability",
@@ -1014,9 +1045,36 @@
       "summary": "介绍企业高风险决策场景下的人机协同审批、可解释性溯源与合规审计设计。",
       "score": 10,
       "feature_focus": "AI 伦理治理与合规审计链路：高风险决策中的人机协同审批与可解释性溯源设计",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-17",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "高风险决策的人机协同审批链路设计",
+        "feature_tag": "安全治理与工程落地",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "该机制位于 Palantir AIP 的治理中枢层，向上承接来自 Modeling Objectives、AIP Evals 和 Workflow Lineage 的模型评估与执行结果，向下触发人工审批流程并联动审计日志系统，确保高风险 AI 决策在进入生产环境前必须经过可追溯的多级审查。",
+        "related_history": "本篇与此前推送的『零数据留存机制』形成互补：前者解决‘数据不泄露’，后者解决‘决策可问责’，共同构成从技术安全到治理合规的完整闭环，是 AIP 安全架构中‘可信运行’的关键一环。",
+        "core_concept": "这个机制就像 AI 系统的‘手术室麻醉师签字流程’——不是简单地让模型跑完就出结果，而是当系统判断某次输出涉及重大影响（如裁员建议、贷款拒批）时，自动暂停并要求人类专家介入审批。它把‘AI 做决定’变成‘人+AI 共同做决定’，让每一步关键判断都有迹可循、有人负责。",
+        "product_mechanics": [
+          "『High-Risk Decision Triggers』：当模型输出命中预设规则（如涉及敏感人群、金额超阈值、结论为‘拒绝’等），系统自动标记为高风险，并在 UI 中以红色警示条显示，同时触发审批工作流，强制跳转至审批界面。",
+          "『Human-in-the-Loop Approval Workflow』：审批流程支持多角色串行或并行审批，每个审批节点需填写理由、上传依据文件，并可附带修改建议；审批通过后，系统自动生成包含原始输入、模型推理路径、审批记录的完整审计快照。",
+          "『Audit Trail for Ethical Decisions』：所有高风险决策的审批过程被永久记录在审计日志中，包括谁审的、何时审的、意见内容、是否采纳，且与数据血缘和模型版本绑定，支持按时间、用户、事件类型进行精准回溯查询。"
+        ],
+        "scenario_usage": "一名银行风控人员在使用 AIP 处理贷款申请时，系统生成一份‘建议拒贷’的报告。由于该决策涉及个人信用且金额超过 50 万，系统自动识别为高风险，弹出审批窗口。审批人看到完整的模型推理摘要、申请人画像及历史行为数据，可在界面上勾选‘同意’‘驳回’或‘退回修改’，并填写审批理由。一旦提交，系统立即生成带有时间戳和签名的审计记录，并将最终决策写入业务数据库，同时通知相关监管方备案。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】Palantir 的核心洞察是：真正的伦理治理不是靠‘禁止’或‘提示’，而是通过‘强制流程化’把责任嵌入系统。常规直觉认为只要加个‘警告框’就够了，但 Palantir 用的是‘不可跳过的工作流’，让人为干预成为系统默认路径，这才是防止‘AI 背锅’的根本。",
+          "【对标框架落位与起步取舍】该能力应沉淀于 L5 治理层，当前起步阶段不必追求全链路自动化，但必须在 Agent 编排运行时（L3）中预留‘高风险判定钩子’接口，优先借鉴其‘触发-审批-留痕’三段式设计，作为后续构建可信 AI 闭环的基础模块。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "High-Risk Decision Triggers（高风险决策触发器）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "配置时需定义触发条件的 JSON Schema，包括字段匹配规则（如字段名=‘loan_amount’且值>500000）、标签匹配（如 Marking=‘Confidential: Credit Risk’）、或模型输出关键词（如包含‘reject’）。前端提供可视化条件组合器，支持布尔逻辑；后台执行时实时扫描输出结果，一旦命中即激活审批流程，并自动关联对应的数据血缘与模型版本。",
+            "our_action": "我方应在 Agent 编排运行时（L3）中引入类似‘决策风险评分’模块，参考 Palantir 的触发器设计，定义可配置的高风险规则集，并在输出结果后强制接入审批流程。当前缺的是‘不可绕过的审批链’，我们应直接抄作业：在关键决策节点增加‘审批阻断’功能，确保每一步高风险操作都必须人工确认，避免‘一键发布’陷阱。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/bring-your-own-model": {
       "url": "https://www.palantir.com/docs/foundry/aip/bring-your-own-model",
@@ -1245,7 +1303,8 @@
       "feature_focus": "Eval-Driven Automation 在 AIP 中的落地机制：基于评估结果驱动自动化决策与执行的闭环逻辑",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=jrN9-GHxRqU": {
       "url": "https://www.youtube.com/watch?v=jrN9-GHxRqU",
@@ -2459,6 +2518,98 @@
       "feature_focus": "OSDK应用中使用Ontology Actions实现动态操作与对象视图联动的开发实践",
       "status": "unread",
       "added_at": "2026-11-16",
+      "sent_at": ""
+    },
+    "https://x.com/ssankar/status/2122466523126112557": {
+      "url": "https://x.com/ssankar/status/2122466523126112557",
+      "raw_url": "",
+      "title": "@ssankar 产品洞察：Feel the Power! Kutztown Foundry, pouring metal in Pennsylvania since 1866, is now Hadrian Fact...",
+      "source": "X @ssankar (Palantir CTO产品思考)",
+      "summary": "Feel the Power! Kutztown Foundry, pouring metal in Pennsylvania since 1866, is now Hadrian Factory 6. We are investing $300M to upgrade and expand it, adding the casting capacity America's naval and munitions supply base needs. 00:00 21 127 5.5K",
+      "full_text": "",
+      "score": 3,
+      "feature_focus": "Kutztown Foundry 的工厂升级新闻，仅提及投资与产能扩展，无具体产品功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=TySnDdKz-DY": {
+      "url": "https://www.youtube.com/watch?v=TySnDdKz-DY",
+      "raw_url": "",
+      "title": "[视频 · Palantir Developers] Product Launch: Ontology-Driven Agents | DevCon 2",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (Palantir Developers)",
+      "summary": "YouTube 频道 Palantir Developers 视频讲解：Product Launch: Ontology-Driven Agents | DevCon 2。简介：Watch as Palantir Software Engineer Natasha Armbrust launches Ontology-Driven Agents, and explains how developers can ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology-Driven Agents 的发布与开发者视角下的 Agent 编排机制设计",
+      "status": "unread",
+      "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=nrIBTVh3sqc": {
+      "url": "https://www.youtube.com/watch?v=nrIBTVh3sqc",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry Automate Tutorial: No-Code AIP Logic Alerts",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry Automate Tutorial: No-Code AIP Logic Alerts。简介：Build a no-code Palantir Foundry automation that watches sales data, flags lagging regions, writes the result back to the Ontology ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "No-code AIP Logic Alerts 在 Palantir Foundry 中的自动化配置与数据监控实现",
+      "status": "unread",
+      "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=EqsLWIrzDbs": {
+      "url": "https://www.youtube.com/watch?v=EqsLWIrzDbs",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Build an AIP Agent in Palantir Foundry (Step by Step)",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Build an AIP Agent in Palantir Foundry (Step by Step)。简介：This step-by-step AIP Agent Studio tutorial covers everything from configuration to publishing. In Phase 4 of the Capstone Property ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Agent Studio 的完整构建流程：从配置到发布的端到端开发实践",
+      "status": "unread",
+      "added_at": "2026-11-17",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=6HTgMkirqN0": {
+      "url": "https://www.youtube.com/watch?v=6HTgMkirqN0",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Introduction to AIP Agents",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Introduction to AIP Agents。简介：This video has been updated by a two-part video series that reflects recent changes in Foundry.",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "AIP Agents 的基础概念介绍与在 Foundry 环境中的核心作用解析",
+      "status": "unread",
+      "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=l3ypWbiu4-E": {
+      "url": "https://www.youtube.com/watch?v=l3ypWbiu4-E",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir AIP + Foundry: How to Use AI Agents with Your Data",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir AIP + Foundry: How to Use AI Agents with Your Data。简介：Using our Phoenix rental property scenario, we demonstrate AIP Agent Studio by creating a read-only assistant that answers ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "AI Agents 与企业数据结合的实际应用案例：以租赁房产场景演示读取与响应逻辑",
+      "status": "unread",
+      "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://www.technologyreview.com/2026/11/16/1146070/building-ai-that-can-work-across-the-enterprise": {
+      "url": "https://www.technologyreview.com/2026/11/16/1146070/building-ai-that-can-work-across-the-enterprise",
+      "raw_url": "",
+      "title": "Building AI that can work across the enterprise",
+      "source": "MIT Tech Review",
+      "summary": "For years, enterprises have approached AI as a series of discrete experiments. Now, as AI agents begin to move into the workflows that run the business, that model is starting to look inadequate. Organizations moving from isolated pilots toward AI agents and autonomous workflows are confronting a deeper challenge: rethinking how data, business processes, governance, and people fit together, turning AI from a collection of tools into part of the enterprise operating model. For Thorsten Leiduck, SVP and global head of SAP Business AI Platform Ecosystem, that shift begins with treating AI as an enterprise platform rather than a collection of disconnected projects. “AI is absolutely dependent on the data foundation,” he says, arguing that companies need a connected, semantically rich layer tha",
+      "full_text": "For years, enterprises have approached AI as a series of discrete experiments. Now, as AI agents begin to move into the workflows that run the business, that model is starting to look inadequate. Organizations moving from isolated pilots toward AI agents and autonomous workflows are confronting a deeper challenge: rethinking how data, business processes, governance, and people fit together, turning AI from a collection of tools into part of the enterprise operating model. For Thorsten Leiduck, SVP and global head of SAP Business AI Platform Ecosystem, that shift begins with treating AI as an enterprise platform rather than a collection of disconnected projects. “AI is absolutely dependent on the data foundation,” he says, arguing that companies need a connected, semantically rich layer that reflects their business before they can reliably deploy AI across processes. The stakes also change as AI moves into mission-critical workflows. For some everyday applications, “80% might be good enough,” he says, but in areas such as supply chains or financial close, that level of accuracy is “a very terrible result.” That foundation also determines which AI applications are worth pursuing. Satinder Pal Singh, associate VP North America for SAP BAIP and SAP AI Strategy at Infosys, frames AI agents as “digital coworkers” and recommends evaluating potential use cases through three lenses: impact, feasibility, and scalability. Companies should identify where an agent can move meaningful business metrics, determine whether their data and talent can support the use case, and then establish whether successful applications can be replicated. “A pilot that can’t scale is just an experiment,” he says. Scaling also brings governance into sharper focus. Clear policies, access controls, monitoring, and oversight are necessary to ensure agents remain trustworthy and aligned with business requirements. “The absence of governance doesn’t speed up AI adoption,” Singh says. “It creates a risk backlog” that can ultimately force a more disruptive stop and audit. Those considerations will become more important as AI agents take on more responsibilities as digital coworkers. Both executives see a future in which agentic systems coordinate work across applications, while customer-specific knowledge graphs and governed data become critical enterprise assets. For Singh, the longer-term opportunity is a shift from AI as a productivity tool to “AI as a decision-making partner,” helping leaders understand what is happening, anticipate what comes next, and determine how to respond. This episode of Business Lab is produced in partnership with Infosys. Full Transcript Megan Tatum: From MIT Technology Review, I’m Megan Tatum, and this is Business Lab, the show that helps business leaders make sense of new technologies coming out of the lab and into the marketplace. This episode is produced in partnership with Infosys. Now, the development and democratization of AI tools has the potential to reconfigure how enterprises operate. But, at a time when applications are being scaled up from that initial phase of experimentation, we’re still seeing senior leaders grapple with questions around AI’s value, risk, and the complexity it adds. It’s becoming clear that, unlike past ways of automation, AI requires a real mindset shift. Put simply, the technology can’t simply be added into an enterprise’s existing toolkit. It requires a complete reconfiguration of what’s inside and how it’s used. Two words for you: conscious configuration. My guests today are Thorsten Leiduck, SVP and global head of SAP Business AI Platform Ecosystem, and Satinder Pal Singh, Associate VP for North America, SAP Business AI Platform and SAP AI Strategy. Welcome, Thorsten and Satinder. Thorsten Leiduck: Yeah, thank you for having us. Really a pleasure to be here with our valued partner, Infosys. Looking forward to the conversation. Satinder Pal Singh: Hi, Megan. Thanks for inviting for the conversation today. Looking forward to the discussion. Megan: Me too. Thank you both so much for being here. Thorsten, if I could start with you. We know that many senior leaders understand the transformative potential in AI, but they continue to struggle with aspects of its implementation. Many projects remain stuck at a pilot phase, for example. When you speak to clients, what are the biggest obstacles they face when it comes to integrating AI into their tech stack? Thorsten: Yeah. Megan, as you mentioned, AI is on the agenda of every client conversation today, but many customers are really struggling how to convert that interest into an operationalized model and to unlock the value of AI across the enterprise. And the reason is that too many programs start as isolated POCs on different AI technologies and in an inconsistent fragmented data foundation. This creates a lot of duplication, inconsistent performance, and no clear path to scale. At the same time, leaders are highly concerned about security, observability, reliability of agents, and some ethical implications when those get deployed. This is also shown in some studies. For example, BCG has launched a report, which shows that 74% of the organizations are stuck in pilot mode with no plan to scale. And in an Anthropic survey, data said that 42% are really struggling with getting access to the data and the quality to really, basically, scale the entire AI capabilities across the organization. The path forward is really to treat AI not just as a project, but more holistically, as an enterprise platform, one that really consistently connects an unified data layer with the process context of the applications, and then embed AI capabilities governed across the entire life cycle. And to make this real, we in SAP launched the SAP autonomous enterprise framework, so organizations can move from pilots to scaled outcomes. Megan: Yeah, really, to provide that support. And, Satinder, would you agree, why is it that we’re seeing enterprises get a touch of almost AI paralysis here? What’s the mindset shift that needs to happen and, perhaps, why is this something organizations need to be thinking about now, as well? Satinder: Absolutely, Megan. And, if anything, the picture sharpens when you look at, specifically, at agentic AI. Infosys and HFS research surveyed over 500 global 2,000 enterprises and found only 14% have successfully scaled AI. Eighty-six percent remain in early exploration, proof of concept, or fragmented pilot phases. For a technology at the top of every boardroom agenda for two years, that’s a striking failure rate. And at the core of that 86% is what I would describe as AI as a department trap. What happens is that an organization creates an AI team or a center of excellence and walls it off from business. That team builds technically excellent pilots the business doesn’t recognize itself in, and you end up with AI solutions searching for problems, rather than the other way around. Mindset shift is clear. Move from treating AI as a technology initiative to treating it as an operating model transformation. AI stops being something IT does for business and starts being something the whole organization does together. Every function, every workflow, embedded from the start. And what makes this a now problem? Early movers are building an advantage. You cannot close by buying the same platform later. Eighteen months of agent behavior data, calibrated knowledge graph, workforce that has genuinely internalized AI, that is a structural advantage that compounds. Infosys Knowledge Institute AI Maturity Index shows that only 8% of the companies qualify as AI native today, yet they achieve four times the revenue contribution from the AI versus laggards. If you’re not building AI today, you’re not standing still, you’re falling behind at an accelerating rate. Megan: Right. There’s a real polarization there, isn’t there, between the front-runners and the laggards, as you say. As we shift from pilot to scaled-up applications, perhaps the first step is evaluating when AI is the right tool. AI has quickly become the default solution within many enterprises. Is there a tendency to use it as a bit of a blunt instrument, nowadays, Thorsten? At the outset, how can senior leaders better evaluate what use cases are worthy of their time and investment, in order to strip out some of that later complexity? Thorsten: Yeah, I think, Megan, what everybody needs to be aware is adopting and rolling out AI across an organization is as much a change management journey as it’s a technology rollout. Now, when you have this in mind, it makes absolutely sense to put AI in front as many teams as possible, because you want to build formality, and spark ideas, and also people should see the benefit of AI in an organization. When you think about travel assistance, meeting summaries via Copilot, or AI-enabled workflows, increase the productivity, everybody feels this in their real job, in their real daily business. And, obviously, this creates creativity and also provides the organization from a bottom-up perspective with some innovation scale. Now, however, as majority grows, the conversation, and this is also what we discuss with many of the leaders, and our clients, shifts more to economics and governance. Things like token costs, model performance, security, and accountability become much more relevant. And when you then take the approach and think about AI agents as digital workers that execute specific tasks within a business process, then this means, from an AI perspective, not every task justifies nation. In some cases, human effort remains more economical or effective. The smart approach, and that’s what we really recommend to our clients, is to start with a defined, maybe small set of high-value use cases with defined success metrics upfront. So, for example, such as cycle time reduction, accuracy gains, or cost of per transaction, or top line improvement, and then scale wh",
+      "score": 6,
+      "feature_focus": "企业级 AI 工作流转型的宏观趋势分析，缺乏对 Palantir 具体产品模块或功能的深入拆解",
+      "status": "rejected",
+      "added_at": "2026-11-17",
       "sent_at": ""
     }
   }
