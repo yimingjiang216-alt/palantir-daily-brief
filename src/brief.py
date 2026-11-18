@@ -649,12 +649,12 @@ def synthesize_product_insight(item, recent_sent_focuses):
             "title": item["title"],
             "feature_tag": "AIP 产品功能洞察",
             "arch_layer": ARCH_LAYERS[1],
-            "arch_position": "处于 Palantir 核心产品链路中，向上连接业务数据对象，向下支撑智能体与业务应用交互。",
+            "arch_position": "",
             "related_history": "",
             "core_concept": item.get("summary", "")[:200],
             "product_mechanics": [item.get("summary", "")[:300]],
             "scenario_usage": "详见原文完整产品工作流说明。",
-            "aip_inspiration": ["建议对照原文梳理我方 AIP 对应模块的产品功能边界。"],
+            "aip_inspiration": ["详见原文具体配置项与校验规则说明。"],
         }
 
     # 用代码级规则 + 提炼标题 + LLM输出锁定架构层级，杜绝串层
@@ -843,24 +843,20 @@ def update_knowledge_base_md(pool):
             disp_title = arch.get("title") or it.get("title", "")
             url = it.get("url") or ""
             src = it.get("source") or "原文"
-            lines.append(f"### 📌 [{date_s}] {disp_title}")
-            lines.append(f"- **原文来源**：[{src} — {it.get('title','')}]({url})")
-            if arch.get("arch_position"):
-                lines.append(f"- **🗺️ 架构位置与上下游**：{arch['arch_position']}")
-            if arch.get("related_history"):
-                lines.append(f"- **🔗 往期关联**：{arch['related_history']}")
+            lines.append(f"### [{date_s}] {disp_title}")
+            lines.append(f"- **原文**：[{src} — {it.get('title','')}]({url})")
             if arch.get("core_concept"):
-                lines.append(f"- **💡 功能本质与通俗解读**：{arch['core_concept']}")
+                lines.append(f"- **1. 解决什么问题**：{arch['core_concept']}")
             if arch.get("product_mechanics"):
-                lines.append("- **🔧 产品功能与机制拆解**：")
+                lines.append("- **2. Palantir 怎么设计的**：")
                 for m in arch["product_mechanics"]:
                     lines.append(f"  - {m}")
             if arch.get("scenario_usage"):
-                lines.append(f"- **🔄 实际业务场景用法**：{arch['scenario_usage']}")
+                lines.append(f"- **业务流转实例**：{arch['scenario_usage']}")
             if arch.get("aip_inspiration"):
-                lines.append("- **🎯 对自研 AIP 的参考价值**：")
+                lines.append("- **3. 架构取舍与最小实现要素**：")
                 for ins in arch["aip_inspiration"]:
-                    lines.append(f"  - ★ {ins}")
+                    lines.append(f"  - {ins}")
             lines.append("")
 
     KB_MD_PATH.write_text("\n".join(lines), encoding="utf-8")
