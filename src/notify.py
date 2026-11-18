@@ -91,24 +91,15 @@ def _build_feishu_post(
             {"tag": "text", "text": f"【洞察 {idx} · {header_badge}】{title}"}
         ])
 
-        if arch_pos:
+        pos_and_concept = " ".join(x for x in [arch_pos, concept] if x)
+        if pos_and_concept:
             content_lines.append([
-                {"tag": "text", "text": f"🗺️ 架构位置与上下游：{arch_pos}"}
-            ])
-
-        if related_hist:
-            content_lines.append([
-                {"tag": "text", "text": f"🔗 关联脉络：{related_hist}"}
-            ])
-
-        if concept:
-            content_lines.append([
-                {"tag": "text", "text": f"💡 一、功能本质与通俗解读\n  {concept}"}
+                {"tag": "text", "text": f"💡 定位与上下游：{pos_and_concept}"}
             ])
 
         if mechanics:
             content_lines.append([
-                {"tag": "text", "text": "🔧 二、产品功能与机制拆解"}
+                {"tag": "text", "text": "🔧 核心机制拆解："}
             ])
             for m in mechanics:
                 content_lines.append([
@@ -117,12 +108,12 @@ def _build_feishu_post(
 
         if scenario:
             content_lines.append([
-                {"tag": "text", "text": f"🔄 三、实际业务场景怎么用\n  {scenario}"}
+                {"tag": "text", "text": f"🔄 业务流转实例：{scenario}"}
             ])
 
         if inspirations:
             content_lines.append([
-                {"tag": "text", "text": "🎯 四、对我们规划自研 AIP 的参考价值"}
+                {"tag": "text", "text": "🎯 自研对标要点："}
             ])
             for ins in inspirations:
                 content_lines.append([
