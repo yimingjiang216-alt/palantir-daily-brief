@@ -1,7 +1,9 @@
 # palantir-daily-brief
 
 Palantir AIP 产品功能每日抓取、拆解与飞书推送脚本。
-每天定时抓取中英文图文与视频资源，经评分筛选后挑出 2 至 5 篇内容做全文提炼，推送到飞书群并同步写入飞书多维表格。
+每天定时抓取 8 类中英文图文与视频资源，经评分筛选后挑出 2 至 5 篇内容拉取全文，单次调用大模型同时生成两套独立结构：
+1. **飞书群日报（按文章粒度）**：三段式工程拆解（解决什么问题、Palantir 怎么设计的、架构取舍与最小实现要素）；
+2. **飞书多维表格记录（按原子组件粒度）**：每篇提取 0 至 2 个具体软件功能组件的参数与校验规格写入多维表格（无具体软件组件的宏观文章返回空数组 `[]`，不写入表格）。
 
 ---
 
@@ -14,9 +16,8 @@ Palantir AIP 产品功能每日抓取、拆解与飞书推送脚本。
 | **3. 评分入池** | `src/brief.py` → `update_candidate_pool()` | 跳过已在 `pool.json` 中的 URL；对新条目按 15 条/批调用大模型打分（0 至 10 分）并提取 `feature_focus`：`>= 7` 分标为 `unread` 入池，`< 7` 分标为 `rejected` 跳过。 |
 | **4. 正文校验与选稿** | `src/brief.py` → `select_daily_items()` | 按分数从高到低遍历未读池，同属一个架构层的候选最多取 4 篇进入初筛。每篇调用 `fetch_full_text()` 拉取正文，不足 400 字则跳过并累加 `fetch_fail_count`，累计 3 次才将状态改为 `insufficient_content`；抓取成功则清零该计数。凑够 12 篇有效候选后，把近期 20 篇已发记录和当前架构层一并交给模型，由模型输出选中的序号数组。若模型给出的序号数少于 `DAILY_MIN_COUNT`（默认 2），按「优先不同架构层、再优先不同来源」的顺序补齐至 `DAILY_COUNT`（默认 3）。最后经 `_cap_by_quality()` 收敛：前 2 篇均为 10 分且正文合计 12000 字以上时只留 2 篇；前 3 篇中至少 2 篇达到 9 分，或前 3 篇正文合计 9000 字以上时只留 3 篇；其余情况保留模型给出的原数量，最多不超过 `DAILY_MAX_COUNT`（默认 5）。 |
 | **5. 全文拆解与组件提取** | `src/brief.py` → `synthesize_product_insight()` | 基于最高 12,000 字原文生成三段式工程拆解（`1. 解决什么问题`、`2. Palantir 怎么设计的`、`3. 架构取舍与最小实现要素`），调用接口时固定传入 `enable_thinking=False`；按 `resolve_arch_layer()` 判定所属 L1 至 L5 架构层，同时独立提取 0 至 2 条不与往期及同批重复的原子功能组件规格（`feature_specs`，纯理念文章返回空数组 `[]` 不入表），并由 `generate_daily_lead()` 生成今日概览。 |
-| **6. 飞书推送与写表** | `src/notify.py` → `send_feishu()` / `sync_to_feishu_bitable()` | ① 发送飞书群 `post` 富文本消息（JSON 超过 24KB 时自动拆为上下两篇发送）；② 调用飞书多维表格自动化 Webhook 写入组件规格记录。 |
+| **6. 飞书推送与写表** | `src/notify.py` → `send_feishu()` / `sync_to_feishu_bitable()` | ① 发送飞书群 `post` 富文本消息（JSON 超过 24KB 时自动拆为上下两篇发送）；② 遍历 `feature_specs` 调用飞书多维表格自动化 Webhook 写入组件规格记录（若 `feature_specs` 为空数组 `[]` 则跳过写表）。 |
 | **7. 状态回写归档** | `src/brief.py` → `mark_items_sent()` | 将当日条目更新为 `status="sent"`、`bitable_synced=True`，重新生成 `Palantir产品功能洞察库.md`，由 GitHub Actions 提交回仓库。 |
-| **8. 采纳组件起草 PRD（按需运行）** | `src/prd_drafter.py` → `main()` | 读取飞书多维表格中「我方采纳评估」标为 `🔥近期MVP可借鉴`（且未标为 `✅已纳入PRD`）的记录，调用大模型生成 9 章节 Markdown PRD 初稿写入 `prd_drafts/` 目录，并在 `pool.json` 的 `prd_drafts` 字段记录已起草的 `record_id`。 |
 
 ---
 
@@ -69,7 +70,7 @@ Palantir AIP 产品功能每日抓取、拆解与飞书推送脚本。
 | `功能组件` | `title` | 原子功能组件名称（`feature_specs[].component_name`） |
 | `架构层级` | `arch_layer` | `L1 数据接入与管道层` 至 `L5 安全治理与工程落地` |
 | `产品设计规格` | `core_concept` | 三要素清单：`① 配置项/入参`、`② 校验与拦截规则`、`③ 执行与异常边界`（`palantir_spec`） |
-| `最小实现要素与代价`（原`自研对标参考`） | `aip_inspiration` | 三要素清单：`适用痛点`、`最小实现要素`、`局限与代价`（`our_action`） |
+| `自研对标参考` | `aip_inspiration` | 三要素清单：`• 适用痛点`、`• 最小实现要素`、`• 局限与代价`（`our_action`） |
 | `规格详情` | `full_detail` | `【产品设计规格（配置/校验/边界）】` + `【最小实现要素与代价】` + 来源文章汇总文本 |
 | `推送日期` | `date` | `YYYY-MM-DD` |
 | `原文链接` | `url` | 原始文章/视频 URL |
