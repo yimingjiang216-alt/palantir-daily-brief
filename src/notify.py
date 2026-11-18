@@ -65,7 +65,7 @@ def _build_feishu_post(
     daily_lead = (items[0].get("daily_lead") or "").strip() if (items and include_lead) else ""
     if daily_lead:
         content_lines.append([
-            {"tag": "text", "text": f"📌 今日主线导读\n  {daily_lead}"}
+            {"tag": "text", "text": f"今日概览：{daily_lead}"}
         ])
         content_lines.append([{"tag": "text", "text": "────────────────────────"}])
 
@@ -74,11 +74,8 @@ def _build_feishu_post(
         title = (it.get("title") or "").strip()
         tag = (it.get("feature_tag") or "AIP 产品洞察").strip()
         arch_layer = (it.get("arch_layer") or "").split(" (")[0].strip()
-        arch_pos = (it.get("arch_position") or "").strip()
-        related_hist = (it.get("related_history") or "").strip()
         concept = (it.get("core_concept") or "").strip()
         mechanics = it.get("product_mechanics") or []
-        scenario = (it.get("scenario_usage") or "").strip()
         inspirations = it.get("aip_inspiration") or []
         url = (it.get("url") or "").strip()
         source = (it.get("source") or "原文").strip()
@@ -86,54 +83,54 @@ def _build_feishu_post(
         if offset > 0:
             content_lines.append([{"tag": "text", "text": "────────────────────────"}])
 
-        header_badge = f"{arch_layer} · {tag}" if arch_layer else tag
+        header_badge = arch_layer if arch_layer else tag
         content_lines.append([
-            {"tag": "text", "text": f"【洞察 {idx} · {header_badge}】{title}"}
+            {"tag": "text", "text": f"【{header_badge}】{title}"}
         ])
 
         if concept:
             content_lines.append([
-                {"tag": "text", "text": f"💡 定位：{concept}"}
+                {"tag": "text", "text": f"1. 解决什么问题\n{concept}"}
             ])
 
         if mechanics:
             content_lines.append([
-                {"tag": "text", "text": "🔧 核心机制："}
+                {"tag": "text", "text": "2. Palantir 怎么设计的"}
             ])
             for m in mechanics[:3]:
                 content_lines.append([
-                    {"tag": "text", "text": f"  • {m}"}
+                    {"tag": "text", "text": f"• {m}"}
                 ])
 
         if inspirations:
             content_lines.append([
-                {"tag": "text", "text": "🎯 自研对标："}
+                {"tag": "text", "text": "3. 我们怎么参考"}
             ])
             for ins in inspirations[:2]:
                 content_lines.append([
-                    {"tag": "text", "text": f"  ★ {ins}"}
+                    {"tag": "text", "text": f"• {ins}"}
                 ])
 
         if url:
             content_lines.append([
-                {"tag": "text", "text": "🔗 原文来源："},
-                {"tag": "a", "text": f"{source}（点击查看原文）", "href": url},
+                {"tag": "text", "text": "原文："},
+                {"tag": "a", "text": f"{source}", "href": url},
             ])
 
     if include_footer:
         if FEISHU_BITABLE_URL:
             content_lines.append([{"tag": "text", "text": "────────────────────────"}])
             content_lines.append([
-                {"tag": "text", "text": "📚 全量架构知识库："},
+                {"tag": "text", "text": "架构知识库："},
                 {
                     "tag": "a",
-                    "text": "👉 点击打开《Palantir 5层产品功能洞察库（飞书多维表格 · 按 L1~L5 架构归档）》",
+                    "text": "Palantir 5层产品功能洞察库（飞书多维表格）",
                     "href": FEISHU_BITABLE_URL,
                 },
             ])
         elif unread_count > 0:
             content_lines.append([
-                {"tag": "text", "text": f"\n📚 产品洞察池剩余高分储备：{unread_count} 篇（全部往期拆解已按 5 层架构归档至《Palantir产品功能洞察库.md》）"}
+                {"tag": "text", "text": f"\n候选池剩余储备：{unread_count} 篇"}
             ])
 
     return {
