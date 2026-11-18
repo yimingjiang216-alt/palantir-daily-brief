@@ -222,10 +222,10 @@ DEEP_DIVE_PROMPT = """你是服务于公司自研 AIP 产品团队的首席产�
   ],
   "feature_specs": [
     {{
-      "component_name": "从本篇正文中提炼出的 1 个最核心的 Palantir 具体产品功能组件/设计机制名（不得与上方『近期已推送过的功能点』重名，格式：『英文原名（中文功能点定位）』，22字以内）",
+      "component_name": "从正文中提炼出的具体软件功能组件/机制名（不得与上方『近期已推送过的功能点』重名，格式：『英文原名（中文机制定位）』，22字以内；若本文纯属宏观文化/组织方法论、无具体软件参数与校验规则，整个 feature_specs 请直接返回空数组 []；若包含 2 个独立核心组件可输出 2 条）",
       "arch_layer": "该功能组件所属的 L1~L5 标准架构层（从上述5个标准层中精确选1个）",
-      "palantir_spec": "配置该组件需定义的输入参数/Schema、前端交互方式、后台校验与执行规则（60~95字，纯工程说明）",
-      "our_action": "复刻该组件所需的最小表结构/字段名、枚举值与前置校验逻辑（55~90字，纯客观规格）"
+      "palantir_spec": "严格按三要素分行写出（共80~130字）：\n① 配置项/入参：需定义哪些字段、Schema或开关；\n② 校验与拦截规则：满足什么条件放行、什么条件直接报错；\n③ 执行与异常边界：通过后执行什么动作、失败如何回滚或重试。",
+      "our_action": "严格按三要素分行写出（共70~115字）：\n• 适用痛点：需要解决什么具体问题时采用该组件；\n• 最小实现要素：复刻至少需建什么表、加哪几个字段、写什么接口；\n• 局限与代价：采用该机制放弃了什么灵活性或有什么前提依赖。"
     }}
   ]
 }}
@@ -665,9 +665,9 @@ def synthesize_product_insight(item, recent_sent_focuses):
         feature_tag=parsed.get("feature_tag", ""),
     )
 
-    # 校准每条原子级功能规格 (feature_specs) 的架构层级
+    # 校准每条原子级功能规格 (feature_specs) 的架构层级；允许模型对纯理念文章返回空数组 []
     raw_specs = parsed.get("feature_specs")
-    if not isinstance(raw_specs, list) or not raw_specs:
+    if not isinstance(raw_specs, list):
         raw_specs = [
             {
                 "component_name": parsed.get("title", item["title"])[:24],
