@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17 01:05:08",
+  "updated_at": "2026-11-18 01:07:33",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -540,7 +540,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -670,7 +670,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir AIP Document Intelligence 教程：PDF 提取、评分、分块到部署。简介：Palantir AIP Document Intelligence 实战教程：把PDF 里的文字、表格和复选框完整提取出来，再部署成数据管道。 扫描件上OCR ...",
       "score": 9,
       "feature_focus": "Document Intelligence 模块从 PDF 提取到部署的完整数据管道构建流程与实战操作",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -683,7 +683,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir OSDK 完整教程：从零搭建后端、AIP 集成与 React 前端。简介：从零搭建一个完整的Palantir Foundry OSDK 集成项目。用Node.js 后端连接真实的Foundry Ontology，读取AIP 流水线生成的AI ...",
       "score": 10,
       "feature_focus": "OSDK 全栈集成教程：基于 Node.js + React 构建与 AIP 集成的后端服务及前端界面",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
@@ -724,7 +724,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=IWdN1Uv-FN0": {
       "url": "https://www.youtube.com/watch?v=IWdN1Uv-FN0",
@@ -734,7 +734,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：手把手建Palantir Ontology — 官方文档真实代码 | Functions · Actions · OSDK。简介：跟着Palantir官方文档，一步步建一个真实的Ontology——带TypeScript/Python真实代码。 Step 1: 从数据集设计Object Types ...",
       "score": 10,
       "feature_focus": "手把手实操构建 Ontology：基于官方文档的 Functions、Actions 和 OSDK 的真实代码实现",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
@@ -820,7 +820,7 @@
       "summary": "YouTube 频道 Vanyar 视频讲解：Palantir AIP Logic, Automate and AIP Evals | Get Started #6。简介：AIP Logic, Automate and AIP Evals in Palantir Foundry: the decision layer that turns Ontology facts into automated action, and how ...",
       "score": 9,
       "feature_focus": "系统讲解 AIP Logic、Automate 与 AIP Evals 三大组件协同机制，揭示决策层如何实现可控自动化与可解释性评估",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -884,7 +884,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-for-domestic-ai.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-for-domestic-ai.md",
@@ -897,7 +897,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-vs-palantir-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/06-umodel-vs-palantir-ontology.md",
@@ -1096,9 +1096,33 @@
       "summary": "详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。",
       "score": 10,
       "feature_focus": "Ontology 数字孪生架构：Object/Property/Link/Action 的业务层抽象与数据映射机制",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-18",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Ontology 官方文档：核心概念与数字孪生架构",
+        "feature_tag": "AIP 产品功能洞察",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "处于 Palantir 核心产品链路中，向上连接业务数据对象，向下支撑智能体与业务应用交互。",
+        "related_history": "",
+        "core_concept": "详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。",
+        "product_mechanics": [
+          "详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。"
+        ],
+        "scenario_usage": "详见原文完整产品工作流说明。",
+        "aip_inspiration": [
+          "建议对照原文梳理我方 AIP 对应模块的产品功能边界。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Ontology 官方文档：核心概念与数字孪生架",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。",
+            "our_action": "建议对照原文梳理我方 AIP 对应模块的产品功能边界。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/functions/overview": {
       "url": "https://www.palantir.com/docs/foundry/functions/overview",
@@ -1120,10 +1144,38 @@
       "summary": "详解 AIP Logic 如何用块状思维链（Block-based CoT）组合提示词、Ontology 查询、计算函数与结构化输出。",
       "score": 10,
       "feature_focus": "AIP Logic 的块状思维链（Block-based CoT）设计，实现提示词、Ontology 查询、计算函数与结构化输出的无代码编排",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "bitable_synced": false
+      "sent_at": "2026-11-18",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP Logic 块状思维链：把推理拆成可调试积木",
+        "feature_tag": "AIP Logic与Agent编排",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "AIP Logic  sits 在 Ontology 之上的编排环：向上消费对象、属性、链接与已注册 Functions/LLM，把提示词、本体查询、计算逻辑编排成一个带输入输出类型的 Logic Function；向下被 Workshop 按钮、Automate 触发器、Chatbot 工具、OSDK 与其他 Logic 函数调用，中间结果交由 AIP Evals 评测。",
+        "related_history": "承接 11-16 的 Ontology 对象/关系建模实践：那篇定义「有什么对象和链接」，本篇讲「怎样用块把这些对象喂给模型并编排成可被调用的函数」，是建模到运行时的下一步递进。",
+        "core_concept": "一句话：AIP Logic 是「大模型推理的可视化流水线」，把一次 AI 判断拆成一串有输入输出类型的积木块，无代码拼起来就发布成一个可被调用的函数。普通 Agent 是「给模型一堆工具让它自己想」，过程藏在黑箱里，出错只能看日志猜；普通工作流引擎又完全不懂语义，只能搬数据。Logic 走中间路线：骨架是确定的（查询块取数、函数块算数、条件块分流），只在真正需要判断的那一块交给 LLM，且该块必须交出结构化结果。就像把「一篇作文」改写成「带小标题的填空表格」，每一格都能单独检查、单独重跑。",
+        "product_mechanics": [
+          "『Blocks 块类型与命名变量』：画布上拖拽不同职责的块——LLM 块（选模型、写提示词、挂工具、定输出结构）、Ontology 查询块（按条件搜对象、沿链接取关联对象）、Function 块（调已注册计算函数）、条件/循环块。每块输出是一个命名变量，下游块通过变量选择器引用，如 llm_result.risk_level 直接进条件分支，不用手写 JSON 解析。",
+          "『LLM 块的输出 Schema 约束』：LLM 块不是自由吐文本，配置时要声明返回类型：字符串、枚举、结构体、对象数组，甚至直接是 Ontology 对象引用。例如让模型输出 {risk_level: 枚举(高/中/低), reason: 文本, affected_orders: 订单对象列表}，类型不合规即报错，下游块拿到的是强类型数据而非一段待清洗的话。",
+          "『本体工具与单步调试面板』：LLM 块可挂 Ontology 查询工具，让模型自己决定搜哪类对象、沿哪条链接展开；调试时右侧面板逐块展示实际输入、工具调用参数与返回、模型输出、耗时与用量，可只重跑某一块并改提示词对比效果，把「思维链」变成可回放的执行轨迹。",
+          "『Staged writes 暂存写入』：模型或函数块产生的本体修改先落成暂存编辑集，不直接进本体。界面可预览这批改动的前后差异，交由后续校验块或人工确认后再统一提交，避免一次幻觉直接污染业务对象；这也是评测里能单独「评估本体编辑」的前提。",
+          "『发布为 Function 与多入口复用』：编排完成后声明函数输入参数（可含对象类型）与返回类型，发布带版本。同一个 Logic Function 可被 Workshop 按钮点击、Automate 定时/事件触发、Chatbot 当作工具、外部 API 调用，逻辑只写一遍，交互入口和自动化共用同一份可评测资产。"
+        ],
+        "scenario_usage": "以供应链延期处置为例：采购员在 Workshop 页面点「评估风险」按钮，或 Automate 每天定时触发同一个 Logic Function。查询块先按条件取出在途订单对象、沿链接拉到供应商与产能对象；LLM 块结合邮件文本与这些对象，调用本体查询工具补查历史交付记录，输出结构化的风险等级、理由与受影响订单列表；函数块算出缺口数量；条件块把高风险分支导向暂存写入，生成待确认的订单调整与预警对象；采购员在界面看差异后确认提交，结果回写本体并通知下游，整条链路的每块输入输出都留痕可复查。",
+        "aip_inspiration": [
+          "【通用设计精髓与认知校准】常规直觉是「模型越强、越该放手让它自主规划」；Palantir 反着来：用确定性骨架包住不确定的模型，只在需要判断的块用 LLM，其余交给查询与函数。可观测性不是靠事后日志，而是靠编排结构本身天然分格，这点最该刷新我们的认知。",
+          "【对标框架落位与起步取舍】该能力属 Agent 编排运行时，但强依赖本体底座提供对象查询与函数注册。起步别先做自主多轮 Agent，先做「块类型 + 强类型中间变量 + 单块重跑调试」三件套，并把本体查询做成一等公民块，比接十个工具更有价值。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "AIP Logic Blocks（块状思维链编排）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "函数级先声明输入参数（支持 Ontology 对象类型）与返回类型；画布上配置 LLM 块（模型、提示词、可挂本体查询/函数工具、输出 Schema）、查询块、函数块、条件与循环块。块间以命名变量引用上游输出并做类型校验；调试面板可逐块运行、查看工具调用参数与返回、耗时用量，支持改提示词单块重跑；通过后发布为带版本的 Logic Function。",
+            "our_action": "落位 Agent 编排运行时。常规做法只有「提示词模板 + 自由 tool calling」，缺的是强类型中间变量与单块可回放。写 PRD 可直接照搬：块类型清单与职责边界、变量引用选择器、LLM 块输出 Schema 编辑器（含枚举/对象数组）、单步运行与中间结果面板、函数版本发布及多入口调用注册。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/agent-studio/overview": {
       "url": "https://www.palantir.com/docs/foundry/agent-studio/overview",
@@ -1304,7 +1356,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=jrN9-GHxRqU": {
       "url": "https://www.youtube.com/watch?v=jrN9-GHxRqU",
@@ -1581,7 +1633,8 @@
       "feature_focus": "Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5",
@@ -2571,7 +2624,7 @@
       "status": "unread",
       "added_at": "2026-11-17",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=6HTgMkirqN0": {
       "url": "https://www.youtube.com/watch?v=6HTgMkirqN0",
@@ -2610,6 +2663,201 @@
       "feature_focus": "企业级 AI 工作流转型的宏观趋势分析，缺乏对 Palantir 具体产品模块或功能的深入拆解",
       "status": "rejected",
       "added_at": "2026-11-17",
+      "sent_at": ""
+    },
+    "https://x.com/PalantirTech/status/2122426136520953879": {
+      "url": "https://x.com/PalantirTech/status/2122426136520953879",
+      "raw_url": "",
+      "title": "@PalantirTech 产品洞察：Sovereign models require sovereign compute. At DevCon 7, Palantir Software Engineers launch Reg...",
+      "source": "X @PalantirTech (官方产品与DevCon动态)",
+      "summary": "Sovereign models require sovereign compute. At DevCon 7, Palantir Software Engineers launch Regional GPU Hubs and Multi-Adapter Deployments, the infrastructure that closes the gap between Model Studio and production. Train your LoRA adapter, ship it to a warm base model Show more 00:00 71 622 43K",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "DevCon 7 发布的 Regional GPU Hubs 与 Multi-Adapter Deployments：Model Studio 训练 LoRA adapter 到生产部署的主权算力链路",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://x.com/chadwahl/status/2122448110177734815": {
+      "url": "https://x.com/chadwahl/status/2122448110177734815",
+      "raw_url": "",
+      "title": "@chadwahl 产品洞察：The Sovereign Compute Cloud Sovereign models require sovereign compute. At DevCon 7, Palantir S...",
+      "source": "X @chadwahl (Palantir Ontology架构师)",
+      "summary": "The Sovereign Compute Cloud Sovereign models require sovereign compute. At DevCon 7, Palantir Software Engineers launch Regional GPU Hubs and Multi-Adapter Deployments, the infrastructure that closes the gap between Model Studio and production. Train your LoRA adapter, ship it to a warm base model 00:00 6 140 4.5K",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "Sovereign Compute Cloud 视角下的 Model Studio 模型微调与多适配器部署基础设施（与官方发布内容重复）",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Lg1ahSHAJ2A": {
+      "url": "https://www.youtube.com/watch?v=Lg1ahSHAJ2A",
+      "raw_url": "",
+      "title": "[视频 · Jesse's  x Gen AI] Palantir-美军背后的 AI 大脑，如何以“数据本体论”为基石，利用 AI 推动企业业务几何式增长",
+      "source": "YouTube 中文科普与架构拆解 (Jesse's  x Gen AI)",
+      "summary": "YouTube 频道 Jesse's  x Gen AI 视频讲解：Palantir-美军背后的 AI 大脑，如何以“数据本体论”为基石，利用 AI 推动企业业务几何式增长。简介：Palantir-它不仅是美军背后的AI 大脑，不仅能通过AI +大数据找出了\"Ben拉登\"，还能帮助波音等超大型公司提升生产效率，帮助金融 ...",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "以‘数据本体论(Ontology)’为叙事主线的 Palantir 商业价值科普，缺少具体模块与机制细节",
+      "status": "rejected",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=1Iv03x27_vk": {
+      "url": "https://www.youtube.com/watch?v=1Iv03x27_vk",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Vibe Coding Your First OSDK App",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Vibe Coding Your First OSDK App。简介：In this video, Gena shows you how to Vibe-Code an OSDK app. Find the data here: ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "用 AI 辅助编码(Vibe Coding)基于 OSDK 快速搭建 Ontology 应用的开发流程",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=u-XusTktitU": {
+      "url": "https://www.youtube.com/watch?v=u-XusTktitU",
+      "raw_url": "",
+      "title": "[视频 · Justin Langfan] Palantir's OSDK Using Python: Hello World Tutorial",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Justin Langfan)",
+      "summary": "YouTube 频道 Justin Langfan 视频讲解：Palantir's OSDK Using Python: Hello World Tutorial。简介：A beginner-friendly end-to-end example of Palantir's OSDK with Python, demonstrated using the free tier in November 2024.",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Python OSDK 端到端 Hello World：连接 Foundry、读取 Ontology 对象的最小可用示例",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=LKoqpWX_nNc": {
+      "url": "https://www.youtube.com/watch?v=LKoqpWX_nNc",
+      "raw_url": "",
+      "title": "[视频 · The Foundry Engineer ] 🎬 Build Your First Workshop Application in Palantir Foundry | Beginner Tutorial",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (The Foundry Engineer )",
+      "summary": "YouTube 频道 The Foundry Engineer  视频讲解：🎬 Build Your First Workshop Application in Palantir Foundry | Beginner Tutorial。简介：Build Your First Workshop Application in Palantir Foundry | Beginner Tutorial** How to Add Actions to Your Palantir Foundry ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Workshop 无代码应用搭建与 Action 绑定：从 Ontology 到可操作业务界面",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=CGXeqjCYpXs": {
+      "url": "https://www.youtube.com/watch?v=CGXeqjCYpXs",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry OSDK Tutorial: Build a React Tenant Portal",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry OSDK Tutorial: Build a React Tenant Portal。简介：Palantir Foundry OSDK tutorial — build an external-facing React tenant portal powered by the Foundry Ontology, with no Foundry ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "OSDK + React 构建面向外部租户的门户：无 Foundry 账号用户的 Ontology 访问与权限边界",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=9hE5dv5ASYc": {
+      "url": "https://www.youtube.com/watch?v=9hE5dv5ASYc",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry OSDK Tutorial: Build an External Tenant Portal from Scratch",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry OSDK Tutorial: Build an External Tenant Portal from Scratch。简介：How do you let external users access your Foundry Ontology without a Foundry account? In this tutorial, I walk through the full ...",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "从零搭建外部租户门户的 OSDK 实现细节（与 React Tenant Portal 主题重复）",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=2jm-dmDOxaI": {
+      "url": "https://www.youtube.com/watch?v=2jm-dmDOxaI",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Building with Palantir OSDK: Backend, AIP Integration & React Frontend — Complete Tutorial",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Building with Palantir OSDK: Backend, AIP Integration & React Frontend — Complete Tutorial。简介：Build a complete Palantir Foundry OSDK integration from scratch. Connect a Node.js backend to a real Foundry Ontology, read ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Node.js 后端 + OSDK + AIP 集成 + React 前端的完整应用工作流：Ontology 读写与 AIP 能力调用",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=NWnI-8c_Fvs": {
+      "url": "https://www.youtube.com/watch?v=NWnI-8c_Fvs",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Deep Dive: Building Your First Application",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Deep Dive: Building Your First Application。简介：This video is a walk-through of Palantir's online course titled “Deep Dive: Building your first application” available from ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "官方课程拆解：Foundry 中构建第一个应用的完整步骤与模块配置",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=xhTSyK6sOtQ": {
+      "url": "https://www.youtube.com/watch?v=xhTSyK6sOtQ",
+      "raw_url": "",
+      "title": "[视频 · Vanyar] Palantir OSDK, MCP and Compute Modules | Get Started #8",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Vanyar)",
+      "summary": "YouTube 频道 Vanyar 视频讲解：Palantir OSDK, MCP and Compute Modules | Get Started #8。简介：In Session 8, we use Palantir Ontology SDK (OSDK), Ontology MCP, Palantir MCP, Superrepo and Compute Modules with the ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "OSDK、Ontology MCP / Palantir MCP、Superrepo 与 Compute Modules 的组合使用与 Agent 工具接入",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=fuBGVg8IW-I": {
+      "url": "https://www.youtube.com/watch?v=fuBGVg8IW-I",
+      "raw_url": "",
+      "title": "[视频 · Vanyar] Build Your First No-Code App in Palantir Workshop | Get Started #5",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Vanyar)",
+      "summary": "YouTube 频道 Vanyar 视频讲解：Build Your First No-Code App in Palantir Workshop | Get Started #5。简介：Palantir Workshop is how an Ontology becomes a screen an operator can use. This session goes from an empty module to a ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Workshop 从空模块到操作员可用界面：Ontology 如何转化为一线作业屏幕",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=iukz2wfCpJY": {
+      "url": "https://www.youtube.com/watch?v=iukz2wfCpJY",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir Foundry OSDK: the Typed SDK for Ontology Apps (Lesson 32)",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir Foundry OSDK: the Typed SDK for Ontology Apps (Lesson 32)。简介：Palantir Foundry OSDK tutorial: use the Ontology SDK to query and write Foundry with typed objects and actions in TypeScript.",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "TypeScript OSDK 的类型化对象与 Action 查询/写回机制",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://medium.com/@hagen.finley_71/palantirs-two-maps-objects-and-systems-6c5dc86a2237?source=rss------palantir-5": {
+      "url": "https://medium.com/@hagen.finley_71/palantirs-two-maps-objects-and-systems-6c5dc86a2237?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Palantir’s Two Maps: Objects and Systems",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "A conversation about objects, handoffs, and the urge to map the whole business Continue reading on Medium »",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Ontology 对象建模与企业系统映射的‘两张地图’理念：对象、交接与业务全景建模边界",
+      "status": "unread",
+      "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://medium.com/@sk14258cs2014/the-engineers-called-delta-how-a-palantir-experiment-became-ais-hottest-job-401294376363?source=rss------palantir-5": {
+      "url": "https://medium.com/@sk14258cs2014/the-engineers-called-delta-how-a-palantir-experiment-became-ais-hottest-job-401294376363?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "The Engineers Called “Delta”: How a Palantir Experiment Became AI’s Hottest Job",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "Picture a software company in the early 2010s with a strange problem: its software was powerful, its customers badly needed it, and almost… Continue reading on Medium »",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "Forward Deployed Engineer(Delta)岗位起源与职业热潮叙事，非产品功能拆解",
+      "status": "rejected",
+      "added_at": "2026-11-18",
       "sent_at": ""
     }
   }

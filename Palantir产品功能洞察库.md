@@ -16,10 +16,12 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 4 篇）
+## 📅 已推送洞察总览表（共 6 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-18 | L2 本体与动作层 | **Ontology 官方文档：核心概念与数字孪生架构** | Ontology 数字孪生架构：Object/Property/Link/Action 的业务层抽象与数据映射机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/ontology/overview) |
+| 2026-11-18 | L3 Agent 编排与评测层 | **AIP Logic 块状思维链：把推理拆成可调试积木** | AIP Logic 的块状思维链（Block-based CoT）设计，实现提示词、Ontology 查询、计算函数与结构化输出的无代码编排 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/logic/overview) |
 | 2026-11-17 | L5 安全治理与工程落地 | **AIP数据护栏：零留存与防泄漏机制** | AIP 安全架构中的数据护栏设计：输入输出边界、敏感信息防泄漏与零数据留存机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/aip-security) |
 | 2026-11-17 | L5 安全治理与工程落地 | **高风险决策的人机协同审批链路设计** | AI 伦理治理与合规审计链路：高风险决策中的人机协同审批与可解释性溯源设计 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/ethics-governance) |
 | 2026-11-16 | L2 本体与动作层 | **Ontology受控执行机制：AI只申请，平台才执行** |  | [GitHub 深度专题 (palantir-aip-study)](https://github.com/wwwweeia/palantir-aip-study/blob/main/05-ontology-engineering-patterns.md) |
@@ -31,7 +33,17 @@
 
 *（待后续日报解锁该层级模块拆解）*
 
-## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 1 篇）
+## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 2 篇）
+
+### 📌 [2026-11-18] Ontology 官方文档：核心概念与数字孪生架构
+- **原文来源**：[Palantir 官方产品文档 — Ontology 官方文档：核心概念与数字孪生架构](https://www.palantir.com/docs/foundry/ontology/overview)
+- **🗺️ 架构位置与上下游**：处于 Palantir 核心产品链路中，向上连接业务数据对象，向下支撑智能体与业务应用交互。
+- **💡 功能本质与通俗解读**：详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。
+- **🔧 产品功能与机制拆解**：
+  - 详解 Ontology 如何把底层数据集与流数据映射为业务层的 Object、Property、Link 与 Action。
+- **🔄 实际业务场景用法**：详见原文完整产品工作流说明。
+- **🎯 对自研 AIP 的参考价值**：
+  - ★ 建议对照原文梳理我方 AIP 对应模块的产品功能边界。
 
 ### 📌 [2026-11-16] Ontology受控执行机制：AI只申请，平台才执行
 - **原文来源**：[GitHub 深度专题 (palantir-aip-study) — Palantir Ontology 工程设计模式：对象、关系与 Action Types 建模实践](https://github.com/wwwweeia/palantir-aip-study/blob/main/05-ontology-engineering-patterns.md)
@@ -47,9 +59,23 @@
   - ★ 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - ★ 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 0 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 1 篇）
 
-*（待后续日报解锁该层级模块拆解）*
+### 📌 [2026-11-18] AIP Logic 块状思维链：把推理拆成可调试积木
+- **原文来源**：[Palantir 官方产品文档 — AIP Logic 官方文档：无代码编排大模型与本体工具链](https://www.palantir.com/docs/foundry/logic/overview)
+- **🗺️ 架构位置与上下游**：AIP Logic  sits 在 Ontology 之上的编排环：向上消费对象、属性、链接与已注册 Functions/LLM，把提示词、本体查询、计算逻辑编排成一个带输入输出类型的 Logic Function；向下被 Workshop 按钮、Automate 触发器、Chatbot 工具、OSDK 与其他 Logic 函数调用，中间结果交由 AIP Evals 评测。
+- **🔗 往期关联**：承接 11-16 的 Ontology 对象/关系建模实践：那篇定义「有什么对象和链接」，本篇讲「怎样用块把这些对象喂给模型并编排成可被调用的函数」，是建模到运行时的下一步递进。
+- **💡 功能本质与通俗解读**：一句话：AIP Logic 是「大模型推理的可视化流水线」，把一次 AI 判断拆成一串有输入输出类型的积木块，无代码拼起来就发布成一个可被调用的函数。普通 Agent 是「给模型一堆工具让它自己想」，过程藏在黑箱里，出错只能看日志猜；普通工作流引擎又完全不懂语义，只能搬数据。Logic 走中间路线：骨架是确定的（查询块取数、函数块算数、条件块分流），只在真正需要判断的那一块交给 LLM，且该块必须交出结构化结果。就像把「一篇作文」改写成「带小标题的填空表格」，每一格都能单独检查、单独重跑。
+- **🔧 产品功能与机制拆解**：
+  - 『Blocks 块类型与命名变量』：画布上拖拽不同职责的块——LLM 块（选模型、写提示词、挂工具、定输出结构）、Ontology 查询块（按条件搜对象、沿链接取关联对象）、Function 块（调已注册计算函数）、条件/循环块。每块输出是一个命名变量，下游块通过变量选择器引用，如 llm_result.risk_level 直接进条件分支，不用手写 JSON 解析。
+  - 『LLM 块的输出 Schema 约束』：LLM 块不是自由吐文本，配置时要声明返回类型：字符串、枚举、结构体、对象数组，甚至直接是 Ontology 对象引用。例如让模型输出 {risk_level: 枚举(高/中/低), reason: 文本, affected_orders: 订单对象列表}，类型不合规即报错，下游块拿到的是强类型数据而非一段待清洗的话。
+  - 『本体工具与单步调试面板』：LLM 块可挂 Ontology 查询工具，让模型自己决定搜哪类对象、沿哪条链接展开；调试时右侧面板逐块展示实际输入、工具调用参数与返回、模型输出、耗时与用量，可只重跑某一块并改提示词对比效果，把「思维链」变成可回放的执行轨迹。
+  - 『Staged writes 暂存写入』：模型或函数块产生的本体修改先落成暂存编辑集，不直接进本体。界面可预览这批改动的前后差异，交由后续校验块或人工确认后再统一提交，避免一次幻觉直接污染业务对象；这也是评测里能单独「评估本体编辑」的前提。
+  - 『发布为 Function 与多入口复用』：编排完成后声明函数输入参数（可含对象类型）与返回类型，发布带版本。同一个 Logic Function 可被 Workshop 按钮点击、Automate 定时/事件触发、Chatbot 当作工具、外部 API 调用，逻辑只写一遍，交互入口和自动化共用同一份可评测资产。
+- **🔄 实际业务场景用法**：以供应链延期处置为例：采购员在 Workshop 页面点「评估风险」按钮，或 Automate 每天定时触发同一个 Logic Function。查询块先按条件取出在途订单对象、沿链接拉到供应商与产能对象；LLM 块结合邮件文本与这些对象，调用本体查询工具补查历史交付记录，输出结构化的风险等级、理由与受影响订单列表；函数块算出缺口数量；条件块把高风险分支导向暂存写入，生成待确认的订单调整与预警对象；采购员在界面看差异后确认提交，结果回写本体并通知下游，整条链路的每块输入输出都留痕可复查。
+- **🎯 对自研 AIP 的参考价值**：
+  - ★ 【通用设计精髓与认知校准】常规直觉是「模型越强、越该放手让它自主规划」；Palantir 反着来：用确定性骨架包住不确定的模型，只在需要判断的块用 LLM，其余交给查询与函数。可观测性不是靠事后日志，而是靠编排结构本身天然分格，这点最该刷新我们的认知。
+  - ★ 【对标框架落位与起步取舍】该能力属 Agent 编排运行时，但强依赖本体底座提供对象查询与函数注册。起步别先做自主多轮 Agent，先做「块类型 + 强类型中间变量 + 单块重跑调试」三件套，并把本体查询做成一等公民块，比接十个工具更有价值。
 
 ## L4 交互应用与开发层 (Workshop / OSDK / Automate)（已沉淀 0 篇）
 
