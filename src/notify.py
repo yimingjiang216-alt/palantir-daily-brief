@@ -171,23 +171,19 @@ def send_feishu(items, date_str=None, unread_count=0):
     if not FEISHU_WEBHOOK:
         log.info("FEISHU_WEBHOOK 当前留空，跳过飞书推送（仅在日志打印今日洞察预览）")
         if items and items[0].get("daily_lead"):
-            print(f"\n📌 今日主线导读：\n  {items[0].get('daily_lead')}")
+            print(f"\n今日概览：{items[0].get('daily_lead')}")
         for idx, r in enumerate(items, 1):
+            arch_short = (r.get("arch_layer") or "").split(" (")[0].strip()
             print(f"\n{'=' * 66}")
-            print(f"【洞察 {idx} · {r.get('arch_layer','')} · {r.get('feature_tag')}】{r.get('title')}")
-            if r.get("arch_position"):
-                print(f"🗺️ 架构位置与上下游：{r.get('arch_position')}")
-            if r.get("related_history"):
-                print(f"🔗 关联脉络：{r.get('related_history')}")
-            print(f"💡 一、功能本质与通俗解读：\n  {r.get('core_concept')}")
-            print("🔧 二、产品功能与机制拆解：")
-            for m in r.get("product_mechanics", []):
-                print(f"  • {m}")
-            print(f"🔄 三、实际业务场景怎么用：\n  {r.get('scenario_usage')}")
-            print("🎯 四、对我们规划自研 AIP 的参考价值：")
-            for t in r.get("aip_inspiration", []):
-                print(f"  ★ {t}")
-            print(f"🔗 来源：{r.get('source')} | {r.get('url')}")
+            print(f"【{arch_short}】{r.get('title')}")
+            print(f"1. 解决什么问题\n{r.get('core_concept')}")
+            print("2. Palantir 怎么设计的")
+            for m in r.get("product_mechanics", [])[:3]:
+                print(f"• {m}")
+            print("3. 架构取舍与最小实现要素")
+            for t in r.get("aip_inspiration", [])[:2]:
+                print(f"• {t}")
+            print(f"原文：{r.get('source')} | {r.get('url')}")
         return False
 
     payload = _build_feishu_post(items, date_str, unread_count=unread_count)
