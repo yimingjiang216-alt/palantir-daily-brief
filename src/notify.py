@@ -104,7 +104,7 @@ def _build_feishu_post(
 
         if inspirations:
             content_lines.append([
-                {"tag": "text", "text": "3. 我们怎么参考"}
+                {"tag": "text", "text": "3. 架构取舍与最小实现要素"}
             ])
             for ins in inspirations[:2]:
                 content_lines.append([
@@ -273,9 +273,9 @@ def sync_to_feishu_bitable(items, date_str=None, pool=None):
             our_action = (sp.get("our_action") or "").strip()
 
             full_spec_card = (
-                f"🔧 【产品设计规格】\n{palantir_spec}\n\n"
-                f"🎯 【自研对标参考】\n{our_action}\n\n"
-                f"📖 来源：{it.get('title','')}（{it.get('source','')}）"
+                f"【产品设计规格】\n{palantir_spec}\n\n"
+                f"【最小实现要素】\n{our_action}\n\n"
+                f"来源：{it.get('title','')}（{it.get('source','')}）"
             )
             row_payload = {
                 "title": comp_name,
