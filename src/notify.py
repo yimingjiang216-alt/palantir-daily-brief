@@ -91,31 +91,25 @@ def _build_feishu_post(
             {"tag": "text", "text": f"【洞察 {idx} · {header_badge}】{title}"}
         ])
 
-        pos_and_concept = " ".join(x for x in [arch_pos, concept] if x)
-        if pos_and_concept:
+        if concept:
             content_lines.append([
-                {"tag": "text", "text": f"💡 定位与上下游：{pos_and_concept}"}
+                {"tag": "text", "text": f"💡 定位：{concept}"}
             ])
 
         if mechanics:
             content_lines.append([
-                {"tag": "text", "text": "🔧 核心机制拆解："}
+                {"tag": "text", "text": "🔧 核心机制："}
             ])
-            for m in mechanics:
+            for m in mechanics[:3]:
                 content_lines.append([
                     {"tag": "text", "text": f"  • {m}"}
                 ])
 
-        if scenario:
-            content_lines.append([
-                {"tag": "text", "text": f"🔄 业务流转实例：{scenario}"}
-            ])
-
         if inspirations:
             content_lines.append([
-                {"tag": "text", "text": "🎯 自研对标要点："}
+                {"tag": "text", "text": "🎯 自研对标："}
             ])
-            for ins in inspirations:
+            for ins in inspirations[:2]:
                 content_lines.append([
                     {"tag": "text", "text": f"  ★ {ins}"}
                 ])
