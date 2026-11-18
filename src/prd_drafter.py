@@ -166,18 +166,12 @@ PRD_PROMPT = """你是一位资深 AIP 产品经理。现在需要把一条来�
 【参考组件信息】
 - 组件名称：{component}
 - 架构层级：{arch_layer}
-- Palantir 产品设计规格：{spec}
-- 自研对标参考：{inspiration}
+- 产品设计规格：{spec}
+- 最小实现要素：{inspiration}
 - 规格详情：{detail}
 
-【自研 AIP 体系上下文】
-- AIP-FDS：数据与本体底座（对应 Palantir L1 数据管道 + L2 Ontology/动作层）
-- AIP-Agent：Agent 编排与运行时（对应 L3）
-- AIP-Stage：云边端部署与安全治理（对应 L4 交互 + L5 安全）
-- 当前处于 MVP 规划阶段，研发资源有限，需要明确「本轮做什么、本轮不做什么」。
-
 【输出要求】
-严格输出一个 JSON 对象，不要输出任何 JSON 之外的文字。字段如下：
+严格输出一个 JSON 对象，不要输出任何 JSON 之外的文字，不要臆测任何未在参考信息中出现的内部系统代号。字段如下：
 
 {{
   "prd_title": "PRD 标题（中文，面向研发评审，格式：对标 Palantir XXX 的 YYY 功能设计）",
