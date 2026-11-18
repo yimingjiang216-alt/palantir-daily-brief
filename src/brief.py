@@ -270,6 +270,7 @@ def call_llm(prompt, max_tokens=4000, max_retries=3):
         "model": LLM_MODEL,
         "max_tokens": max_tokens,
         "temperature": 0.3,
+        "enable_thinking": False,
         "messages": [{"role": "user", "content": prompt}],
     }
     headers = {
