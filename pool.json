@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-18 01:07:33",
+  "updated_at": "2026-11-19 01:06:03",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -539,8 +539,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false,
-      "fetch_fail_count": 2
+      "bitable_synced": false
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -721,7 +720,7 @@
       "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir到底是什么？四大核心平台全面技术解析 | Gotham Foundry Apollo AIP 一次讲清楚。简介：Palantir不只是一只热门股票——它是一个真正改变企业数据使用方式的技术平台。本视频从纯技术角度，深入解析Palantir的四大 ...",
       "score": 9,
       "feature_focus": "四大核心平台（Gotham, Foundry, Apollo, AIP）的技术架构全景解析，涵盖数据治理与 AI 融合路径",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -881,7 +880,7 @@
       "summary": "深度剖析 Palantir FDE 驻场工程模式如何与 Bootcamp 配合，在客户现场快速构建 Ontology 并将定制方案沉淀为标准产品模块。",
       "score": 9,
       "feature_focus": "Palantir FDE 驻场机制与 Bootcamp 协同推动 Ontology 快速构建及产品化闭环",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -894,7 +893,7 @@
       "summary": "针对国内企业自研 AIP 平台，分析如何借鉴 Palantir 的语义底座、Action 闭环与人机协同旋钮，避开盲目堆砌算力与纯文本 RAG 的误区。",
       "score": 9,
       "feature_focus": "国内企业自研 AIP 时对 Palantir 语义底座、Action 闭环与人机协同旋钮的架构借鉴策略",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1132,9 +1131,42 @@
       "summary": "说明如何用 TypeScript/Python 编写直接读取和修改 Ontology 对象的业务规则与小模型逻辑。",
       "score": 10,
       "feature_focus": "Functions on Objects：通过 TypeScript/Python 编写直接操作 Ontology 对象的业务规则与小模型逻辑",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-19",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Functions on Objects：业务逻辑绑定本体对象，统一计算入口",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "位于 Ontology 对象定义之上、Action Types 之下的计算中间层。Functions 直接以 Object Type 为入参和返回类型，既被 Action Types 作为写回后端调用，也被 Workshop/OSDK/AIP Logic 作为只读查询或派生计算调用。它是 Ontology 从静态数据模型升级为可执行业务语义层的关键连接件。",
+        "related_history": "前序已拆解 Ontology 核心概念（Object/Property/Link/Action 的静态建模）和 AIP Logic Blocks（无代码编排）。本篇聚焦 Functions 这一代码级计算层——它填补了 Action Types 声明式规则无法覆盖的复杂业务逻辑空白，同时为 AIP Logic 提供可调用的确定性计算工具。",
+        "core_concept": "常规做法把业务规则散落在各应用前端或独立微服务里，同一个对象的计算口径不一致，改一处漏三处。Palantir 把函数签名直接绑定到 Object Type，入参出参都是本体对象，所有消费方调同一份函数，口径天然统一。",
+        "product_mechanics": [
+          "开发者用 TypeScript 或 Python 编写函数，入参声明为具体 Object Type 或 ObjectSet，返回值也必须是 Ontology 类型或基础类型。平台在编译期校验类型签名是否匹配当前 Ontology Schema，不匹配直接报错拒绝发布。",
+          "函数发布后自动注册为 Function-backed Action 的后端实现。当 Action 被触发时，平台先执行 Submission Criteria 校验参数合法性，通过后将参数传入函数执行体，函数内部对 Object 的修改由平台统一收集并批量写回 Ontology，函数本身不持有数据库写权限。",
+          "函数支持 Batched Execution 模式：入参从单个 Object 扩展为 ObjectSet，平台自动将大批量对象分片传入函数实例并行执行，单次分片大小受 Scale and Property Limits 约束，超限则拆分为多批次顺序提交。"
+        ],
+        "scenario_usage": "业务用户在 Workshop 点击「重新计算信用评分」按钮 → 触发 Function-backed Action → 平台调用绑定的 TypeScript 函数读取客户对象及关联订单 → 计算结果写回客户对象的 creditScore 属性。",
+        "aip_inspiration": [
+          "取舍差异：放弃了函数自由访问任意数据库的灵活性，换来所有计算逻辑与 Ontology Schema 强绑定——Schema 变更时编译器自动标红所有受影响函数，不会出现运行时才发现字段缺失的事故。",
+          "最小实现要素：需定义 function_registry 表含 function_id、input_object_type_ids、output_type、runtime_lang、version 字段；编译期校验入参类型 ID 在当前 Ontology 中存在且属性路径可达；执行层拦截函数对外部存储的直接写操作，只允许通过平台 SDK 返回修改意图。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Function-backed Actions（函数驱动动作）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项：Action Type 的 backend 字段指向一个已发布的 Function，Function 签名中声明 inputObjectType、parameters schema、returnEdits 布尔开关。\n② 校验规则：Action 触发时先跑 Submission Criteria 表达式，不满足则拦截并返回用户可读错误；Function 编译期检查入参 Object Type 是否存在于当前 Ontology branch。\n③ 执行边界：函数体内通过 OntologyEdit API 声明修改意图，平台收集全部 edits 后原子写回；函数抛异常则整批 edits 丢弃，对象状态不变。",
+            "our_action": "• 适用痛点：Action 的声明式规则无法表达多步条件分支、跨对象聚合计算等复杂写入逻辑时需要此组件。\n• 最小实现要素：建 action_function_binding 表含 action_type_id、function_id、param_mapping_json；实现 edit_collector 中间件拦截函数内所有写操作并缓存为 pending_edits 列表；提交时做事务性批量写入。\n• 局限与代价：函数必须用平台指定语言和 SDK 编写，不能引入任意第三方库；调试依赖平台沙箱环境，本地复现成本高。"
+          },
+          {
+            "component_name": "Batched Execution（批量分片执行）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项：Function 入参类型声明为 ObjectSet 而非单 Object；Action 配置中开启 batched_execution 开关；平台侧设定 max_objects_per_batch 上限值。\n② 校验规则：提交的 ObjectSet 总量超过单次上限时，平台按 max_objects_per_batch 自动切分；每个分片独立校验 Submission Criteria，任一分片校验失败则该分片跳过并记录错误，不阻塞其余分片。\n③ 执行边界：各分片函数实例并行执行，每个分片的 edits 独立原子提交；全部分片完成后汇总成功/失败计数返回调用方。",
+            "our_action": "• 适用痛点：需要对数千甚至数万对象执行同一业务规则（如批量重算指标、批量状态迁移）时，逐条调用延迟不可接受。\n• 最小实现要素：在 function_executor 服务中增加 batch_splitter 模块，读取 max_batch_size 配置；为每个分片生成独立 execution_context 含 shard_id、object_ids、retry_count；结果表记录每分片 status 和 error_msg。\n• 局限与代价：分片间无法共享中间状态，跨对象依赖计算需提前在单函数内通过 ObjectSet 查询解决；并行度受平台资源配额限制。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/logic/overview": {
       "url": "https://www.palantir.com/docs/foundry/logic/overview",
@@ -1353,7 +1385,7 @@
       "summary": "YouTube 频道 Palantir Developers 视频讲解：Product Launch: Eval-Driven Automation in AIP | DevCon 2。简介：Watch as Palantir's Forward Deployed Engineers Matt Hawes and Austin Czarnecki launch the latest AIP capabilities for ...",
       "score": 10,
       "feature_focus": "Eval-Driven Automation 在 AIP 中的落地机制：基于评估结果驱动自动化决策与执行的闭环逻辑",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1633,8 +1665,7 @@
       "feature_focus": "Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 1
+      "sent_at": ""
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5",
@@ -1908,9 +1939,42 @@
       "summary": "You must own your evals to own your alpha. What makes your organization unique can't be protected by benchmarks built for someone else. Ontology Scenarios and Snapshots in Palantir AIP anchor your agents to your enterprise data, letting you freeze any real-world moment, replay it, or stage a what-if to measure performance. Evals then give every agent its own benchmark, on any model. 00:00 49 522 104K",
       "score": 10,
       "feature_focus": "Ontology Scenarios 与 Snapshots 功能：通过冻结真实业务时刻实现可复现、可评估、可对比的 Agent 性能评测体系",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-19",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Ontology Snapshots：冻结业务时刻做Agent评测",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于本体对象存储之上、Agent运行时之下。Snapshot把某一时刻的对象集合与属性值固化为只读副本，Scenario在该副本上叠加假设性修改，两者共同构成Evals的输入数据源。Agent在评测模式下读取的是Snapshot而非生产本体，输出结果写入评测记录表而非生产Action。",
+        "related_history": "此前推送的Ontology核心概念讲的是Object/Property/Link的活态建模；本篇讲的是把这些活态对象在某个时间点冻住变成测试夹具。Functions on Objects解决的是计算逻辑绑定问题，本篇解决的是计算逻辑跑在什么数据上做回归验证的问题。两者互补但不重叠。",
+        "core_concept": "常规做法拿公开benchmark或手工编造case测Agent，测不出它在自家业务数据上的真实表现。Palantir把生产环境某一刻的本体状态整体快照下来当测试输入，让每个Agent用自己的真实业务场景做基准，换模型时能直接对比同一份输入下的输出差异。",
+        "product_mechanics": [
+          "创建Snapshot时指定时间戳与对象类型范围，系统将该时刻所有匹配对象的属性值和关联关系序列化为只读副本，后续生产数据变更不影响已冻结副本的内容。",
+          "创建Scenario时选择一个已有Snapshot作为基线，用户可在其上修改指定对象的属性值模拟假设条件，系统将修改记录为增量补丁而非覆盖原始快照，评测结束后补丁可丢弃或保留为新版本。",
+          "运行Eval时选择目标Agent、绑定一个Snapshot或Scenario作为输入上下文、指定评分函数，系统用该上下文替代生产本体喂给Agent执行，将Agent输出与预期结果逐字段比对后写入评测得分表。"
+        ],
+        "scenario_usage": "产品经理发现线上Agent处理某类工单出错 → 从该工单发生时刻创建Snapshot → 修改prompt或切换模型后对同一Snapshot重跑Eval → 对比两次得分决定是否上线新版本。",
+        "aip_inspiration": [
+          "省掉了人工构造测试数据集的成本，但限制了评测只能基于已发生过的真实业务状态，无法凭空生成从未出现过的极端边界case，需要额外补充合成数据机制。",
+          "至少需要三张表：snapshot_meta（snapshot_id, created_at, object_type_filter, source_timestamp）、snapshot_objects（snapshot_id, object_id, properties_json, links_json）、eval_runs（run_id, snapshot_id, scenario_patch_id, agent_version, model_id, score_json, created_at）。Scenario补丁单独存一张scenario_patches表记录object_id与field-level diff。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Ontology Snapshots（本体时刻冻结）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项/入参：source_timestamp（精确到秒的时间戳）、object_type_ids（要冻结的对象类型列表）、scope_filter（可选的属性过滤条件缩小范围）。\n② 校验与拦截规则：source_timestamp不得晚于当前时间；object_type_ids必须在本体注册表中存在；若目标时刻的对象已被物理删除则报错并中止。\n③ 执行与异常边界：通过后将匹配对象的全量属性与Link序列化写入只读存储，生成snapshot_id返回；写入过程中任一对象序列化失败则整批回滚，不产生半成品快照。",
+            "our_action": "• 适用痛点：Agent迭代后无法复现历史业务现场做回归测试，每次都要手动拼mock数据。\n• 最小实现要素：建snapshot_meta表和snapshot_objects表，写一个create_snapshot接口接收timestamp和object_type列表，内部遍历本体存储按时间戳查询并批量写入只读副本。\n• 局限与代价：快照占用额外存储空间，大对象集合冻结耗时长；依赖本体存储支持按时间戳回溯查询，若底层无时序版本能力则需先补建。"
+          },
+          {
+            "component_name": "Ontology Scenarios（假设场景沙箱）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项/入参：base_snapshot_id（必填，指向一个已存在的Snapshot）、patches数组（每条含object_id、field_name、new_value）、scenario_label（人类可读标签）。\n② 校验与拦截规则：base_snapshot_id必须存在且状态为ready；patch中的object_id必须在基线快照范围内；field_name必须是该对象类型的合法属性；new_value类型必须匹配属性Schema，否则拒绝该条patch。\n③ 执行与异常边界：校验通过后生成scenario_id，patches以增量形式独立存储不修改基线；Agent读取时系统在内存中合并基线与补丁返回虚拟视图；评测结束后可选择丢弃补丁或将合并结果持久化为新Snapshot。",
+            "our_action": "• 适用痛点：想测试Agent在库存翻倍或客户等级变更等假设条件下的决策质量，但不敢动生产数据。\n• 最小实现要素：建scenario_patches表（scenario_id, base_snapshot_id, object_id, field_name, new_value），写apply_scenario接口做字段级Schema校验，读接口返回merge后的虚拟对象视图。\n• 局限与代价：只能修改已有对象的已有属性，不能凭空新增对象或新增Link；复杂多步因果链假设需要手动编排多个patch的执行顺序。"
+          }
+        ]
+      }
     },
     "https://x.com/palantirvision/status/1943099585569620197": {
       "url": "https://x.com/palantirvision/status/1943099585569620197",
@@ -2621,7 +2685,7 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "AIP Agent Studio 的完整构建流程：从配置到发布的端到端开发实践",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-17",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -2858,6 +2922,178 @@
       "feature_focus": "Forward Deployed Engineer(Delta)岗位起源与职业热潮叙事，非产品功能拆解",
       "status": "rejected",
       "added_at": "2026-11-18",
+      "sent_at": ""
+    },
+    "https://x.com/ssankar/status/2122881867817030081": {
+      "url": "https://x.com/ssankar/status/2122881867817030081",
+      "raw_url": "",
+      "title": "@ssankar 产品洞察：There is a reason we made Apollo. The only way to responsible manage upgrade delivery as AI inf...",
+      "source": "X @ssankar (Palantir CTO产品思考)",
+      "summary": "There is a reason we made Apollo. The only way to responsible manage upgrade delivery as AI inflects code velocity. NEWS: Wall Street execs and NSA have told Congress that outages were caused by patching vulnerabilities identified by AI models, sources say AI did not cause outages but found so many issues that the rush to fix them before an attack overwhelmed systems 71 354 20K",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "Apollo 持续交付/升级编排模块：在 AI 加速代码产出背景下如何可控地管理补丁与版本发布",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=-502LXRsNSI": {
+      "url": "https://www.youtube.com/watch?v=-502LXRsNSI",
+      "raw_url": "",
+      "title": "[视频 · AI科技解码🧐] Palantir最大护城河曝光！FDE模式硬刚大模型，企业级AI真正决胜点！科技巨头抢疯了！",
+      "source": "YouTube 中文科普与架构拆解 (AI科技解码🧐)",
+      "summary": "YouTube 频道 AI科技解码🧐 视频讲解：Palantir最大护城河曝光！FDE模式硬刚大模型，企业级AI真正决胜点！科技巨头抢疯了！。简介：Palantir（PLTR）真正的护城河究竟是什么？ 随着AI竞争从大模型转向企业级应用，Forward Deployed Engineer（FDE，前线部署 ...",
+      "full_text": "",
+      "score": 5,
+      "feature_focus": "FDE（前线部署工程师）交付模式作为竞争护城河的商业叙事，无具体产品功能拆解",
+      "status": "rejected",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=p62_3bgaJfQ": {
+      "url": "https://www.youtube.com/watch?v=p62_3bgaJfQ",
+      "raw_url": "",
+      "title": "[视频 · 跟贝贝一起学习] Palantir AIP 教程：搭建操作 AI Agent — Part 1（第12课）",
+      "source": "YouTube 中文科普与架构拆解 (跟贝贝一起学习)",
+      "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir AIP 教程：搭建操作 AI Agent — Part 1（第12课）。简介：第12课Part 1：操作Agent——能做事的AI 把只读Agent 升级为操作Agent。Part 1 讲操作Agent 的三大支柱：Ontology Context、 ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Agent Studio 从只读 Agent 升级为操作型 Agent：Ontology Context、工具/Action 调用等三大支柱的搭建实操",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=LKXvbuxiNyA": {
+      "url": "https://www.youtube.com/watch?v=LKXvbuxiNyA",
+      "raw_url": "",
+      "title": "[视频 · 铜锣湾白板报] 什么是 Ontology？给 AI 的“世界说明书”：从原理到 Palantir 与 AWS 实践",
+      "source": "YouTube 中文科普与架构拆解 (铜锣湾白板报)",
+      "summary": "YouTube 频道 铜锣湾白板报 视频讲解：什么是 Ontology？给 AI 的“世界说明书”：从原理到 Palantir 与 AWS 实践。简介：Palantir、微软、Snowflake、AWS 都在讲的Ontology（本体）到底是什么？为什么AI 越强，越需要它？ 这期从一道AI 答错的题讲 ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology 本体概念本质：作为 AI 的语义世界模型，Palantir 与 AWS 的本体建模实践对比",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=LNurFCPRzMk": {
+      "url": "https://www.youtube.com/watch?v=LNurFCPRzMk",
+      "raw_url": "",
+      "title": "[视频 · AsedaCodes] Exploring Palantir Foundry AIP Evals",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (AsedaCodes)",
+      "summary": "YouTube 频道 AsedaCodes 视频讲解：Exploring Palantir Foundry AIP Evals。简介：",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Foundry AIP Evals 评测模块的功能探索与界面走查",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=iMF6cnU3o3o": {
+      "url": "https://www.youtube.com/watch?v=iMF6cnU3o3o",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Chad & Colton | Operationalizing AI with Palantir AIP Evals",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Chad & Colton | Operationalizing AI with Palantir AIP Evals。简介：How do you take Generative AI from the lab to the heart of your enterprise? Join Chad Wahlquist and Colton Rusch as they ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "AIP Evals 官方讲解：用评估体系把生成式 AI 从实验推进到企业生产运营",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=79x-Xf0VZ4Y": {
+      "url": "https://www.youtube.com/watch?v=79x-Xf0VZ4Y",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] AIP Evals Tutorial: Test & Score LLM Functions in Palantir",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：AIP Evals Tutorial: Test & Score LLM Functions in Palantir。简介：Learn how to test AI functions with Palantir AIP Evals — put a real number on your LLM agents, chatbots, and extractors instead of ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Evals 教程：对 LLM Function/Agent/抽取器构建测试集并量化打分的完整流程",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=1F9tSbH1nic": {
+      "url": "https://www.youtube.com/watch?v=1F9tSbH1nic",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Introduction to Evaluations in AIP Logic",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Introduction to Evaluations in AIP Logic。简介：In this video, Gena demonstrates how to use the Evaluation Suite in AIP Logic. *About Ontologize* We build teams of Palantir ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Logic 内置 Evaluation Suite 的使用方式：逻辑函数的评估与回归验证",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
+      "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
+      "raw_url": "",
+      "title": "[视频 · The Foundry Engineer ] 🔥 All 63 Palantir Foundry Applications Explained in 1 Video!#FoundryTutorial #Foundrycourse",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (The Foundry Engineer )",
+      "summary": "YouTube 频道 The Foundry Engineer  视频讲解：🔥 All 63 Palantir Foundry Applications Explained in 1 Video!#FoundryTutorial #Foundrycourse。简介：Explore 63 powerful Palantir Foundry applications in one video! From data integration to AI & ML, discover how Foundry connects ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Foundry 全量 63 个应用模块的功能全景梳理（数据集成到 AI/ML 的模块地图）",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=hXSx9uG0R4k": {
+      "url": "https://www.youtube.com/watch?v=hXSx9uG0R4k",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Palantir AIP Evals | Feedback to Fix",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Palantir AIP Evals | Feedback to Fix。简介：Chad Wahlquist and Colton Rusch show how Palantir's AIP Evals power high-fidelity feedback loops with AI agents, enabling ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Evals 的 Feedback-to-Fix 闭环：高保真反馈回路驱动 AI Agent 迭代修复",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=pGBkkZFqLn4": {
+      "url": "https://www.youtube.com/watch?v=pGBkkZFqLn4",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Chad & Arnav | Privacy & Security with Palantir AIP",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Chad & Arnav | Privacy & Security with Palantir AIP。简介：You can make your organization more effective without compromising on security and privacy through the use of technologies like ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "AIP 的隐私与安全治理机制：权限、数据保护与合规控制下的 AI 使用",
+      "status": "unread",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.bearlypolitics.co.uk/p/deep-dive-palantir-has-an-end-date": {
+      "url": "https://www.bearlypolitics.co.uk/p/deep-dive-palantir-has-an-end-date",
+      "raw_url": "",
+      "title": "[Substack] Bearly Politics Deep Dive: Palantir Has an End Date Years of pressure got us an end date. Now we have to make",
+      "source": "Substack 深度专栏",
+      "summary": "Bearly Politics Deep Dive: Palantir Has an End Date Years of pressure got us an end date. Now we have to make it stick. On Monday, the 16th of November, there was some good news, or rather I should say, even more good news.",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "NHS 合同终止的政治施压与社会运动报道，无产品功能内容",
+      "status": "rejected",
+      "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://citizensreunited.substack.com/p/palantir-may-be-out-but-another-firm": {
+      "url": "https://citizensreunited.substack.com/p/palantir-may-be-out-but-another-firm",
+      "raw_url": "",
+      "title": "[Substack] The Citizens Palantir may be out, but another firm co-founded by its former employees is in Even as government",
+      "source": "Substack 深度专栏",
+      "summary": "The Citizens Palantir may be out, but another firm co-founded by its former employees is in Even as government says Palantir’s NHS contract will end in 2029, it has signed a £10.8 million deal with ElevenLabs, a company co-founded by former Palantir employees Welcome back to The Eye – our weekly guide to the shifting relationship between Big Tech and the state.",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "政府与 Big Tech 采购合同变动的政治评论（Palantir/ElevenLabs），无产品功能内容",
+      "status": "rejected",
+      "added_at": "2026-11-19",
       "sent_at": ""
     }
   }
