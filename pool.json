@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-19 01:06:03",
+  "updated_at": "2026-11-20 01:05:55",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -1217,9 +1217,42 @@
       "summary": "介绍如何在 Agent Studio 中为 Agent 配置 Ontology 上下文检索、Action 工具调用权限与人工确认护栏。",
       "score": 9,
       "feature_focus": "Agent Studio 中基于 Ontology 上下文检索与 Action 工具调用权限配置的可解释性 Agent 构建机制",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-20",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Chatbot Studio：检索上下文与工具白名单构建可溯源Agent",
+        "feature_tag": "AIP Logic与Agent编排",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 LLM 推理层与 Ontology 数据层之间的 Agent 配置中枢。向下通过 Retrieval Context 绑定 Ontology 对象与非结构化文档作为知识源，向上通过 Tools 注册可调用的 Action/Function 白名单，横向通过 Application State 注入当前页面业务实体，形成完整的 Agent 运行时上下文组装链路。",
+        "related_history": "与已推送的 AIP Logic（无代码块状编排）互补：Logic 侧重单次确定性流程编排，Chatbot Studio 侧重多轮对话场景下的动态上下文检索与工具选择。与已推送的 Markings 权限机制衔接：Retrieval Context 检索结果受 Markings 过滤后才进入 LLM 上下文窗口。",
+        "core_concept": "常规做法把全量知识库塞进 prompt 导致幻觉且无法溯源，或让 LLM 自由调用任意 API 导致越权写入。Chatbot Studio 用显式注册的 Context Types 限定检索范围并强制生成 Citation，用 Tools 白名单限定可执行动作集合，未注册的工具直接拦截不传给模型。",
+        "product_mechanics": [
+          "Retrieval Context 配置时指定 context_type 枚举（Ontology object set、document media set、custom function），系统按类型走不同检索管道；每条返回片段自动附带 source_rid 和 chunk_offset，前端渲染为可点击 Citation 链接回原始对象或文档段落。",
+          "Tools 注册面板要求逐条声明 tool_name、description、input_schema（JSON Schema）及绑定的 Action Type RID 或 Function RID；LLM 输出 tool_call 时系统校验函数签名匹配且当前用户对该 Action 有执行权限，校验失败返回结构化错误而非静默跳过。",
+          "Application State 允许将 Workshop 页面当前选中的 Object RID 列表注入 session 变量，Agent 首轮 prompt 自动拼接这些对象的属性摘要，省去用户手动描述业务实体的步骤。"
+        ],
+        "scenario_usage": "运维工程师在 Workshop 设备详情页唤起 Chatbot → 系统自动注入当前设备 Object 属性至 Application State → Agent 检索关联维修工单文档生成带 Citation 的诊断建议 → 用户确认后 Agent 调用注册的 create_work_order Action 写回新工单。",
+        "aip_inspiration": [
+          "取舍差异：放弃了让 LLM 自主发现可用工具的灵活性，换取每次 tool_call 都经过签名校验和权限拦截的确定性；放弃了全库 RAG 的召回广度，换取每条回答都能精确引用到具体对象或文档段落的溯源能力。",
+          "最小实现要素：需建 agent_config 表含 retrieval_sources（type/source_id/filter_expr）、registered_tools（name/schema/bound_action_id/required_permission）、app_state_bindings（variable_name/object_type_rid）三组字段；检索接口返回必须携带 source_id + offset；tool_call 网关需做 schema validate + permission check 双重拦截。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Retrieval Context & Citations（检索上下文与引用溯源）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：context_type 枚举（ontology_object_set / media_set / custom_function）、source_rid、filter_expression、max_chunks、embedding_model_id；\n② 校验规则：source_rid 必须存在且当前用户有读权限，filter_expression 语法校验通过后编译为 Ontology query；检索结果为空时返回空数组而非报错，但禁止 LLM 在无检索结果时编造引用；\n③ 执行边界：每个 chunk 携带 source_rid + chunk_offset + relevance_score，前端 Citation 组件根据 source_rid 路由到 Object View 或 Document Viewer 对应段落；检索超时则降级返回已缓存的上次结果并标记 stale。",
+            "our_action": "• 适用痛点：Agent 回答缺乏出处导致业务用户不信任，或 RAG 召回噪声过大污染推理；\n• 最小实现要素：建 retrieval_source 表（id, type, target_id, filter_json, chunk_limit），检索接口统一返回 {text, source_id, offset, score}，前端按 source_id 跳转原始资源；\n• 局限与代价：每条回答强制绑定引用增加了检索延迟约 200-500ms，且要求所有知识源预先完成分块索引，无法即时接入未索引的新文档。"
+          },
+          {
+            "component_name": "Tools Registry（Agent工具白名单注册与调用拦截）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：tool_name、natural_language_description、input_parameters（JSON Schema）、bound_resource_rid（Action Type 或 Function）、execution_mode（sync/async）、requires_confirmation（bool）；\n② 校验规则：LLM 输出的 tool_call JSON 必须通过 input_parameters schema validation；bound_resource_rid 对应的 Action/Function 必须处于 published 状态；当前 session user 对该资源有 execute 权限；三项任一不满足则返回 tool_error 给 LLM 重新规划；\n③ 执行边界：requires_confirmation=true 时暂停执行等待用户点击确认；执行失败返回结构化 error_code + message 供 LLM 决定是否重试或换路径；单次 session 内同一 tool 连续失败 3 次后从可用列表临时移除。",
+            "our_action": "• 适用痛点：防止 LLM 幻觉调用不存在的接口或越权执行写操作，同时让业务管理员无需改代码即可增减 Agent 能力；\n• 最小实现要素：建 tool_registry 表（name, description, param_schema_json, bound_api_id, confirm_required, max_retries），网关层做 schema validate → permission check → execute 三步串行；\n• 局限与代价：每新增一个业务能力需管理员手动注册并编写 description，无法像纯 function-calling 方案那样让模型自动发现 OpenAPI spec 中的所有端点。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/workshop/overview": {
       "url": "https://www.palantir.com/docs/foundry/workshop/overview",
@@ -1629,7 +1662,8 @@
       "feature_focus": "Forward Deployed Engineers（FDE）模式：解释 Palantir 如何通过嵌入式工程团队推动 AI Agent 在企业中的落地与规模化",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@eric_1885/who-has-the-stones-5615f37de98b?source=rss------palantir-5": {
       "url": "https://medium.com/@eric_1885/who-has-the-stones-5615f37de98b?source=rss------palantir-5",
@@ -1653,7 +1687,8 @@
       "feature_focus": "Octopus 模型：系统性描述 Palantir AIP 如何通过多阶段、模块化方式加速企业级数据迁移与系统重构",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5",
@@ -1677,7 +1712,8 @@
       "feature_focus": "AIPCon 8 制造业/保险/建筑行业演示：还原 AIP 在真实业务场景中构建可解释、可追踪的 AI 工作流的完整闭环",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5",
@@ -1687,9 +1723,41 @@
       "summary": "AIPCon 8 Demo Showcase — Part One Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "AIPCon 8 企业 AI 未来愿景演示：揭示 AIP 如何通过统一语义空间（Unified Namespace）实现跨系统智能协同",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-20",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Guideline Evaluation：自动校验医疗必要性并生成申诉信",
+        "feature_tag": "行业工作流与落地范式",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 L3 Agent 编排层，消费 L2 Ontology 中的患者病历对象与保险规则对象，输出结构化诊断编码与申诉文档写回业务系统",
+        "related_history": "与已推送的 AIP Logic 块状编排互补：本篇聚焦该编排在医疗 RCM 场景的具体实例化——如何将非结构化病历、CPT/ICD-10 编码体系与动态保险规则串联为端到端自动化流水线",
+        "core_concept": "常规做法靠人工逐条比对病历与保险公司报销指南，漏诊编码导致拒赔。Palantir 把病历字段、CPT 码、保险规则全部映射进 Ontology 对象，Agent 自动交叉校验后直接输出合规 ICD-10 编码和申诉信草稿，拦截不满足报销条件的诊断项。",
+        "product_mechanics": [
+          "入参为患者 chart 对象（含 CPT 码列表、住院账户 ID、临床记录文本）→ 系统拉取对应 payor 的动态 guideline 规则集 → 逐条匹配临床证据是否满足 medical necessity 阈值，不满足则标记缺失证据字段",
+          "当所有必需临床证据字段通过校验时 → Agent 从候选 ICD-10 枚举中选取报销最优编码组合 → 调用文档生成函数拼装 appeal letter 草稿，写回患者账户对象供人工终审"
+        ],
+        "scenario_usage": "RCM 专员选中待审病例 → 触发 Guideline Evaluation workflow → 系统读取病历与保险规则、输出合规编码及申诉信草稿 → 写回病例对象等待人工确认提交",
+        "aip_inspiration": [
+          "省掉了人工在多个系统间切换查编码、查指南、写信的操作链；限制是保险规则必须预先结构化为可查询对象，不能依赖 PDF 原文模糊匹配",
+          "最小要素：patient_chart 表（cpt_codes[]、account_id、clinical_notes）、payor_guideline 表（required_evidence_fields[]、icd10_candidates[]、necessity_threshold）、appeal_draft 表（generated_text、status 枚举 draft/approved/submitted）；校验规则：每条 required_evidence_field 必须在 clinical_notes 中有对应提取结果才放行"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Guideline Evaluation（保险指南自动校验工作流）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项/入参：patient chart 对象引用、CPT code 列表、hospital account ID、目标 payor guideline 版本标识；\n② 校验与拦截规则：逐条检查 guideline 要求的 evidence field 是否在病历中存在有效值，任一必填证据缺失则拦截该诊断编码并返回缺失清单；\n③ 执行与异常边界：全部证据通过后从 ICD-10 候选集中选最优编码组合，调用 LLM 生成 appeal letter 草稿写入 chart 对象；生成失败时保留编码结果但标记 letter_status=failed 供重试。",
+            "our_action": "• 适用痛点：人工比对病历与保险报销条件耗时长、编码遗漏导致拒赔率高；\n• 最小实现要素：建 patient_chart 表含 cpt_codes 数组与 clinical_notes 文本字段，建 payor_guideline 表含 required_evidence_fields 数组与 icd10_candidates 枚举，写一个校验接口逐字段匹配证据覆盖率；\n• 局限与代价：保险规则必须提前结构化为字段级 schema，无法处理纯自然语言描述的模糊条款，规则更新需同步维护 guideline 表版本。"
+          },
+          {
+            "component_name": "RaceOS Session Ingestion（赛后数据即时融合管线）",
+            "arch_layer": "L1 数据接入与管道层 (Data Connection / Pipeline Builder)",
+            "palantir_spec": "① 配置项/入参：session_id、传感器通道列表（采样频率 10~1000Hz）、driver_radio 音频文件路径、setup_config 快照 ID、历史 lap_timing 数据集引用；\n② 校验与拦截规则：传感器通道时间戳对齐校验，缺失超过阈值的通道标记 anomaly 但不阻塞整体入库；driver_radio 转写置信度低于阈值时标记待人工复核；\n③ 执行与异常边界：校验通过后批量写入 session telemetry 对象并关联 setup_config 与 driver_feedback 对象，触发下游预测模型推理；单通道写入失败时隔离该通道数据、其余正常落库。",
+            "our_action": "• 适用痛点：高频多源异构数据（时序遥测+语音+结构化配置）需在极短窗口内完成清洗融合供决策使用；\n• 最小实现要素：建 session_telemetry 表含 channel_id/timestamp/value 三列，建 driver_feedback 表含 transcript_text/confidence_score/session_id，写一个 ingestion pipeline 按 session_id 聚合多源数据并做时间戳对齐；\n• 局限与代价：要求所有数据源能在分钟级内可达（网络或本地缓存），离线场景需预置边缘采集节点；音频转写质量依赖外部 ASR 服务精度。"
+          }
+        ]
+      }
     },
     "https://blog.palantir.com/turning-conversation-into-action-c6bc4ed8c8be?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/turning-conversation-into-action-c6bc4ed8c8be?source=rss------palantir_aip-5",
@@ -1701,7 +1769,8 @@
       "feature_focus": "CSE（Conversational Systems Engine）#2：将自然语言对话转化为可执行操作的 AI Agent 架构与企业集成机制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/a-better-conversation-palantir-cse-1-8c6fb00ba5be?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/a-better-conversation-palantir-cse-1-8c6fb00ba5be?source=rss------palantir_aip-5",
@@ -2269,9 +2338,42 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "OSDK 将 Ontology 对象查询、Action 触发与 AI 函数封装为外部应用可调用的标准 SDK",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-20",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "OSDK：本体Schema编译为类型安全SDK供外部应用调用",
+        "feature_tag": "Workshop与OSDK应用",
+        "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+        "arch_position": "位于Ontology语义层与外部前端/后端应用之间的开发者接口层，将平台内部的对象查询、Action写回、Function调用封装为多语言强类型SDK包，是AIP能力向企业自有系统输出的标准出口。",
+        "related_history": "此前已拆解Ontology对象建模(L2)、Functions on Objects计算逻辑(L2)、AIP Logic编排(L3)。本篇聚焦这些能力如何通过OSDK打包输出到平台外部应用，补齐从平台内闭环到平台外集成的最后一公里。",
+        "core_concept": "常规做法让外部应用直接拼REST请求访问业务数据，字段名拼错或类型不匹配只有运行时才报错，且每个应用各自维护一套鉴权和序列化逻辑。OSDK在编译期把Ontology Schema生成强类型客户端，字段不存在或类型错误直接编译失败，鉴权统一收敛到SDK内置OAuth流程。",
+        "product_mechanics": [
+          "机制点1：开发者在Developer Console注册应用并勾选所需Object Types和Action Types → 平台按勾选范围生成对应语言的SDK包(Java/Python/TypeScript) → SDK内每个Object Type映射为一个带完整属性类型的类，未勾选的类型不出现在SDK中，编译期即不可见",
+          "机制点2：TypeScript OSDK提供WebSocket订阅接口，入参为Object Type标识与过滤条件 → 当被订阅对象属性发生变更时平台推送增量事件 → 客户端回调函数接收变更后的对象快照，无需轮询；连接断开后SDK自动重连并从断点续订",
+          "机制点3：OSDK调用Action时入参必须匹配Action Type定义的参数Schema → SDK在本地做类型校验，缺必填字段或枚举值越界直接抛编译错误或运行时TypeError → 校验通过后请求发往平台，平台再执行权限检查与业务规则校验，双层拦截"
+        ],
+        "scenario_usage": "外部React应用通过TypeScript OSDK查询工单对象列表 → 用户点击审批按钮触发approve Action → SDK将参数序列化并提交平台 → 平台校验权限后写回工单状态字段并通过WebSocket推送变更给所有订阅客户端",
+        "aip_inspiration": [
+          "取舍差异：放弃了通用REST API的灵活性，外部应用只能调用注册时勾选的Object Types和Actions，无法绕过Schema约束自由拼查询；换来的是编译期类型安全和统一的鉴权收敛，省掉每个应用自建OAuth和序列化层的重复工作",
+          "最小实现要素：需定义应用注册表(app_id, allowed_object_types[], allowed_action_types[])、代码生成器读取Ontology Schema输出强类型客户端、SDK内置OAuth token刷新逻辑、Action调用前本地参数校验器(必填检查+枚举白名单)"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "WebSocket Subscriptions（本体变更实时推送）",
+            "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+            "palantir_spec": "① 配置项/入参：订阅时指定object_type_id、property_filter(可选属性过滤条件)、subscription_id用于断点续订；\n② 校验与拦截规则：订阅的object_type必须在应用注册的allowed_object_types范围内，否则返回403；filter表达式语法不合法返回400；\n③ 执行与异常边界：连接建立后平台监听对象写回事件，匹配filter后推送变更快照；WebSocket断开时SDK缓存最后收到的event_sequence，重连时携带该sequence从断点续订，避免丢事件。",
+            "our_action": "• 适用痛点：外部应用需要实时感知业务对象状态变更，轮询方案延迟高且浪费带宽；\n• 最小实现要素：建subscription_registry表(subscription_id, app_id, object_type, filter_expr, last_event_seq)，写一个事件分发服务监听对象写回消息队列并按filter匹配推送，客户端SDK封装自动重连与seq续订逻辑；\n• 局限与代价：需维护长连接集群和事件序列存储，水平扩展时需处理连接亲和性；filter表达能力受限于预定义语法，不支持任意SQL级复杂过滤。"
+          },
+          {
+            "component_name": "Ontology MCP（本体能力MCP协议暴露）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项/入参：在Developer Console为应用开启Ontology MCP开关，配置mcp_tools列表声明哪些Object查询和Action作为MCP tool暴露，每个tool定义name、description、input_schema(JSON Schema)；\n② 校验与拦截规则：外部Agent发起tool_call时，平台校验tool name是否在已注册列表内、入参是否满足input_schema，不满足直接返回error；同时校验调用者OAuth scope是否覆盖该tool绑定的object_type权限；\n③ 执行与异常边界：校验通过后平台将tool_call转译为对应的Ontology查询或Action执行，结果按MCP协议格式返回；Action执行失败时返回结构化error含错误码与描述，不执行部分写入。",
+            "our_action": "• 适用痛点：需要让第三方LLM Agent以标准协议调用平台业务能力，而非逐个对接私有API；\n• 最小实现要素：建mcp_tool_registry表(tool_name, description, input_json_schema, bound_object_type, bound_action_type, required_scopes[])，实现MCP协议endpoint接收tool_call并路由到内部查询/写回服务，入参用JSON Schema validator校验；\n• 局限与代价：MCP协议仍在演进，tool粒度需人工设计，过粗则Agent难以精确调用，过细则tool数量爆炸影响LLM选择准确率；依赖外部Agent正确实现MCP客户端规范。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip-evals/overview": {
       "url": "https://www.palantir.com/docs/foundry/aip-evals/overview",
@@ -3014,7 +3116,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=1F9tSbH1nic": {
       "url": "https://www.youtube.com/watch?v=1F9tSbH1nic",
@@ -3028,7 +3130,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -3055,7 +3157,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=pGBkkZFqLn4": {
       "url": "https://www.youtube.com/watch?v=pGBkkZFqLn4",
@@ -3094,6 +3196,149 @@
       "feature_focus": "政府与 Big Tech 采购合同变动的政治评论（Palantir/ElevenLabs），无产品功能内容",
       "status": "rejected",
       "added_at": "2026-11-19",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=2a1T4tqLDNM": {
+      "url": "https://www.youtube.com/watch?v=2a1T4tqLDNM",
+      "raw_url": "",
+      "title": "[视频 · ForgeSight] American Airlines - Palantir AIPCon Use Case Summary",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (ForgeSight)",
+      "summary": "YouTube 频道 ForgeSight 视频讲解：American Airlines - Palantir AIPCon Use Case Summary。简介：In this video, Dan break down one of the most powerful demos from AIPCon 2025, Palantir's annual partner event. American ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "第三方拆解 American Airlines 在 AIPCon 2025 的真机 Demo，还原航空运营场景下 AIP 的具体功能与工作流",
+      "status": "unread",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=IZRCw5WnJm8": {
+      "url": "https://www.youtube.com/watch?v=IZRCw5WnJm8",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Redefining Wealth Management | Citi Wealth at AIPCon 7",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Redefining Wealth Management | Citi Wealth at AIPCon 7。简介：This process would take 9 days. Now it takes seconds.” Citi Wealth has achieved a 90% decrease in time per case and an 80% ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Citi Wealth 用 AIP 重构财富管理案件处理流程（9天→秒级），展示 Agent 驱动的端到端业务工作流与效率量化",
+      "status": "unread",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=I7siZgE533E": {
+      "url": "https://www.youtube.com/watch?v=I7siZgE533E",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Highlights | AIPCon 9",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Highlights | AIPCon 9。简介：Any sufficiently advanced technology is indistinguishable from magic.",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "AIPCon 9 大会集锦宣传片，仅有口号式亮点剪辑，无具体产品功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=IeHOZO03suA": {
+      "url": "https://www.youtube.com/watch?v=IeHOZO03suA",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Asymmetric Advantage | Intro at AIPCon 10",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Asymmetric Advantage | Intro at AIPCon 10。简介：",
+      "full_text": "",
+      "score": 3,
+      "feature_focus": "AIPCon 10 开场主题演讲（Asymmetric Advantage），偏战略叙事而非产品模块讲解",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=DZ95Gmvg_D4": {
+      "url": "https://www.youtube.com/watch?v=DZ95Gmvg_D4",
+      "raw_url": "",
+      "title": "[视频 · More Perfect Union] I Worked At Palantir: The Tech Company Reshaping Reality",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (More Perfect Union)",
+      "summary": "YouTube 频道 More Perfect Union 视频讲解：I Worked At Palantir: The Tech Company Reshaping Reality。简介：A former Palantir employee is sounding the alarm. The tech company, founded by Peter Thiel, claims they can revolutionize ...",
+      "full_text": "",
+      "score": 1,
+      "feature_focus": "前员工对 Palantir 的社会/伦理批判报道，与 AIP 产品功能无关",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Ok6j_IbuTxo": {
+      "url": "https://www.youtube.com/watch?v=Ok6j_IbuTxo",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Empowering Frontline Support with AIP | Parts Town at AIPCon 10",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Empowering Frontline Support with AIP | Parts Town at AIPCon 10。简介：At AIPCon 10, Parts Town shows how Palantir AIP is transforming customer support and field service operations across specialty ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Parts Town 用 AIP 赋能一线客服与现场服务：备件领域的客户支持工作流与 AIP 落地实战案例",
+      "status": "unread",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=EvoCRLMvN5s": {
+      "url": "https://www.youtube.com/watch?v=EvoCRLMvN5s",
+      "raw_url": "",
+      "title": "[视频 · Palantir] AIPCon 7 | Highlights",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：AIPCon 7 | Highlights。简介：This is what a Palantir unit of time looks like.",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "AIPCon 7 大会 Highlights 混剪，营销向概览，缺乏可复用的功能设计细节",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://dataengineeringcentral.substack.com/p/what-the-is-ontology": {
+      "url": "https://dataengineeringcentral.substack.com/p/what-the-is-ontology",
+      "raw_url": "",
+      "title": "[Substack] Data Engineering Central What the !@#$% is Ontology? the new Data Mesh? Who would have thought, some dude in t",
+      "source": "Substack 深度专栏",
+      "summary": "Data Engineering Central What the !@#$% is Ontology? the new Data Mesh? Who would have thought, some dude in the 1600s talking about ontology and metaphysics. Here we are today, and now the word “Ontology” is all over my timeline, and yet again I somehow managed to be left behind while just smiling and nodding at all the experts that appeared out of thin air …",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "从数据工程视角追问 Ontology 概念本质及其与 Data Mesh 的关系，有助于理解 Palantir Ontology 的语义层定位",
+      "status": "unread",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://veronahe.substack.com/p/to-rip-apart-a-word-ontology": {
+      "url": "https://veronahe.substack.com/p/to-rip-apart-a-word-ontology",
+      "raw_url": "",
+      "title": "[Substack] Veronika Heimsbakk To rip apart a word: Ontology From Aristotle to the AI ontology gold rush. These days, it s",
+      "source": "Substack 深度专栏",
+      "summary": "Veronika Heimsbakk To rip apart a word: Ontology From Aristotle to the AI ontology gold rush. These days, it seems to me that “everyone” wants to build an ontology.",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "从亚里士多德到 AI 热潮的 Ontology 词义辨析，偏哲学/行业评论，未落到 Palantir 对象-Action 机制实现",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://medium.com/earnings-driver/palantir-sells-data-software-most-of-its-added-revenue-becomes-profit-7fdb42046626?source=rss------palantir-5": {
+      "url": "https://medium.com/earnings-driver/palantir-sells-data-software-most-of-its-added-revenue-becomes-profit-7fdb42046626?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Palantir Sells Data Software. Most of Its Added Revenue Becomes Profit.",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "In one line: Palantir earns by selling software contracts of one to five years to governments and companies, and it keeps most of its… Continue reading on Earnings Driver »",
+      "full_text": "",
+      "score": 1,
+      "feature_focus": "Palantir 软件合同收入转化为利润的财务分析，纯营收/盈利视角",
+      "status": "rejected",
+      "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.technologyreview.com/2026/11/19/1148979/the-download-liver-kept-alive-sila-battery-deal-ai-hype": {
+      "url": "https://www.technologyreview.com/2026/11/19/1148979/the-download-liver-kept-alive-sila-battery-deal-ai-hype",
+      "raw_url": "",
+      "title": "The Download: a living liver, a billion-dollar battery deal, and AI hype",
+      "source": "MIT Tech Review",
+      "summary": "This is today’s edition of The Download , our weekday newsletter that provides a daily dose of what’s going on in the world of technology. A human liver has been kept alive outside the body for a record seven weeks Researchers in Australia claim they’ve kept a human liver alive on life support outside the body for seven weeks, smashing the previous record of about two weeks. They achieved the feat by connecting a donated liver to a system of automated pumps and sensors that fed the organ nutrients, supplied it with blood, and whisked away waste. The approach could open up new possibilities in biomedical engineering, from repairing damaged organs to growing new ones. Some researchers are even exploring artificial wombs. Take a closer look at the technology keeping human organs alive . —Anto",
+      "full_text": "This is today’s edition of The Download , our weekday newsletter that provides a daily dose of what’s going on in the world of technology. A human liver has been kept alive outside the body for a record seven weeks Researchers in Australia claim they’ve kept a human liver alive on life support outside the body for seven weeks, smashing the previous record of about two weeks. They achieved the feat by connecting a donated liver to a system of automated pumps and sensors that fed the organ nutrients, supplied it with blood, and whisked away waste. The approach could open up new possibilities in biomedical engineering, from repairing damaged organs to growing new ones. Some researchers are even exploring artificial wombs. Take a closer look at the technology keeping human organs alive . —Antonio Regalado What a billion-dollar deal says about the US battery market After a tough few years littered with high-profile failures, there’s some positive news for next-generation batteries in the US: Sila has signed a deal with battery maker Panasonic Energy to supply silicon-carbon anode material that could be worth more than $1 billion. The agreement will help Sila scale production, potentially bringing smaller, lighter batteries to market. But it also reveals how battery politics have shifted. The factory is backed by a $1.4 billion loan from the Trump administration’s Defense Department—and the industry is increasingly focused on geopolitics rather than the energy transition. Find out what this deal reveals about the US battery industry . —Casey Crownhart This story is from The Spark, our weekly climate tech newsletter. Sign up to receive it in your inbox every Wednesday. The AI Hype Index returns Separating AI reality from hyped-up fiction isn’t always easy. That’s why we’ve created the AI Hype Index—a simple, at-a-glance summary of what’s shaping the industry right now. The latest edition tracks AI’s spread across everything from literary prizes and cyberattacks to a Grok-ified version of The Odyssey . See where it all landed on this month’s index . The must-reads I’ve combed the internet to find you today’s most fun/important/scary/fascinating stories about technology. 1 Anthropic has raised $81 billion in the biggest-ever IPO It eclipsed SpaceX as the largest stock-market debut. ( Bloomberg $) + Its stated mission could conflict with shareholders’ interests. ( NYT $) + The IPO comes amid new safety fears about its AI advances. ( FT $) + Its performance will test the strength of the AI boom. ( BBC ) + What even is the AI bubble? ( MIT Technology Review ) 2 China is reportedly seeking Nvidia chips for AI-powered weapons Beijing is trying to circumvent US export controls. ( CNBC ) + Alibaba tapped Nvidia to support a military-linked lab. ( NYT $) + When the US military implemented AI, civilian deaths rose . ( Intercept ) + “Humans in the loop” in AI war is an illusion. ( MIT Technology Review ) 3 Elon Musk has joined Silicon Valley’s retreat from Trump He called his midterm spending “foolish” and broke with MAGA. ( FT $) + OpenAI and Palantir leaders have also struck new tones. ( Gizmodo ) + Silicon Valley got the midterms badly wrong. ( MIT Technology Review ) 4 Ukraine used relay drones to strike Putin’s bridge without Starlink The strike showed how it’s learning to fight without SpaceX. ( Ars Technica ) + Musk has denied Kyiv’s claims about restrictions on Starlink. ( CNBC ) 5 A major cyberattack has hit the European Commission It may have exposed large amounts of staff personal data. ( Politico ) + Trump has blamed Minnesota for water system hacks. ( ABC ) 6 Trump may force US firms to disclose their use of Chinese AI The proposal aims to discourage reliance on Chinese models. ( Reuters $) 7 The US has slashed funding for biomedical science abroad It’s also weakened oversight of foreign grants. ( Economist $) 8 AI datacentres are set to drive a 70% rise in emissions by 2030 The US and China are turning to fossil fuels to power AI. ( Guardian ) + The climate case for AI has not been made. ( MIT Technology Review ) 9 Grand Theft Auto 6 has become the best-reviewed game ever It scored 99 out of 100 on review aggregation site Metacritic. ( BBC ) + Schools and businesses are bracing for “GTA Flu” season. ( NYT $) 10 A new underwater research station aims to protect coral reefs Aquanauts there will monitor struggling ecosystems. ( New Scientist $) Quote of the day “Here are some of the smartest people on the planet being completely idiotic.” —Thomas Nagel, a philosopher and professor emeritus at NYU, tells Wired why he objects to Anthropic giving Claude more independence, just as the company makes its record-breaking stock-market debut. One more thing China has approved the world’s first invasive brain-computer chip—here’s what’s next Sitting in the courtyard of his house in China’s Henan province last October, Dong Hui decided to try holding a pen. Six years after a car accident left him paralyzed from the neck down, he slowly wrote his name, “Thank you,” and the date. The breakthrough was made possible by a brain implant called NEO. In March, it became the world’s first invasive brain-computer interface approved for use beyond clinical trials. The approval is expected to accelerate China’s push to become a global leader in brain implants. Here’s how China reached the milestone—and what it means for the future of BCIs . —You Xiaoying We can still have nice things A place for comfort, fun, and distraction to brighten up your day. (Got any ideas? Drop me a line .) + Chloe the dog loves Chinese food even more than her owner. + Getting outdoors can do wonders not only for your mood, but also for your diet . + Sit back and enjoy the intriguing tale of the 12-year-old DJ who pioneered record scratching. + This extraordinary collection of Cold War-era matchbox labels is a treasure trove of Soviet art.",
+      "score": 0,
+      "feature_focus": "MIT 科技日报杂讯（离体肝脏、电池交易、AI 炒作），与 Palantir 产品完全无关",
+      "status": "rejected",
+      "added_at": "2026-11-20",
       "sent_at": ""
     }
   }

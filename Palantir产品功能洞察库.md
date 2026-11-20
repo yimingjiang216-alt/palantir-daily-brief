@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 8 篇）
+## 📅 已推送洞察总览表（共 11 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-20 | L3 Agent 编排与评测层 | **Guideline Evaluation：自动校验医疗必要性并生成申诉信** | AIPCon 8 企业 AI 未来愿景演示：揭示 AIP 如何通过统一语义空间（Unified Namespace）实现跨系统智能协同 | [Medium Palantir AIP 专栏](https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5) |
+| 2026-11-20 | L3 Agent 编排与评测层 | **Chatbot Studio：检索上下文与工具白名单构建可溯源Agent** | Agent Studio 中基于 Ontology 上下文检索与 Action 工具调用权限配置的可解释性 Agent 构建机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/agent-studio/overview) |
+| 2026-11-20 | L4 交互应用与开发层 | **OSDK：本体Schema编译为类型安全SDK供外部应用调用** | OSDK 将 Ontology 对象查询、Action 触发与 AI 函数封装为外部应用可调用的标准 SDK | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/ontology-sdk/overview) |
 | 2026-11-19 | L2 本体与动作层 | **Functions on Objects：业务逻辑绑定本体对象，统一计算入口** | Functions on Objects：通过 TypeScript/Python 编写直接操作 Ontology 对象的业务规则与小模型逻辑 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/functions/overview) |
 | 2026-11-19 | L3 Agent 编排与评测层 | **Ontology Snapshots：冻结业务时刻做Agent评测** | Ontology Scenarios 与 Snapshots 功能：通过冻结真实业务时刻实现可复现、可评估、可对比的 Agent 性能评测体系 | [X @PalantirTech (官方产品与DevCon动态)](https://x.com/PalantirTech/status/2120251578728812685) |
 | 2026-11-18 | L2 本体与动作层 | **Ontology 官方文档：核心概念与数字孪生架构** | Ontology 数字孪生架构：Object/Property/Link/Action 的业务层抽象与数据映射机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/ontology/overview) |
@@ -70,7 +73,30 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 2 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 4 篇）
+
+### [2026-11-20] Guideline Evaluation：自动校验医疗必要性并生成申诉信
+- **原文**：[Medium Palantir AIP 专栏 — Inside the AIPCon 8 Demos Redefining the Future of Enterprise AI](https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5)
+- **1. 解决什么问题**：常规做法靠人工逐条比对病历与保险公司报销指南，漏诊编码导致拒赔。Palantir 把病历字段、CPT 码、保险规则全部映射进 Ontology 对象，Agent 自动交叉校验后直接输出合规 ICD-10 编码和申诉信草稿，拦截不满足报销条件的诊断项。
+- **2. Palantir 怎么设计的**：
+  - 入参为患者 chart 对象（含 CPT 码列表、住院账户 ID、临床记录文本）→ 系统拉取对应 payor 的动态 guideline 规则集 → 逐条匹配临床证据是否满足 medical necessity 阈值，不满足则标记缺失证据字段
+  - 当所有必需临床证据字段通过校验时 → Agent 从候选 ICD-10 枚举中选取报销最优编码组合 → 调用文档生成函数拼装 appeal letter 草稿，写回患者账户对象供人工终审
+- **业务流转实例**：RCM 专员选中待审病例 → 触发 Guideline Evaluation workflow → 系统读取病历与保险规则、输出合规编码及申诉信草稿 → 写回病例对象等待人工确认提交
+- **3. 架构取舍与最小实现要素**：
+  - 省掉了人工在多个系统间切换查编码、查指南、写信的操作链；限制是保险规则必须预先结构化为可查询对象，不能依赖 PDF 原文模糊匹配
+  - 最小要素：patient_chart 表（cpt_codes[]、account_id、clinical_notes）、payor_guideline 表（required_evidence_fields[]、icd10_candidates[]、necessity_threshold）、appeal_draft 表（generated_text、status 枚举 draft/approved/submitted）；校验规则：每条 required_evidence_field 必须在 clinical_notes 中有对应提取结果才放行
+
+### [2026-11-20] Chatbot Studio：检索上下文与工具白名单构建可溯源Agent
+- **原文**：[Palantir 官方产品文档 — Agent Studio 官方文档：构建与配置企业级交互式 Agent](https://www.palantir.com/docs/foundry/agent-studio/overview)
+- **1. 解决什么问题**：常规做法把全量知识库塞进 prompt 导致幻觉且无法溯源，或让 LLM 自由调用任意 API 导致越权写入。Chatbot Studio 用显式注册的 Context Types 限定检索范围并强制生成 Citation，用 Tools 白名单限定可执行动作集合，未注册的工具直接拦截不传给模型。
+- **2. Palantir 怎么设计的**：
+  - Retrieval Context 配置时指定 context_type 枚举（Ontology object set、document media set、custom function），系统按类型走不同检索管道；每条返回片段自动附带 source_rid 和 chunk_offset，前端渲染为可点击 Citation 链接回原始对象或文档段落。
+  - Tools 注册面板要求逐条声明 tool_name、description、input_schema（JSON Schema）及绑定的 Action Type RID 或 Function RID；LLM 输出 tool_call 时系统校验函数签名匹配且当前用户对该 Action 有执行权限，校验失败返回结构化错误而非静默跳过。
+  - Application State 允许将 Workshop 页面当前选中的 Object RID 列表注入 session 变量，Agent 首轮 prompt 自动拼接这些对象的属性摘要，省去用户手动描述业务实体的步骤。
+- **业务流转实例**：运维工程师在 Workshop 设备详情页唤起 Chatbot → 系统自动注入当前设备 Object 属性至 Application State → Agent 检索关联维修工单文档生成带 Citation 的诊断建议 → 用户确认后 Agent 调用注册的 create_work_order Action 写回新工单。
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃了让 LLM 自主发现可用工具的灵活性，换取每次 tool_call 都经过签名校验和权限拦截的确定性；放弃了全库 RAG 的召回广度，换取每条回答都能精确引用到具体对象或文档段落的溯源能力。
+  - 最小实现要素：需建 agent_config 表含 retrieval_sources（type/source_id/filter_expr）、registered_tools（name/schema/bound_action_id/required_permission）、app_state_bindings（variable_name/object_type_rid）三组字段；检索接口返回必须携带 source_id + offset；tool_call 网关需做 schema validate + permission check 双重拦截。
 
 ### [2026-11-19] Ontology Snapshots：冻结业务时刻做Agent评测
 - **原文**：[X @PalantirTech (官方产品与DevCon动态) — @PalantirTech 产品洞察：You must own your evals to own your alpha. What makes your organization unique can't be protect...](https://x.com/PalantirTech/status/2120251578728812685)
@@ -98,9 +124,19 @@
   - 【通用设计精髓与认知校准】常规直觉是「模型越强、越该放手让它自主规划」；Palantir 反着来：用确定性骨架包住不确定的模型，只在需要判断的块用 LLM，其余交给查询与函数。可观测性不是靠事后日志，而是靠编排结构本身天然分格，这点最该刷新我们的认知。
   - 【对标框架落位与起步取舍】该能力属 Agent 编排运行时，但强依赖本体底座提供对象查询与函数注册。起步别先做自主多轮 Agent，先做「块类型 + 强类型中间变量 + 单块重跑调试」三件套，并把本体查询做成一等公民块，比接十个工具更有价值。
 
-## L4 交互应用与开发层 (Workshop / OSDK / Automate)（已沉淀 0 篇）
+## L4 交互应用与开发层 (Workshop / OSDK / Automate)（已沉淀 1 篇）
 
-*（待后续日报解锁该层级模块拆解）*
+### [2026-11-20] OSDK：本体Schema编译为类型安全SDK供外部应用调用
+- **原文**：[Palantir 官方产品文档 — Ontology SDK (OSDK) 官方文档：在外部应用中调用本体与动作](https://www.palantir.com/docs/foundry/ontology-sdk/overview)
+- **1. 解决什么问题**：常规做法让外部应用直接拼REST请求访问业务数据，字段名拼错或类型不匹配只有运行时才报错，且每个应用各自维护一套鉴权和序列化逻辑。OSDK在编译期把Ontology Schema生成强类型客户端，字段不存在或类型错误直接编译失败，鉴权统一收敛到SDK内置OAuth流程。
+- **2. Palantir 怎么设计的**：
+  - 机制点1：开发者在Developer Console注册应用并勾选所需Object Types和Action Types → 平台按勾选范围生成对应语言的SDK包(Java/Python/TypeScript) → SDK内每个Object Type映射为一个带完整属性类型的类，未勾选的类型不出现在SDK中，编译期即不可见
+  - 机制点2：TypeScript OSDK提供WebSocket订阅接口，入参为Object Type标识与过滤条件 → 当被订阅对象属性发生变更时平台推送增量事件 → 客户端回调函数接收变更后的对象快照，无需轮询；连接断开后SDK自动重连并从断点续订
+  - 机制点3：OSDK调用Action时入参必须匹配Action Type定义的参数Schema → SDK在本地做类型校验，缺必填字段或枚举值越界直接抛编译错误或运行时TypeError → 校验通过后请求发往平台，平台再执行权限检查与业务规则校验，双层拦截
+- **业务流转实例**：外部React应用通过TypeScript OSDK查询工单对象列表 → 用户点击审批按钮触发approve Action → SDK将参数序列化并提交平台 → 平台校验权限后写回工单状态字段并通过WebSocket推送变更给所有订阅客户端
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃了通用REST API的灵活性，外部应用只能调用注册时勾选的Object Types和Actions，无法绕过Schema约束自由拼查询；换来的是编译期类型安全和统一的鉴权收敛，省掉每个应用自建OAuth和序列化层的重复工作
+  - 最小实现要素：需定义应用注册表(app_id, allowed_object_types[], allowed_action_types[])、代码生成器读取Ontology Schema输出强类型客户端、SDK内置OAuth token刷新逻辑、Action调用前本地参数校验器(必填检查+枚举白名单)
 
 ## L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)（已沉淀 3 篇）
 
