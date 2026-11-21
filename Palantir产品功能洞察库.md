@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 11 篇）
+## 📅 已推送洞察总览表（共 14 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-21 | L4 交互应用与开发层 | **Workshop：Object层驱动的人机协同操作应用构建器** | Workshop 如何将 Ontology 视图、AIP Logic 推荐结果与 Action 按钮整合为一线业务员的人机协同操作界面 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/workshop/overview) |
+| 2026-11-21 | L4 交互应用与开发层 | **Automate：条件持续监测驱动动作与Logic自动执行** | Automate 的事件驱动机制：基于 Ontology 状态变化或定时条件触发 AIP Logic 执行与业务动作 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/automate/overview) |
+| 2026-11-21 | L3 Agent 编排与评测层 | **AIP Evals：用测试集与裁判模型量化LLM函数输出** | AIP Evals 教程：对 LLM Function/Agent/抽取器构建测试集并量化打分的完整流程 | [YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei)](https://www.youtube.com/watch?v=79x-Xf0VZ4Y) |
 | 2026-11-20 | L3 Agent 编排与评测层 | **Guideline Evaluation：自动校验医疗必要性并生成申诉信** | AIPCon 8 企业 AI 未来愿景演示：揭示 AIP 如何通过统一语义空间（Unified Namespace）实现跨系统智能协同 | [Medium Palantir AIP 专栏](https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5) |
 | 2026-11-20 | L3 Agent 编排与评测层 | **Chatbot Studio：检索上下文与工具白名单构建可溯源Agent** | Agent Studio 中基于 Ontology 上下文检索与 Action 工具调用权限配置的可解释性 Agent 构建机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/agent-studio/overview) |
 | 2026-11-20 | L4 交互应用与开发层 | **OSDK：本体Schema编译为类型安全SDK供外部应用调用** | OSDK 将 Ontology 对象查询、Action 触发与 AI 函数封装为外部应用可调用的标准 SDK | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/ontology-sdk/overview) |
@@ -73,7 +76,18 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 4 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 5 篇）
+
+### [2026-11-21] AIP Evals：用测试集与裁判模型量化LLM函数输出
+- **原文**：[YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei) — [视频 · LearnWithBeibei] AIP Evals Tutorial: Test & Score LLM Functions in Palantir](https://www.youtube.com/watch?v=79x-Xf0VZ4Y)
+- **1. 解决什么问题**：手动点几条样例无法发现提示词改动引发的回归。AIP Evals 要求绑定固定测试集，每次跑完输出逐条通过/失败表和总通过率，改动前后数字直接对比，回归立刻可见。
+- **2. Palantir 怎么设计的**：
+  - 创建 Evaluation Suite 时绑定一个 target function，写入若干 test case，每条包含 input 和 expected condition；选 evaluation function 类型为 LLM-as-a-judge boolean，指定裁判模型（如 Claude Sonnet 5），禁止用被测模型自身做裁判。
+  - 运行时系统将每条 test case 的 input 送入 target function 取 actual value，再把 actual value 与该条 condition 一起送入裁判模型；裁判返回 true/false，系统汇总为逐条结果表和 overall pass rate；JSON 解析失败时该条标记 error 而非 pass。
+- **业务流转实例**：开发者修改提示词后触发 Eval Suite 运行 → 系统批量调用 target function 并经裁判模型逐条打分 → 写回通过率表与逐条 pass/fail 明细，开发者据此决定是否发布。
+- **3. 架构取舍与最小实现要素**：
+  - 省掉了人工逐条比对的主观判断，但限制了评测只能覆盖预先写好 expected condition 的场景，开放式生成质量仍需人工抽检补充。
+  - 最小字段：eval_suite 表含 suite_id、target_function_ref；test_case 表含 case_id、input_payload、expected_condition_text；eval_run 表含 run_id、suite_id、model_version、per_case_result(boolean)、error_flag、overall_pass_rate。校验规则：裁判模型 ID 不得等于 target function 所用模型 ID。
 
 ### [2026-11-20] Guideline Evaluation：自动校验医疗必要性并生成申诉信
 - **原文**：[Medium Palantir AIP 专栏 — Inside the AIPCon 8 Demos Redefining the Future of Enterprise AI](https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5)
@@ -124,7 +138,31 @@
   - 【通用设计精髓与认知校准】常规直觉是「模型越强、越该放手让它自主规划」；Palantir 反着来：用确定性骨架包住不确定的模型，只在需要判断的块用 LLM，其余交给查询与函数。可观测性不是靠事后日志，而是靠编排结构本身天然分格，这点最该刷新我们的认知。
   - 【对标框架落位与起步取舍】该能力属 Agent 编排运行时，但强依赖本体底座提供对象查询与函数注册。起步别先做自主多轮 Agent，先做「块类型 + 强类型中间变量 + 单块重跑调试」三件套，并把本体查询做成一等公民块，比接十个工具更有价值。
 
-## L4 交互应用与开发层 (Workshop / OSDK / Automate)（已沉淀 1 篇）
+## L4 交互应用与开发层 (Workshop / OSDK / Automate)（已沉淀 3 篇）
+
+### [2026-11-21] Workshop：Object层驱动的人机协同操作应用构建器
+- **原文**：[Palantir 官方产品文档 — Workshop 官方文档：构建人机协同的操作应用界面](https://www.palantir.com/docs/foundry/workshop/overview)
+- **1. 解决什么问题**：常规做法让前端直接拼SQL取数再硬编码写回接口，导致字段映射散落各处、权限校验绕过本体层。Workshop强制所有读走Object Data Layer、所有写走Action Types，把数据访问收口到统一语义层，杜绝前端越权写入。
+- **2. Palantir 怎么设计的**：
+  - Variables系统：定义Object Set Filter Variable绑定某ObjectType的筛选条件，当用户操作Filter List组件时触发变量重算，下游所有引用该变量的Widget自动刷新数据，无需手写联动逻辑。
+  - Events机制：Button Group组件配置onClick事件，入参为当前选中Object的主键与Action Type标识；系统先校验当前用户对该Action的执行权限，通过后调用Action写回Ontology，失败则拦截并返回错误提示。
+  - Cross-application Commands：App Pairing建立两个Workshop模块间的通信通道，发送端触发Command携带Object引用，接收端订阅该Command后自动定位到对应Object View，实现跨应用的对象级联动而非页面跳转。
+- **业务流转实例**：运维人员在Inbox界面选中告警Object → 点击Inline Action按钮触发分派Action → 系统将工单状态写回Ontology并刷新任务列表变量。
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃前端自由拼接任意数据源的灵活性，换取读写路径全部经过Ontology层的权限校验与审计一致性，前端开发者不再需要自行实现字段级鉴权。
+  - 最小实现要素：需定义variable_registry表存储变量ID、绑定object_type_id、filter_schema_json、recompute_trigger枚举；widget_config表存widget_id、bound_variable_ids数组、event_action_type_id；每次渲染前校验用户对bound object_type的read权限。
+
+### [2026-11-21] Automate：条件持续监测驱动动作与Logic自动执行
+- **原文**：[Palantir 官方产品文档 — Automate 官方文档：事件驱动的自动化监测与动作触发](https://www.palantir.com/docs/foundry/automate/overview)
+- **1. 解决什么问题**：常规做法把触发条件和执行逻辑写死在同一个定时脚本里，改条件要改代码、改执行也要改代码，且无法按对象粒度精确触发。Automate 把 Condition 和 Effect 拆成独立配置项，条件侧订阅 Ontology 对象集变化或时间表达式，执行侧挂载 Action/Logic/Function，两边独立变更互不影响。
+- **2. Palantir 怎么设计的**：
+  - Condition 配置支持三种类型：Time condition 填 cron 表达式按周期触发；Object set condition 绑定一个 Object Set 并设过滤谓词，当集合成员新增或属性值越过阈值时触发；Dataset condition 监听指定数据集更新事件。三者可组合为 AND 逻辑。
+  - Effect 配置从四种类型中选取：Action effect 指定 Action Type 及入参映射；Logic effect 指定 AIP Logic Function 并传入触发对象作为上下文；Function effect 调用 Foundry Function；Notification effect 发送平台消息或邮件并可附加 Notepad/Contour 生成的 PDF。每条 Automation 可挂多个 Effect 并配置 Fallback effect 处理主 Effect 失败场景。
+  - 执行治理层提供 Evaluation frequency 控制轮询间隔、Manual and automatic retries 配置重试次数与退避策略、Muting/Pausing/Expiration 三个开关分别实现临时静默、暂停调度和到期自动下线，Automation history 记录每次触发的条件快照与 Effect 执行结果供审计回溯。
+- **业务流转实例**：运维人员配置 Object set condition 监听高优先级 Alert 对象新增 → Automate 触发 Logic effect 调用 AIP Logic 生成处置建议 → 再触发 Action effect 将建议写回 Alert 对象的 remediation 字段，同时 Notification effect 邮件通知责任人。
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃在脚本中自由编写任意触发逻辑的灵活性，换取条件与执行的声明式解耦——非开发人员可在界面上独立修改触发规则或替换下游 Effect，无需碰代码，也无需重新部署。
+  - 最小实现要素：需建 automation 表含 condition_type 枚举(time/object_set/dataset)、condition_config JSON(cron 表达式或 object_set_id+filter 谓词)、effect_type 枚举(action/logic/function/notification)、effect_config JSON(目标函数 ID 与入参映射)、execution_identity 字段指定代理执行身份、retry_policy JSON(max_retries/backoff)、status 枚举(active/muted/paused/expired)。另需 automation_execution_log 表记录每次触发的 condition_snapshot 与 effect_result。
 
 ### [2026-11-20] OSDK：本体Schema编译为类型安全SDK供外部应用调用
 - **原文**：[Palantir 官方产品文档 — Ontology SDK (OSDK) 官方文档：在外部应用中调用本体与动作](https://www.palantir.com/docs/foundry/ontology-sdk/overview)

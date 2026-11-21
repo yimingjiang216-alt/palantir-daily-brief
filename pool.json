@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-20 01:05:55",
+  "updated_at": "2026-11-21 01:03:56",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -539,7 +539,8 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false
+      "bitable_synced": false,
+      "fetch_fail_count": 1
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -1262,9 +1263,42 @@
       "summary": "详解 Workshop 如何将 Ontology 对象视图、AIP Logic 推荐结果与 Action 执行按钮组装成一线业务员的操作台。",
       "score": 9,
       "feature_focus": "Workshop 如何将 Ontology 视图、AIP Logic 推荐结果与 Action 按钮整合为一线业务员的人机协同操作界面",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-21",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Workshop：Object层驱动的人机协同操作应用构建器",
+        "feature_tag": "Workshop与OSDK应用",
+        "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+        "arch_position": "位于Ontology对象数据层之上、面向一线业务操作员的交互界面层。Workshop从Object Data Layer读取全部数据，通过Actions写回、Functions执行业务逻辑、Derived Properties做运行时计算，将AIP Logic推荐结果与人工决策整合为可操作的闭环界面。",
+        "related_history": "与已推送的AIP Logic（无代码编排）、Agent Studio（Agent构建）、OSDK（外部调用）形成上下游关系：Logic产出推荐 → Workshop呈现给人 → 人点击Action按钮写回Ontology。本文聚焦Workshop自身的变量系统、事件机制与跨应用交互能力，不重复上游编排细节。",
+        "core_concept": "常规做法让前端直接拼SQL取数再硬编码写回接口，导致字段映射散落各处、权限校验绕过本体层。Workshop强制所有读走Object Data Layer、所有写走Action Types，把数据访问收口到统一语义层，杜绝前端越权写入。",
+        "product_mechanics": [
+          "Variables系统：定义Object Set Filter Variable绑定某ObjectType的筛选条件，当用户操作Filter List组件时触发变量重算，下游所有引用该变量的Widget自动刷新数据，无需手写联动逻辑。",
+          "Events机制：Button Group组件配置onClick事件，入参为当前选中Object的主键与Action Type标识；系统先校验当前用户对该Action的执行权限，通过后调用Action写回Ontology，失败则拦截并返回错误提示。",
+          "Cross-application Commands：App Pairing建立两个Workshop模块间的通信通道，发送端触发Command携带Object引用，接收端订阅该Command后自动定位到对应Object View，实现跨应用的对象级联动而非页面跳转。"
+        ],
+        "scenario_usage": "运维人员在Inbox界面选中告警Object → 点击Inline Action按钮触发分派Action → 系统将工单状态写回Ontology并刷新任务列表变量。",
+        "aip_inspiration": [
+          "取舍差异：放弃前端自由拼接任意数据源的灵活性，换取读写路径全部经过Ontology层的权限校验与审计一致性，前端开发者不再需要自行实现字段级鉴权。",
+          "最小实现要素：需定义variable_registry表存储变量ID、绑定object_type_id、filter_schema_json、recompute_trigger枚举；widget_config表存widget_id、bound_variable_ids数组、event_action_type_id；每次渲染前校验用户对bound object_type的read权限。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Variable Recompute（变量响应式重算引擎）",
+            "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+            "palantir_spec": "① 配置项/入参：每个Variable声明type（object_set_filter/string/numeric/struct/sql_query）、source_object_type、filter_expression、依赖的其他variable_id列表。\n② 校验与拦截规则：当上游变量值变更时，系统按依赖DAG拓扑排序触发下游重算；若检测到循环依赖则报错拒绝保存；若filter_expression引用的Property不存在于目标ObjectType则校验失败。\n③ 执行与异常边界：重算成功后将新值广播至所有绑定Widget触发局部刷新；若查询超时则保留上一次有效值并在Widget上标记stale状态，不阻塞其他无关变量的计算链路。",
+            "our_action": "• 适用痛点：多Widget联动场景下手动维护刷新顺序易遗漏、出现数据不一致。\n• 最小实现要素：建variable_definition表含id、type_enum、depends_on_ids数组、filter_json字段；实现DAG拓扑排序的重算调度器；Widget订阅variable_id变更事件做局部渲染。\n• 局限与代价：引入响应式依赖图增加调试复杂度，变量数量过多时拓扑排序与并发查询带来性能开销，需设上限或分页懒加载。"
+          },
+          {
+            "component_name": "App Pairing & Commands（跨应用对象级联动）",
+            "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+            "palantir_spec": "① 配置项/入参：在源模块配置App Pairing Widget指定目标模块ID与共享的Object Type；定义Command schema包含command_name、payload_fields（通常为object_primary_key与action_context）。\n② 校验与拦截规则：发送Command时校验目标模块是否已加载且用户对其有访问权限；payload中的object_primary_key必须在目标模块绑定的Object Set范围内，否则丢弃该消息。\n③ 执行与异常边界：校验通过后目标模块接收Command并自动滚动至对应Object View或触发预设Event；若目标模块未就绪则消息进入短暂队列等待，超时后丢弃并在源模块提示发送失败。",
+            "our_action": "• 适用痛点：多个独立操作界面需围绕同一业务对象协同，传统iframe跳转丢失上下文。\n• 最小实现要素：建app_pairing_config表含source_app_id、target_app_id、shared_object_type_id；定义command_schema表含name、payload_field_definitions；实现基于WebSocket或postMessage的双向通道与权限前置校验中间件。\n• 局限与代价：要求所有参与应用共享同一Ontology对象模型，异构系统接入需额外适配层；实时通道断连时需降级为轮询或手动刷新。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/automate/overview": {
       "url": "https://www.palantir.com/docs/foundry/automate/overview",
@@ -1274,9 +1308,42 @@
       "summary": "解析 Automate 如何监听 Ontology 对象状态变化或定时条件，自动唤醒 AIP Logic 并触发业务动作。",
       "score": 9,
       "feature_focus": "Automate 的事件驱动机制：基于 Ontology 状态变化或定时条件触发 AIP Logic 执行与业务动作",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-21",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Automate：条件持续监测驱动动作与Logic自动执行",
+        "feature_tag": "行业工作流与落地范式",
+        "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+        "arch_position": "位于 Ontology 对象状态与 AIP Logic/Action 执行之间的调度触发层。它不生产数据也不定义业务逻辑，只负责「什么时候、对哪些对象、以谁的身份」把下游的 Action、Logic Function、Foundry Function 或通知调起来。是 Workshop（人触发）之外的另一条无人值守触发通路。",
+        "related_history": "与已推送的 AIP Logic（无代码编排）、Functions on Objects（对象函数）、Agent Studio（交互式 Agent）形成互补：前三者解决「怎么算、算什么」，Automate 解决「不用人点按钮，系统自己判断何时去算」。同时复用 Ontology Scenarios/Snapshots 做分支测试，复用 Action Types 做受控写回。本篇聚焦其独有的 Condition-Effect 解耦模型与执行治理机制。",
+        "core_concept": "常规做法把触发条件和执行逻辑写死在同一个定时脚本里，改条件要改代码、改执行也要改代码，且无法按对象粒度精确触发。Automate 把 Condition 和 Effect 拆成独立配置项，条件侧订阅 Ontology 对象集变化或时间表达式，执行侧挂载 Action/Logic/Function，两边独立变更互不影响。",
+        "product_mechanics": [
+          "Condition 配置支持三种类型：Time condition 填 cron 表达式按周期触发；Object set condition 绑定一个 Object Set 并设过滤谓词，当集合成员新增或属性值越过阈值时触发；Dataset condition 监听指定数据集更新事件。三者可组合为 AND 逻辑。",
+          "Effect 配置从四种类型中选取：Action effect 指定 Action Type 及入参映射；Logic effect 指定 AIP Logic Function 并传入触发对象作为上下文；Function effect 调用 Foundry Function；Notification effect 发送平台消息或邮件并可附加 Notepad/Contour 生成的 PDF。每条 Automation 可挂多个 Effect 并配置 Fallback effect 处理主 Effect 失败场景。",
+          "执行治理层提供 Evaluation frequency 控制轮询间隔、Manual and automatic retries 配置重试次数与退避策略、Muting/Pausing/Expiration 三个开关分别实现临时静默、暂停调度和到期自动下线，Automation history 记录每次触发的条件快照与 Effect 执行结果供审计回溯。"
+        ],
+        "scenario_usage": "运维人员配置 Object set condition 监听高优先级 Alert 对象新增 → Automate 触发 Logic effect 调用 AIP Logic 生成处置建议 → 再触发 Action effect 将建议写回 Alert 对象的 remediation 字段，同时 Notification effect 邮件通知责任人。",
+        "aip_inspiration": [
+          "取舍差异：放弃在脚本中自由编写任意触发逻辑的灵活性，换取条件与执行的声明式解耦——非开发人员可在界面上独立修改触发规则或替换下游 Effect，无需碰代码，也无需重新部署。",
+          "最小实现要素：需建 automation 表含 condition_type 枚举(time/object_set/dataset)、condition_config JSON(cron 表达式或 object_set_id+filter 谓词)、effect_type 枚举(action/logic/function/notification)、effect_config JSON(目标函数 ID 与入参映射)、execution_identity 字段指定代理执行身份、retry_policy JSON(max_retries/backoff)、status 枚举(active/muted/paused/expired)。另需 automation_execution_log 表记录每次触发的 condition_snapshot 与 effect_result。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Condition-Effect Engine（条件-效果解耦调度引擎）",
+            "arch_layer": "L4 交互应用与开发层 (Workshop / OSDK / Automate)",
+            "palantir_spec": "① 配置项/入参：Condition 侧定义 type 枚举(time/object_set/dataset)、object_set_id、filter_predicate、cron_expression；Effect 侧定义 type 枚举(action/logic/function/notification)、target_id、input_mapping、fallback_effect_id。\n② 校验与拦截规则：Condition 评估时校验 object_set 是否存在且当前用户有读权限；Effect 执行前校验 execution_identity 对目标 Action/Function 是否有调用权限；不满足则跳过执行并写入 history。\n③ 执行与异常边界：Condition 满足后按 Effect 列表顺序执行；单个 Effect 失败时检查是否配置 fallback_effect，有则执行降级逻辑；支持 automatic retry 按配置的 max_retries 和 backoff 重试；全部失败记录到 automation_history 供人工排查。",
+            "our_action": "• 适用痛点：业务需要「对象状态变化自动触发 AI 推理或写回」但不想为每个场景写定时脚本，且需要非开发人员能自行调整触发条件。\n• 最小实现要素：建 automation 表存 condition 与 effect 的声明式配置；实现 condition_evaluator 服务轮询或订阅对象变更事件；实现 effect_executor 按类型分发调用 Action/Logic/Notification 接口；建 execution_log 表记录每次运行快照。\n• 局限与代价：触发粒度受限于轮询频率而非实时事件流，高频场景有延迟；condition 表达能力限于预定义谓词，复杂跨对象关联判断需先物化为 Object Set。"
+          },
+          {
+            "component_name": "Execution Governance（自动化执行治理与生命周期管控）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "① 配置项/入参：evaluation_frequency 设定轮询周期；retry_policy 含 max_retries、backoff_strategy；muting_until 时间戳控制静默窗口；paused 布尔开关；expiration_date 到期自动下线；execution_identity 指定代理用户或服务账号。\n② 校验与拦截规则：每次评估前检查 paused/muted/expired 三个状态，任一命中则跳过本轮；execution_identity 权限不足时拦截 Effect 执行并报错；第三方应用创建的 automation 归属权校验防止越权修改。\n③ 执行与异常边界：过期 automation 自动标记 expired 不再调度但保留历史；manual retry 允许管理员从 history 中选失败记录重跑；automation_history 按权限隔离可见范围，非管理员只能看自己有权访问的对象相关记录。",
+            "our_action": "• 适用痛点：自动化任务上线后缺乏统一的生命周期管理，过期任务持续消耗资源，失败任务无人知晓，执行身份混乱导致权限事故。\n• 最小实现要素：在 automation 表增加 status 枚举(active/muted/paused/expired)、expiration_date、execution_identity 字段；调度器每轮评估前做状态前置检查；execution_log 表加 triggered_by_identity 和 visibility_scope 字段做审计隔离。\n• 局限与代价：引入 execution_identity 意味着必须维护一套服务账号体系及其权限分配，增加管理成本；静默和暂停机制依赖调度器主动检查，无法做到毫秒级即时生效。"
+          }
+        ]
+      }
     },
     "https://x.com/PalantirVision": {
       "url": "https://x.com/PalantirVision",
@@ -1663,7 +1730,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@eric_1885/who-has-the-stones-5615f37de98b?source=rss------palantir-5": {
       "url": "https://medium.com/@eric_1885/who-has-the-stones-5615f37de98b?source=rss------palantir-5",
@@ -1688,7 +1755,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5",
@@ -1700,7 +1767,8 @@
       "feature_focus": "Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5",
@@ -1713,7 +1781,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-redefining-the-future-of-enterprise-ai-a0a740fe44ce?source=rss------palantir_aip-5",
@@ -1770,7 +1838,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/a-better-conversation-palantir-cse-1-8c6fb00ba5be?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/a-better-conversation-palantir-cse-1-8c6fb00ba5be?source=rss------palantir_aip-5",
@@ -1794,7 +1862,8 @@
       "feature_focus": "Polaris 反人口贩卖项目实战：展示 AIP 如何在保护敏感数据前提下，实现跨机构情报融合与高可信度 AI 推理",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/industry-ai-8cd003a81be1?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/industry-ai-8cd003a81be1?source=rss------palantir_aip-5",
@@ -1902,7 +1971,8 @@
       "feature_focus": "从会议记录到本体对象的自动化转化流程，展示 Foundry 中 Ontology 与 AI Agent 的联动机制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5",
@@ -1914,7 +1984,8 @@
       "feature_focus": "基于本体原生设计解决地址语义歧义问题，构建消费者级房地产应用的实战案例",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5",
@@ -1938,7 +2009,8 @@
       "feature_focus": "OMCP（Ontology-Managed Control Plane）中本体驱动的 AI Agent 协作与控制机制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://towardsdatascience.com/ontoloysim-an-ontology-based-production-simulation-for-python-fd8c40cd8a4": {
       "url": "https://towardsdatascience.com/ontoloysim-an-ontology-based-production-simulation-for-python-fd8c40cd8a4",
@@ -2103,7 +2175,8 @@
       "feature_focus": "AIP Evolve 的系统级优化能力：通过工作流重构实现 90% 成本与计算时间降低，体现 AIP 对生产环境的深度调度控制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=YB4ev1hGVN0": {
       "url": "https://www.youtube.com/watch?v=YB4ev1hGVN0",
@@ -3113,10 +3186,41 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "AIP Evals 教程：对 LLM Function/Agent/抽取器构建测试集并量化打分的完整流程",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-19",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": "2026-11-21",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP Evals：用测试集与裁判模型量化LLM函数输出",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 AIP Logic 下游，对已发布的 LLM Function 做批量回归测试；输入是人工校验过的测试用例集，输出是通过率指标表。不介入线上推理链路，只在开发迭代阶段运行。",
+        "related_history": "此前推送过 Ontology Scenarios/Snapshots 冻结业务时刻做可复现评测，本篇聚焦评测执行侧：如何定义测试集、配置裁判模型、读取逐条通过率并定位回归。两篇互补，前者解决数据快照，后者解决打分流水线。",
+        "core_concept": "手动点几条样例无法发现提示词改动引发的回归。AIP Evals 要求绑定固定测试集，每次跑完输出逐条通过/失败表和总通过率，改动前后数字直接对比，回归立刻可见。",
+        "product_mechanics": [
+          "创建 Evaluation Suite 时绑定一个 target function，写入若干 test case，每条包含 input 和 expected condition；选 evaluation function 类型为 LLM-as-a-judge boolean，指定裁判模型（如 Claude Sonnet 5），禁止用被测模型自身做裁判。",
+          "运行时系统将每条 test case 的 input 送入 target function 取 actual value，再把 actual value 与该条 condition 一起送入裁判模型；裁判返回 true/false，系统汇总为逐条结果表和 overall pass rate；JSON 解析失败时该条标记 error 而非 pass。"
+        ],
+        "scenario_usage": "开发者修改提示词后触发 Eval Suite 运行 → 系统批量调用 target function 并经裁判模型逐条打分 → 写回通过率表与逐条 pass/fail 明细，开发者据此决定是否发布。",
+        "aip_inspiration": [
+          "省掉了人工逐条比对的主观判断，但限制了评测只能覆盖预先写好 expected condition 的场景，开放式生成质量仍需人工抽检补充。",
+          "最小字段：eval_suite 表含 suite_id、target_function_ref；test_case 表含 case_id、input_payload、expected_condition_text；eval_run 表含 run_id、suite_id、model_version、per_case_result(boolean)、error_flag、overall_pass_rate。校验规则：裁判模型 ID 不得等于 target function 所用模型 ID。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "LLM-as-a-Judge Boolean（裁判模型布尔评分器）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：evaluation_function_type 设为 llm_judge_boolean；judge_model_id 指定外部强模型；actual_value_format 设为 markdown string；每条 test case 单独写 condition 自然语言描述。\n② 校验规则：judge_model_id 与 target_function 所用 model_id 相同时拦截报错；condition 为空时拒绝保存该 case。\n③ 执行边界：裁判返回非 boolean 或 JSON 解析失败时，该条结果标记 parse_error，不计入 pass 也不计入 fail，需人工排查后重跑。",
+            "our_action": "• 适用痛点：LLM 输出不确定性导致无法用 assertEqual 做回归，需要语义级判定。\n• 最小实现：建 eval_case 表加 condition_text 字段；写 judge 接口接收 actual+condition 返回 boolean；加 model_id 不等校验。\n• 局限：裁判模型本身有偏差，condition 写得松会漏检，需定期人工校准裁判准确率。"
+          },
+          {
+            "component_name": "Evaluation Suite Runner（评测套件批量执行器）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：suite_id 绑定 target_function_ref；test_cases 数组每条含 input_schema 与 expected_condition；可选 repeat_count 控制同一 case 重复跑次数以测方差。\n② 校验规则：target_function 必须已发布且可调用；test_cases 数量为零时拒绝执行；repeat_count 上限由平台配额决定。\n③ 执行边界：逐条串行或并行调用 target_function，收集 actual_value 后送 judge；单条超时标记 timeout_error；全部完成后聚合 overall_pass_rate 写入 eval_run 记录。",
+            "our_action": "• 适用痛点：需要在提示词迭代或模型切换后快速拿到量化回归报告，而非靠人肉试。\n• 最小实现：建 eval_suite、eval_case、eval_run 三张表；写 batch_runner 服务循环调用 target+judge；输出 pass_rate 与 per_case 明细。\n• 局限：测试集覆盖度取决于人工编写质量，无法自动发现未覆盖的边界场景。"
+          }
+        ]
+      }
     },
     "https://www.youtube.com/watch?v=1F9tSbH1nic": {
       "url": "https://www.youtube.com/watch?v=1F9tSbH1nic",
@@ -3129,8 +3233,7 @@
       "feature_focus": "AIP Logic 内置 Evaluation Suite 的使用方式：逻辑函数的评估与回归验证",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -3154,7 +3257,7 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "AIP Evals 的 Feedback-to-Fix 闭环：高保真反馈回路驱动 AI Agent 迭代修复",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-19",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -3339,6 +3442,85 @@
       "feature_focus": "MIT 科技日报杂讯（离体肝脏、电池交易、AI 炒作），与 Palantir 产品完全无关",
       "status": "rejected",
       "added_at": "2026-11-20",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=562V8xgykUE": {
+      "url": "https://www.youtube.com/watch?v=562V8xgykUE",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Highlights | AIPCon 11",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Highlights | AIPCon 11。简介：Own your models. Control your alpha. Capture the full value of your enterprise stack.",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "AIPCon 11 大会集锦，口号式宣传（Own your models / Control your alpha），无具体模块功能拆解",
+      "status": "rejected",
+      "added_at": "2026-11-21",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Q5uVckUvGcQ": {
+      "url": "https://www.youtube.com/watch?v=Q5uVckUvGcQ",
+      "raw_url": "",
+      "title": "[视频 · The Strike Division] Pentagon CTO demonstrates Palantir's Maven system, used for military operations",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (The Strike Division)",
+      "summary": "YouTube 频道 The Strike Division 视频讲解：Pentagon CTO demonstrates Palantir's Maven system, used for military operations。简介：Pentagon CTO demonstrates Palantir's Maven system, used for military operations. #military #army #technology.",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "Maven Smart System 真机演示：军事作战场景下的目标识别与情报决策工作流展示",
+      "status": "unread",
+      "added_at": "2026-11-21",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=dIY9rBWkHHc": {
+      "url": "https://www.youtube.com/watch?v=dIY9rBWkHHc",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Palantir CEO Alex Karp Opening Remarks | AIPCon 11",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Palantir CEO Alex Karp Opening Remarks | AIPCon 11。简介：At AIPCon 11, Palantir CEO Alex Karp breaks down why Palantir stands apart from the parasitic software industrial complex, what ...",
+      "full_text": "",
+      "score": 2,
+      "feature_focus": "Alex Karp 开场演讲，公司定位与行业批判类表态，不含产品功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-21",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=r_iIiVtKLX8": {
+      "url": "https://www.youtube.com/watch?v=r_iIiVtKLX8",
+      "raw_url": "",
+      "title": "[视频 · Palantir] General Mills on Driving Supply Chain Automation with Palantir | AIPCon 3",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：General Mills on Driving Supply Chain Automation with Palantir | AIPCon 3。简介：... accelerated every single use case that's come after it that was sort of the core then we made an investment and planning system ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "General Mills 供应链自动化实战：以计划/投资系统为核心用例的 Foundry+AIP 端到端业务工作流落地",
+      "status": "unread",
+      "added_at": "2026-11-21",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://munaeem.medium.com/ukraine-is-fighting-the-war-who-will-own-the-technology-it-creates-af024b0c7706?source=rss------palantir-5": {
+      "url": "https://munaeem.medium.com/ukraine-is-fighting-the-war-who-will-own-the-technology-it-creates-af024b0c7706?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Ukraine Is Fighting the War. Who Will Own the Technology It Creates?",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "Ukrainian soldiers are generating valuable battlefield data. American technology companies are helping turn it into military AI. Who will… Continue reading on Medium »",
+      "full_text": "",
+      "score": 2,
+      "feature_focus": "乌克兰战场数据归属与军事 AI 的地缘政治议题讨论，非产品功能内容",
+      "status": "rejected",
+      "added_at": "2026-11-21",
+      "sent_at": ""
+    },
+    "https://recruitersachin.medium.com/hiring-palantir-foundry-forward-deployed-engineer-fde-remote-full-time-b4da4248cdfe?source=rss------palantir_foundry-5": {
+      "url": "https://recruitersachin.medium.com/hiring-palantir-foundry-forward-deployed-engineer-fde-remote-full-time-b4da4248cdfe?source=rss------palantir_foundry-5",
+      "raw_url": "",
+      "title": "Hiring: Palantir Foundry Forward Deployed Engineer (FDE) | Remote | Full-Time",
+      "source": "Medium Palantir Foundry 专栏",
+      "summary": "We’re Hiring | Palantir Foundry Forward Deployed Engineer (FDE) Continue reading on Medium »",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "Foundry FDE 岗位招聘广告，无任何产品功能信息",
+      "status": "rejected",
+      "added_at": "2026-11-21",
       "sent_at": ""
     }
   }
