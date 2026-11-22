@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 14 篇）
+## 📅 已推送洞察总览表（共 17 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-22 | L3 Agent 编排与评测层 | **Workflow Lineage：AIP执行链路追踪与生产可观测** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/aip-observability/) |
+| 2026-11-22 | L3 Agent 编排与评测层 | **Trace Curation：生产trace入本体转微调训练集** | Model Studio 中的微调能力与生产级 trace 收集机制，实现企业对 AI 模型训练过程的掌控 | [X @PalantirTech (官方产品与DevCon动态)](https://x.com/PalantirTech/status/2121278958683500549) |
+| 2026-11-22 | L1 数据接入与管道层 | **Incremental Transforms：增量只读新增行，版本变更强制全量重算** | Legacy ETL 迁移至 Foundry 时的增量处理、模式演进与无停机验证策略 | [Dev.to Palantir 技术专栏](https://dev.to/kaviwrites/migrating-legacy-etl-to-palantir-foundry-incremental-transforms-schema-evolution-and-18lm) |
 | 2026-11-21 | L4 交互应用与开发层 | **Workshop：Object层驱动的人机协同操作应用构建器** | Workshop 如何将 Ontology 视图、AIP Logic 推荐结果与 Action 按钮整合为一线业务员的人机协同操作界面 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/workshop/overview) |
 | 2026-11-21 | L4 交互应用与开发层 | **Automate：条件持续监测驱动动作与Logic自动执行** | Automate 的事件驱动机制：基于 Ontology 状态变化或定时条件触发 AIP Logic 执行与业务动作 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/automate/overview) |
 | 2026-11-21 | L3 Agent 编排与评测层 | **AIP Evals：用测试集与裁判模型量化LLM函数输出** | AIP Evals 教程：对 LLM Function/Agent/抽取器构建测试集并量化打分的完整流程 | [YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei)](https://www.youtube.com/watch?v=79x-Xf0VZ4Y) |
@@ -37,9 +40,18 @@
 
 ---
 
-## L1 数据接入与管道层 (Data Connection / Pipeline Builder)（已沉淀 0 篇）
+## L1 数据接入与管道层 (Data Connection / Pipeline Builder)（已沉淀 1 篇）
 
-*（待后续日报解锁该层级模块拆解）*
+### [2026-11-22] Incremental Transforms：增量只读新增行，版本变更强制全量重算
+- **原文**：[Dev.to Palantir 技术专栏 — Migrating Legacy ETL to Palantir Foundry: Incremental Transforms, Schema Evolution, and Reconciliation Without Downtime](https://dev.to/kaviwrites/migrating-legacy-etl-to-palantir-foundry-incremental-transforms-schema-evolution-and-18lm)
+- **1. 解决什么问题**：常规全量重建随数据总量线性增长且失败会留半写脏数据；Foundry 用事务提交保证原子可见性，用 @incremental 装饰器让 transform 只读上次成功构建后新增的行，逻辑变更时靠 semantic_version 递增强制全量重算。
+- **2. Palantir 怎么设计的**：
+  - @incremental(semantic_version=N) 标记 transform → 运行时 Input.dataframe() 只返回上次 commit 后追加的行 → Output 可选 append 或 replace 模式写出；当 semantic_version 递增时系统忽略增量状态，触发全量重算并重置水位线
+  - 上游数据集若被 snapshot 整体替换而非 append → 下游 incremental transform 无法识别增量边界 → 系统拒绝增量执行或回退全量；因此 changelog 必须保持 append-only，current-state 表用 Window+row_number 按 order_id 去重取最新行后 replace 写出
+- **业务流转实例**：数据工程师在 Code Repositories 提交带 @incremental 的 Python transform → Foundry 调度器按依赖图触发构建 → 只处理新增 changelog 行并将 current-state 结果以事务写入目标 dataset
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃了数据库原生 upsert 能力，要求开发者自行用窗口函数建模 latest-state-per-key；换来的是每次构建都有事务级原子性和可回溯的版本链，失败不会污染下游消费
+  - 最小实现要素：需定义 changelog 表含业务主键、updated_at、ingested_at 三个排序字段；transform 元数据存 semantic_version 整型与 last_committed_offset；输出表按业务日期分区；校验规则为 cast 后 null_rate 超阈值则 FAIL 阻断提交
 
 ## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 3 篇）
 
@@ -76,7 +88,30 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 5 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 7 篇）
+
+### [2026-11-22] Workflow Lineage：AIP执行链路追踪与生产可观测
+- **原文**：[Palantir AIP 官方文档 — AIP 官方文档：AIP 可观测性与生产追踪 (Observability)](https://www.palantir.com/docs/foundry/aip/aip-observability/)
+- **1. 解决什么问题**：常规做法下 AIP Logic 调用链跨多个 Function 和 LLM，出错时只能逐段翻日志拼因果。Palantir 把每次执行绑定到 Workflow Lineage 的分布式 trace，按 parent-child span 自动串联，故障定位从人肉拼接变成按 trace_id 一次查全链路。
+- **2. Palantir 怎么设计的**：
+  - 执行历史查询：用户输入 workflow_id 或时间范围 → 系统从 Workflow Lineage 索引中检索匹配的 execution record 列表 → 返回每条记录的 status 枚举(success/failure/timeout)、耗时 ms、触发来源(Action/Automate/手动)及关联 trace_id
+  - 分布式追踪展开：用户点击某条 execution 的 trace_id → 系统按 span 树结构渲染该次执行涉及的所有子调用(Ontology read、LLM inference、Function invoke、Action write) → 每个 span 标注 start_time/end_time/status/error_message，失败 span 红色高亮并展示入参快照
+  - 日志搜索与指标聚合：用户在 log search 界面输入关键词或 object_type 过滤条件 → 系统在结构化日志存储中做全文检索并按 severity 分级返回 → metrics dashboard 按 function_name 维度聚合 p50/p95/p99 延迟与错误率时序曲线
+- **业务流转实例**：运维人员发现某 AIP Logic 函数错误率突增 → 进入 Workflow Lineage 按 function_name 过滤 failure 记录 → 展开 trace 定位到具体 LLM 调用 span 超时 → 查看入参确认是 prompt token 超限导致 provider 拒绝
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：不在每个 Function 内部手写埋点代码，而是由平台执行引擎在调度层自动注入 span context，业务开发者零改造即获得全链路追踪，代价是无法自定义 span 粒度
+  - 最小实现要素：需定义 execution_record 表(execution_id, workflow_id, trigger_source, status, duration_ms, created_at)；span 表(span_id, parent_span_id, execution_id, operation_type, input_snapshot_json, output_snapshot_json, error_code)；采集侧在函数调度入口拦截并写入 span context propagation header
+
+### [2026-11-22] Trace Curation：生产trace入本体转微调训练集
+- **原文**：[X @PalantirTech (官方产品与DevCon动态) — @PalantirTech 产品洞察：Own the benchmark. Shape the model. Encode your alpha. At DevCon 7, Palantir Software Engineers...](https://x.com/PalantirTech/status/2121278958683500549)
+- **1. 解决什么问题**：常规微调用人工标注或脱敏日志当训练集，样本脱离业务对象，模型学不到企业专有判断。Palantir把生产trace连同Ontology上下文一起落成训练资产，样本自带业务语义。
+- **2. Palantir 怎么设计的**：
+  - 采集开关按AIP工作流粒度配置，指定要记录的函数与Agent节点。运行时每次调用写入一条trace，含入参、检索到的Ontology对象引用、模型输出、人工是否采纳。未开启的节点不落记录。
+  - 策展环节对trace做筛选与打标，剔除失败调用和未被采纳的输出，保留人工修正后的正确答案作为标签。筛出的集合绑定版本号，交给Model Studio作为微调输入，训练产出的模型再注册回平台供Logic调用。
+- **业务流转实例**：业务人员在Workshop里修正Agent建议并提交 → 该次trace被标记为已修正 → 策展时纳入训练集 → Model Studio微调后新模型上线替换原函数。
+- **3. 架构取舍与最小实现要素**：
+  - 省掉了单独建标注平台和人工写样本这一步，训练数据由日常操作副产物直接生成；代价是必须先有稳定的线上流量，冷启动阶段无数据可用。
+  - 至少定义trace表：trace_id、workflow_id、node_id、input_payload、context_object_refs、model_output、human_verdict枚举、corrected_output、dataset_version。校验规则：human_verdict为空或调用报错的记录不得进训练集。
 
 ### [2026-11-21] AIP Evals：用测试集与裁判模型量化LLM函数输出
 - **原文**：[YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei) — [视频 · LearnWithBeibei] AIP Evals Tutorial: Test & Score LLM Functions in Palantir](https://www.youtube.com/watch?v=79x-Xf0VZ4Y)

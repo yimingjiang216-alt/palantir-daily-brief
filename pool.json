@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-21 01:03:56",
+  "updated_at": "2026-11-22 01:04:05",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -169,9 +169,42 @@
       "summary": "Palantir AIP 官方产品文档核心模块拆解：AIP 官方文档：AIP 可观测性与生产追踪 (Observability)",
       "score": 9,
       "reason": "系统阐述 AIP 可观测性体系，涵盖 Trace Curation、执行链路追踪、性能指标埋点、异常告警与根因分析机制，支持生产环境的可观测闭环",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-22",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Workflow Lineage：AIP执行链路追踪与生产可观测",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于平台横切层，覆盖 L2 Ontology Action 执行、L3 AIP Logic/Agent 调用、L4 Workshop/Automate 触发的全链路。不侵入业务逻辑代码，通过 Workflow Lineage 统一采集执行元数据，向上提供 metrics/tracing/logging 三类只读查询接口。",
+        "related_history": "与已推送的 AIP Evals（离线评测打分）形成互补：Evals 管上线前的质量门禁，Observability 管上线后的运行时健康度。与 Automate 事件驱动机制配合时，Automate 触发 AIP Logic 执行的每次调用均被 Workflow Lineage 自动记录 trace_id，无需业务侧手动埋点。",
+        "core_concept": "常规做法下 AIP Logic 调用链跨多个 Function 和 LLM，出错时只能逐段翻日志拼因果。Palantir 把每次执行绑定到 Workflow Lineage 的分布式 trace，按 parent-child span 自动串联，故障定位从人肉拼接变成按 trace_id 一次查全链路。",
+        "product_mechanics": [
+          "执行历史查询：用户输入 workflow_id 或时间范围 → 系统从 Workflow Lineage 索引中检索匹配的 execution record 列表 → 返回每条记录的 status 枚举(success/failure/timeout)、耗时 ms、触发来源(Action/Automate/手动)及关联 trace_id",
+          "分布式追踪展开：用户点击某条 execution 的 trace_id → 系统按 span 树结构渲染该次执行涉及的所有子调用(Ontology read、LLM inference、Function invoke、Action write) → 每个 span 标注 start_time/end_time/status/error_message，失败 span 红色高亮并展示入参快照",
+          "日志搜索与指标聚合：用户在 log search 界面输入关键词或 object_type 过滤条件 → 系统在结构化日志存储中做全文检索并按 severity 分级返回 → metrics dashboard 按 function_name 维度聚合 p50/p95/p99 延迟与错误率时序曲线"
+        ],
+        "scenario_usage": "运维人员发现某 AIP Logic 函数错误率突增 → 进入 Workflow Lineage 按 function_name 过滤 failure 记录 → 展开 trace 定位到具体 LLM 调用 span 超时 → 查看入参确认是 prompt token 超限导致 provider 拒绝",
+        "aip_inspiration": [
+          "取舍差异：不在每个 Function 内部手写埋点代码，而是由平台执行引擎在调度层自动注入 span context，业务开发者零改造即获得全链路追踪，代价是无法自定义 span 粒度",
+          "最小实现要素：需定义 execution_record 表(execution_id, workflow_id, trigger_source, status, duration_ms, created_at)；span 表(span_id, parent_span_id, execution_id, operation_type, input_snapshot_json, output_snapshot_json, error_code)；采集侧在函数调度入口拦截并写入 span context propagation header"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Distributed Tracing（分布式执行链路追踪）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项/入参：每次 AIP Logic 或 Ontology Action 执行自动生成 trace_id，子调用继承 parent_span_id，operation_type 枚举含 ontology_read/llm_call/function_invoke/action_write；\n② 校验与拦截规则：span 写入时校验 trace_id 非空且 parent_span_id 指向已存在 span，孤儿 span 标记 orphan 告警但不阻断执行；\n③ 执行与异常边界：span 正常闭合写 end_time+status=ok；子调用抛异常时写 status=error+error_message 并保留 input_snapshot，不重试不回滚业务动作，仅记录失败现场供事后排查。",
+            "our_action": "• 适用痛点：AIP 函数调用链跨 LLM/Ontology/外部 API，生产报错后无法快速定位是哪一跳失败；\n• 最小实现要素：建 trace 表和 span 表，调度引擎入口生成 trace_id 并通过 context header 向下传播，每跳结束写 span record；\n• 局限与代价：自动注入 span 粒度固定为平台调度单元，业务内部的细分支逻辑不可见，需额外手动埋点补充。"
+          },
+          {
+            "component_name": "Execution Metrics Dashboard（执行指标聚合看板）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项/入参：按 function_name/workflow_id 维度自动聚合，指标含 invocation_count、error_rate、latency_p50/p95/p99，时间窗口支持 1h/24h/7d 枚举切换；\n② 校验与拦截规则：当 error_rate 超过用户配置阈值时触发告警通知，阈值字段为 decimal 0~1，未配置则不告警只展示；\n③ 执行与异常边界：指标数据从 execution_record 异步聚合写入时序存储，聚合延迟容忍上限 60s，聚合任务失败时 dashboard 展示 stale 标记而非空白。",
+            "our_action": "• 适用痛点：上线后缺乏按函数粒度的健康度视图，只能等用户投诉才发现问题；\n• 最小实现要素：execution_record 表加 function_name 索引，后台定时任务按分钟级窗口聚合 count/error/latency 写入 metrics 时序表，前端按维度查询渲染；\n• 局限与代价：异步聚合有秒级延迟，不适合做实时熔断决策，熔断需在调度层同步判断。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/ethics-governance/": {
       "url": "https://www.palantir.com/docs/foundry/aip/ethics-governance/",
@@ -395,10 +428,42 @@
       "summary": "Legacy ETL replacements rarely fail because the new platform can't run the transformations. They fail because nobody can prove the new outputs are correct, or because a finance report three teams away breaks on the first Monday after cutover. A legacy pipeline has usually been around long enough to collect undocumented fixes, silent type coercions, and consumers nobody remembers onboarding. Rewriting its SQL in a new tool is the easy part. Keeping the behavior that the business actually depends on is the hard part. This article covers three concerns that decide whether a migration to Palantir Foundry goes smoothly: Incremental transformation: processing only what changed, instead of rebuilding everything nightly. Schema evolution: handling source and output schema changes without breaking ",
       "score": 8,
       "feature_focus": "Legacy ETL 迁移至 Foundry 时的增量处理、模式演进与无停机验证策略",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "full_text": "Legacy ETL replacements rarely fail because the new platform can't run the transformations. They fail because nobody can prove the new outputs are correct, or because a finance report three teams away breaks on the first Monday after cutover. A legacy pipeline has usually been around long enough to collect undocumented fixes, silent type coercions, and consumers nobody remembers onboarding. Rewriting its SQL in a new tool is the easy part. Keeping the behavior that the business actually depends on is the hard part. This article covers three concerns that decide whether a migration to Palantir Foundry goes smoothly: Incremental transformation: processing only what changed, instead of rebuilding everything nightly. Schema evolution: handling source and output schema changes without breaking consumers. Reconciliation: proving, with evidence, that the new pipeline produces equivalent results. Running the legacy and Foundry pipelines side by side ties these together. Parallel operation turns cutover from a leap of faith into a decision backed by data. Why Legacy ETL Migrations Are Difficult Most legacy ETL estates share a familiar set of problems: Monolithic jobs. A single workflow extracts, cleans, joins, aggregates, and loads, so you can't migrate one piece without understanding all of it. Hidden dependencies. A downstream job reads an intermediate staging table that was never meant to be public. Hard-coded logic. Currency rates, region mappings, and exclusion lists live inside stored procedures. Fragile schedules. Job B starts at 02:30 because job A \"usually finishes by then.\" Inconsistent schemas. The same customer ID is a string in one system and an integer in another. Limited observability. Failures surface as a stale dashboard, not as an alert. Locked-in consumers. Reports, extracts, and applications depend on exact table names, column orders, and even rounding behavior. A big bang migration bets that every one of these has been found and handled before go-live. In practice, some will only be found after go-live, when the old system is gone and there's nothing to compare against. A Safer Migration Pattern An incremental approach reduces that risk by migrating in bounded slices. One common lifecycle: Inventory existing jobs, sources, targets, and schedules. Identify critical data products and who consumes them. Select a migration boundary small enough to validate fully, such as one subject area or one fact table and its dimensions. Build the corresponding Foundry pipeline. Run both pipelines in parallel on the same inputs. Compare outputs systematically. Resolve differences , classifying each as a new-pipeline bug, a legacy bug, or an accepted change. Shift consumers gradually. Retire the legacy pipeline once nothing reads from it. This is an architectural pattern, not a mandatory Palantir methodology. Its value is that every step produces evidence, and the blast radius of a mistake stays limited to one slice. Incremental Transforms in Foundry Many legacy jobs follow a truncate-and-reload pattern: delete the target table, rebuild it from full source extracts. It's simple, but cost and runtime grow with total data volume rather than with the volume of change. What Foundry provides Foundry datasets are versioned through transactions. A build either commits a transaction or it doesn't, so a failed run doesn't leave a half-written output visible to consumers. Python transforms in Code Repositories support an @incremental decorator. When a transform runs incrementally, reading an input returns only the rows added since the last successful build, and the output can append rather than replace. Bumping the decorator's semantic_version forces a full recompute, which is useful when logic changes. Data Connection also supports incremental syncs for some source types, typically by tracking a monotonically increasing column such as an update timestamp or sequence ID. Pipeline Builder has its own incremental options; what's available can depend on your enrollment and pipeline type. An important constraint: incremental transforms are built around appended data. If an upstream dataset is fully replaced by a snapshot, a downstream incremental transform generally can't run incrementally. Foundry datasets also aren't key-based tables with native upserts, so \"latest state per key\" has to be modeled explicitly. Design concerns Change detection. Prefer reliable change signals (CDC feeds, sequence numbers) over updated_at columns that applications forget to maintain. Partitioning. Partition outputs by a column consumers filter on, such as business date, so reprocessing stays targeted. Watermarks. Ingestion-side watermarks decide what gets pulled. Transform-side incrementality decides what gets processed. Keep the two concepts separate in your design. Late-arriving data. An order updated today for last month's date lands in today's increment. Any aggregate by business date must recompute the affected dates, not just append. Idempotency. Transactions make commits atomic, but your logic must still be deterministic. Avoid current_timestamp() inside business logic and deduplicate on stable keys. Example: from full refresh to changelog plus current state Legacy: a nightly job truncates fact_orders and reloads from a full ERP extract. Redesign: ingest only changed rows into an append-only changelog, then derive the current state per order. from pyspark.sql import functions as F , Window from transforms.api import transform , incremental , Input , Output @incremental ( semantic_version = 1 ) @transform ( out = Output ( \" /Sales/clean/orders_current \" ), changes = Input ( \" /Sales/clean/orders_changelog \" ), ) def compute ( changes , out ): new_rows = changes . dataframe () # only rows appended since last build previous = out . dataframe ( \" previous \" , schema = new_rows . schema ) w = Window . partitionBy ( \" order_id \" ). orderBy ( F . col ( \" updated_at \" ). desc (), F . col ( \" ingested_at \" ). desc () ) latest = ( previous . unionByName ( new_rows ) . withColumn ( \" rn \" , F . row_number (). over ( w )) . filter ( \" rn = 1 \" ) . drop ( \" rn \" ) ) out . set_mode ( \" replace \" ) out . write_dataframe ( latest ) The trade-off is visible: the extraction and changelog are incremental, but this current-state dataset is still rewritten each run. For very large tables, teams may partition the current-state output, or have consumers read from the changelog through a view. The decorator style above is the classic API; check your repository template for the syntax your Foundry version uses. Managing Schema Evolution Schema changes cause more migration incidents than transformation logic does, because they often fail silently. Change Typical risk Column added Low, unless consumers use SELECT * or positional reads Field renamed Breaks consumers; can look like a dropped column plus a new null column Type changed Silent nulls on failed casts, precision loss, timezone shifts Field removed Breaks consumers and business rules that depend on it Nested structure changed Breaks flattening logic, often deep inside the pipeline Source version upgrade Several of the above at once, often undocumented Practices that help: Schema contracts. Define the canonical output schema explicitly and treat changes to it as reviewed changes. Explicit mappings. Map source fields to canonical fields by name, never by position. Version-aware transforms. Handle known source versions deliberately instead of hoping the shape stays stable. Validation before promotion. Foundry Data Expectations let a transform fail a build when checks don't pass, for example Check(E.primary_key(\"order_id\"), \"orders pk\", on_error=\"FAIL\") . Foundry also supports branching, so schema changes can be built and checked on a branch before merging. Consumer impact analysis. Use Foundry's data lineage to see which downstream datasets and applications read a column before you change it. Example: a source rename and type change The ERP upgrade renames cust_id to customer_id and changes amount from string to decimal. from pyspark.sql import functions as F , types as T CANONICAL = { \" order_id \" : T . StringType (), \" customer_id \" : T . StringType (), \" amount \" : T . DecimalType ( 18 , 2 ), \" updated_at \" : T . TimestampType (), } RENAMES = { \" cust_id \" : \" customer_id \" } # known source v1 -> v2 mapping def to_canonical ( df ): for old , new in RENAMES . items (): if old in df . columns and new not in df . columns : df = df . withColumnRenamed ( old , new ) missing = [ c for c in CANONICAL if c not in df . columns ] if missing : raise ValueError ( f \" Schema contract violated, missing: { missing } \" ) return df . select ([ F . col ( c ). cast ( t ). alias ( c ) for c , t in CANONICAL . items ()]) One catch: with Spark's default (non-ANSI) settings, a failed cast returns null instead of raising an error. Pair the mapping with a null-rate check on amount . Also, if the output schema of an incremental transform changes, appending to the existing output will typically conflict. Bumping semantic_version to force a full rebuild is the cleaner path. Reconciliation Between Legacy and Foundry Pipelines Matching row counts proves very little. Two tables can have identical counts while one has duplicated keys, swapped values, or nulls where the other has data. Reconcile at several levels: Level What it catches Row counts Gross load failures, filter differences Key coverage Records present in only one output Duplicate detection Join fan-out, broken dedup logic Aggregate totals Sums by date, region, product; rounding drift Null rates per column Failed casts, broken mappings Record-level comparison Value differences on matching keys Business-rule validation Rules that must hold regardless of either pipeline Sample-based review Human inspection where full comparison is impractical A common approach is to ingest the legacy output into Foundry via Data Connection, then compare in a dedicated reconciliation transform: COMP"
+      "sent_at": "2026-11-22",
+      "full_text": "Legacy ETL replacements rarely fail because the new platform can't run the transformations. They fail because nobody can prove the new outputs are correct, or because a finance report three teams away breaks on the first Monday after cutover. A legacy pipeline has usually been around long enough to collect undocumented fixes, silent type coercions, and consumers nobody remembers onboarding. Rewriting its SQL in a new tool is the easy part. Keeping the behavior that the business actually depends on is the hard part. This article covers three concerns that decide whether a migration to Palantir Foundry goes smoothly: Incremental transformation: processing only what changed, instead of rebuilding everything nightly. Schema evolution: handling source and output schema changes without breaking consumers. Reconciliation: proving, with evidence, that the new pipeline produces equivalent results. Running the legacy and Foundry pipelines side by side ties these together. Parallel operation turns cutover from a leap of faith into a decision backed by data. Why Legacy ETL Migrations Are Difficult Most legacy ETL estates share a familiar set of problems: Monolithic jobs. A single workflow extracts, cleans, joins, aggregates, and loads, so you can't migrate one piece without understanding all of it. Hidden dependencies. A downstream job reads an intermediate staging table that was never meant to be public. Hard-coded logic. Currency rates, region mappings, and exclusion lists live inside stored procedures. Fragile schedules. Job B starts at 02:30 because job A \"usually finishes by then.\" Inconsistent schemas. The same customer ID is a string in one system and an integer in another. Limited observability. Failures surface as a stale dashboard, not as an alert. Locked-in consumers. Reports, extracts, and applications depend on exact table names, column orders, and even rounding behavior. A big bang migration bets that every one of these has been found and handled before go-live. In practice, some will only be found after go-live, when the old system is gone and there's nothing to compare against. A Safer Migration Pattern An incremental approach reduces that risk by migrating in bounded slices. One common lifecycle: Inventory existing jobs, sources, targets, and schedules. Identify critical data products and who consumes them. Select a migration boundary small enough to validate fully, such as one subject area or one fact table and its dimensions. Build the corresponding Foundry pipeline. Run both pipelines in parallel on the same inputs. Compare outputs systematically. Resolve differences , classifying each as a new-pipeline bug, a legacy bug, or an accepted change. Shift consumers gradually. Retire the legacy pipeline once nothing reads from it. This is an architectural pattern, not a mandatory Palantir methodology. Its value is that every step produces evidence, and the blast radius of a mistake stays limited to one slice. Incremental Transforms in Foundry Many legacy jobs follow a truncate-and-reload pattern: delete the target table, rebuild it from full source extracts. It's simple, but cost and runtime grow with total data volume rather than with the volume of change. What Foundry provides Foundry datasets are versioned through transactions. A build either commits a transaction or it doesn't, so a failed run doesn't leave a half-written output visible to consumers. Python transforms in Code Repositories support an @incremental decorator. When a transform runs incrementally, reading an input returns only the rows added since the last successful build, and the output can append rather than replace. Bumping the decorator's semantic_version forces a full recompute, which is useful when logic changes. Data Connection also supports incremental syncs for some source types, typically by tracking a monotonically increasing column such as an update timestamp or sequence ID. Pipeline Builder has its own incremental options; what's available can depend on your enrollment and pipeline type. An important constraint: incremental transforms are built around appended data. If an upstream dataset is fully replaced by a snapshot, a downstream incremental transform generally can't run incrementally. Foundry datasets also aren't key-based tables with native upserts, so \"latest state per key\" has to be modeled explicitly. Design concerns Change detection. Prefer reliable change signals (CDC feeds, sequence numbers) over updated_at columns that applications forget to maintain. Partitioning. Partition outputs by a column consumers filter on, such as business date, so reprocessing stays targeted. Watermarks. Ingestion-side watermarks decide what gets pulled. Transform-side incrementality decides what gets processed. Keep the two concepts separate in your design. Late-arriving data. An order updated today for last month's date lands in today's increment. Any aggregate by business date must recompute the affected dates, not just append. Idempotency. Transactions make commits atomic, but your logic must still be deterministic. Avoid current_timestamp() inside business logic and deduplicate on stable keys. Example: from full refresh to changelog plus current state Legacy: a nightly job truncates fact_orders and reloads from a full ERP extract. Redesign: ingest only changed rows into an append-only changelog, then derive the current state per order. from pyspark.sql import functions as F , Window from transforms.api import transform , incremental , Input , Output @incremental ( semantic_version = 1 ) @transform ( out = Output ( \" /Sales/clean/orders_current \" ), changes = Input ( \" /Sales/clean/orders_changelog \" ), ) def compute ( changes , out ): new_rows = changes . dataframe () # only rows appended since last build previous = out . dataframe ( \" previous \" , schema = new_rows . schema ) w = Window . partitionBy ( \" order_id \" ). orderBy ( F . col ( \" updated_at \" ). desc (), F . col ( \" ingested_at \" ). desc () ) latest = ( previous . unionByName ( new_rows ) . withColumn ( \" rn \" , F . row_number (). over ( w )) . filter ( \" rn = 1 \" ) . drop ( \" rn \" ) ) out . set_mode ( \" replace \" ) out . write_dataframe ( latest ) The trade-off is visible: the extraction and changelog are incremental, but this current-state dataset is still rewritten each run. For very large tables, teams may partition the current-state output, or have consumers read from the changelog through a view. The decorator style above is the classic API; check your repository template for the syntax your Foundry version uses. Managing Schema Evolution Schema changes cause more migration incidents than transformation logic does, because they often fail silently. Change Typical risk Column added Low, unless consumers use SELECT * or positional reads Field renamed Breaks consumers; can look like a dropped column plus a new null column Type changed Silent nulls on failed casts, precision loss, timezone shifts Field removed Breaks consumers and business rules that depend on it Nested structure changed Breaks flattening logic, often deep inside the pipeline Source version upgrade Several of the above at once, often undocumented Practices that help: Schema contracts. Define the canonical output schema explicitly and treat changes to it as reviewed changes. Explicit mappings. Map source fields to canonical fields by name, never by position. Version-aware transforms. Handle known source versions deliberately instead of hoping the shape stays stable. Validation before promotion. Foundry Data Expectations let a transform fail a build when checks don't pass, for example Check(E.primary_key(\"order_id\"), \"orders pk\", on_error=\"FAIL\") . Foundry also supports branching, so schema changes can be built and checked on a branch before merging. Consumer impact analysis. Use Foundry's data lineage to see which downstream datasets and applications read a column before you change it. Example: a source rename and type change The ERP upgrade renames cust_id to customer_id and changes amount from string to decimal. from pyspark.sql import functions as F , types as T CANONICAL = { \" order_id \" : T . StringType (), \" customer_id \" : T . StringType (), \" amount \" : T . DecimalType ( 18 , 2 ), \" updated_at \" : T . TimestampType (), } RENAMES = { \" cust_id \" : \" customer_id \" } # known source v1 -> v2 mapping def to_canonical ( df ): for old , new in RENAMES . items (): if old in df . columns and new not in df . columns : df = df . withColumnRenamed ( old , new ) missing = [ c for c in CANONICAL if c not in df . columns ] if missing : raise ValueError ( f \" Schema contract violated, missing: { missing } \" ) return df . select ([ F . col ( c ). cast ( t ). alias ( c ) for c , t in CANONICAL . items ()]) One catch: with Spark's default (non-ANSI) settings, a failed cast returns null instead of raising an error. Pair the mapping with a null-rate check on amount . Also, if the output schema of an incremental transform changes, appending to the existing output will typically conflict. Bumping semantic_version to force a full rebuild is the cleaner path. Reconciliation Between Legacy and Foundry Pipelines Matching row counts proves very little. Two tables can have identical counts while one has duplicated keys, swapped values, or nulls where the other has data. Reconcile at several levels: Level What it catches Row counts Gross load failures, filter differences Key coverage Records present in only one output Duplicate detection Join fan-out, broken dedup logic Aggregate totals Sums by date, region, product; rounding drift Null rates per column Failed casts, broken mappings Record-level comparison Value differences on matching keys Business-rule validation Rules that must hold regardless of either pipeline Sample-based review Human inspection where full comparison is impractical A common approach is to ingest the legacy output into Foundry via Data Connection, then compare in a dedicated reconciliation transform: COMP",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Incremental Transforms：增量只读新增行，版本变更强制全量重算",
+        "feature_tag": "数据管道与增量处理",
+        "arch_layer": "L1 数据接入与管道层 (Data Connection / Pipeline Builder)",
+        "arch_position": "位于 Code Repositories 的 Python Transform 执行层，介于 Data Connection 增量同步（入站水位线）与下游 Ontology 对象物化之间。负责将 append-only changelog 转换为 current-state 视图，是 ETL 迁移中替代 truncate-and-reload 的核心计算单元。",
+        "related_history": "此前推送集中在 L2~L4 层（Ontology Functions、Agent Studio、Workshop、Automate、Evals），本次首次拆解 L1 数据管道层的增量计算机制与 Schema 契约校验，补齐从源系统到本体之间的工程细节。",
+        "core_concept": "常规全量重建随数据总量线性增长且失败会留半写脏数据；Foundry 用事务提交保证原子可见性，用 @incremental 装饰器让 transform 只读上次成功构建后新增的行，逻辑变更时靠 semantic_version 递增强制全量重算。",
+        "product_mechanics": [
+          "@incremental(semantic_version=N) 标记 transform → 运行时 Input.dataframe() 只返回上次 commit 后追加的行 → Output 可选 append 或 replace 模式写出；当 semantic_version 递增时系统忽略增量状态，触发全量重算并重置水位线",
+          "上游数据集若被 snapshot 整体替换而非 append → 下游 incremental transform 无法识别增量边界 → 系统拒绝增量执行或回退全量；因此 changelog 必须保持 append-only，current-state 表用 Window+row_number 按 order_id 去重取最新行后 replace 写出"
+        ],
+        "scenario_usage": "数据工程师在 Code Repositories 提交带 @incremental 的 Python transform → Foundry 调度器按依赖图触发构建 → 只处理新增 changelog 行并将 current-state 结果以事务写入目标 dataset",
+        "aip_inspiration": [
+          "取舍差异：放弃了数据库原生 upsert 能力，要求开发者自行用窗口函数建模 latest-state-per-key；换来的是每次构建都有事务级原子性和可回溯的版本链，失败不会污染下游消费",
+          "最小实现要素：需定义 changelog 表含业务主键、updated_at、ingested_at 三个排序字段；transform 元数据存 semantic_version 整型与 last_committed_offset；输出表按业务日期分区；校验规则为 cast 后 null_rate 超阈值则 FAIL 阻断提交"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Incremental Transform（增量构建装饰器）",
+            "arch_layer": "L1 数据接入与管道层 (Data Connection / Pipeline Builder)",
+            "palantir_spec": "① 配置项/入参：@incremental 装饰器接收 semantic_version 整型；Input 指向 append-only changelog dataset；Output 指定目标 dataset 路径与 write mode（append/replace）。\n② 校验与拦截规则：上游 dataset 最新事务类型必须为 APPEND；若为 SNAPSHOT 则增量不可用，需回退全量或报错；semantic_version 与上次构建记录不一致时强制全量。\n③ 执行与异常边界：通过校验后只读取新增行执行用户逻辑，写出结果以新事务提交；构建失败时事务不提交，下游看不到半成品数据，下次重试从同一 offset 继续。",
+            "our_action": "• 适用痛点：夜间全量重建耗时随数据膨胀线性增长，且中途失败留下脏表影响报表。\n• 最小实现要素：建 changelog 表（主键+事件时间+入库时间）；transform 注册表存 version 与 offset；输出表加事务状态字段；实现 offset 比对与 version 变更检测接口。\n• 局限与代价：不支持原生 upsert，latest-state 需额外窗口函数计算；上游必须保证 append-only 语义，snapshot 源需先转 changelog。"
+          },
+          {
+            "component_name": "Data Expectations（数据质量断言门禁）",
+            "arch_layer": "L1 数据接入与管道层 (Data Connection / Pipeline Builder)",
+            "palantir_spec": "① 配置项/入参：在 transform 代码中声明 Check 对象，指定检查类型（primary_key、not_null、null_rate 等）、目标列名、on_error 策略（FAIL/WARN）。\n② 校验与拦截规则：构建完成后系统对输出 dataframe 执行所有 Check；任一 on_error=FAIL 的断言不通过则整个事务标记失败，不对外发布。\n③ 执行与异常边界：全部通过则正常提交事务；失败时输出 dataset 保持上一版本不变，开发者修复后重新触发构建即可，无需手动清理脏数据。",
+            "our_action": "• 适用痛点：源系统字段重命名或类型变更后 Spark 默认 cast 静默返回 null，下游报表出错却无告警。\n• 最小实现要素：定义 checks 配置表（check_type、column、threshold、on_error）；transform 执行末尾插入断言引擎；断言失败时将 build 状态写为 FAILED 并阻止版本发布。\n• 局限与代价：断言只能校验输出侧统计特征，无法捕获值交换等逻辑错误；需配合 reconciliation 做跨管道逐行比对才能覆盖全部场景。"
+          }
+        ]
+      }
     },
     "https://dev.to/kaviwrites/designing-a-palantir-foundry-ontology-that-holds-up-in-production-object-types-link-types-and-5gel": {
       "url": "https://dev.to/kaviwrites/designing-a-palantir-foundry-ontology-that-holds-up-in-production-object-types-link-types-and-5gel",
@@ -540,7 +605,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -1463,7 +1528,8 @@
       "feature_focus": "AT&T 实战案例中 AIP Logic 与 Automate 联动实现运营支持自动化的完整工作流演示",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=0WdJKxEphQY": {
       "url": "https://www.youtube.com/watch?v=0WdJKxEphQY",
@@ -1727,7 +1793,7 @@
       "summary": "Forward Deployed Engineers: The Go-To-Market Model Behind the AI Agent Boom Continue reading on Medium »",
       "score": 9,
       "feature_focus": "Forward Deployed Engineers（FDE）模式：解释 Palantir 如何通过嵌入式工程团队推动 AI Agent 在企业中的落地与规模化",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1752,7 +1818,7 @@
       "summary": "The Octopus Model for Enterprise Transformation Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "Octopus 模型：系统性描述 Palantir AIP 如何通过多阶段、模块化方式加速企业级数据迁移与系统重构",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1768,7 +1834,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5",
@@ -1778,7 +1844,7 @@
       "summary": "AIPCon 8 Demo Showcase — Part Two Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "AIPCon 8 制造业/保险/建筑行业演示：还原 AIP 在真实业务场景中构建可解释、可追踪的 AI 工作流的完整闭环",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1835,7 +1901,7 @@
       "summary": "Anchoring AI agents into the enterprise Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "CSE（Conversational Systems Engine）#2：将自然语言对话转化为可执行操作的 AI Agent 架构与企业集成机制",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1863,7 +1929,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/industry-ai-8cd003a81be1?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/industry-ai-8cd003a81be1?source=rss------palantir_aip-5",
@@ -1972,7 +2038,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5",
@@ -1985,7 +2051,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5",
@@ -2010,7 +2076,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://towardsdatascience.com/ontoloysim-an-ontology-based-production-simulation-for-python-fd8c40cd8a4": {
       "url": "https://towardsdatascience.com/ontoloysim-an-ontology-based-production-simulation-for-python-fd8c40cd8a4",
@@ -2068,9 +2134,41 @@
       "summary": "Own the benchmark. Shape the model. Encode your alpha. At DevCon 7, Palantir Software Engineers launched new capabilities across Model Studio and Trace Curation to bring fine tuning closer to the enterprise. This captures production traces from AIP workflows within the Show more 00:00 43 397 159K",
       "score": 9,
       "feature_focus": "Model Studio 中的微调能力与生产级 trace 收集机制，实现企业对 AI 模型训练过程的掌控",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-22",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Trace Curation：生产trace入本体转微调训练集",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于AIP工作流执行侧与Model Studio训练侧之间。上游消费AIP Logic/Agent运行时产生的调用记录，下游产出带Ontology对象引用的训练样本资产，供Model Studio发起微调任务。原文只点到Model Studio与Trace Curation两个模块名，未披露内部服务拆分，此处按数据流向定位，不臆测内部落位。",
+        "related_history": "与11-21的AIP Evals教程互补：Evals解决『拿测试集给模型打分』，本篇解决『训练集从哪来』。与11-19的Ontology Scenarios/Snapshots形成对照：Snapshot冻结业务时刻用于可复现评测，Trace Curation沉淀真实运行轨迹用于训练。与同批Workflow Lineage的区别在于用途——Lineage面向排障与可观测，Trace Curation面向数据资产化，同一份trace两种消费方式。",
+        "core_concept": "常规微调用人工标注或脱敏日志当训练集，样本脱离业务对象，模型学不到企业专有判断。Palantir把生产trace连同Ontology上下文一起落成训练资产，样本自带业务语义。",
+        "product_mechanics": [
+          "采集开关按AIP工作流粒度配置，指定要记录的函数与Agent节点。运行时每次调用写入一条trace，含入参、检索到的Ontology对象引用、模型输出、人工是否采纳。未开启的节点不落记录。",
+          "策展环节对trace做筛选与打标，剔除失败调用和未被采纳的输出，保留人工修正后的正确答案作为标签。筛出的集合绑定版本号，交给Model Studio作为微调输入，训练产出的模型再注册回平台供Logic调用。"
+        ],
+        "scenario_usage": "业务人员在Workshop里修正Agent建议并提交 → 该次trace被标记为已修正 → 策展时纳入训练集 → Model Studio微调后新模型上线替换原函数。",
+        "aip_inspiration": [
+          "省掉了单独建标注平台和人工写样本这一步，训练数据由日常操作副产物直接生成；代价是必须先有稳定的线上流量，冷启动阶段无数据可用。",
+          "至少定义trace表：trace_id、workflow_id、node_id、input_payload、context_object_refs、model_output、human_verdict枚举、corrected_output、dataset_version。校验规则：human_verdict为空或调用报错的记录不得进训练集。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Trace Curation（生产轨迹策展为训练集）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：按工作流与节点开启trace采集，记录入参、Ontology对象引用、模型输出、人工采纳或修正结果。\n② 校验：调用失败、无人工反馈的记录不进候选集；样本必须携带有效的对象引用，引用失效则剔除。\n③ 执行：通过筛选的trace打包为带版本号的训练数据资产，挂在Ontology上可被查询与复用；策展结果可回退到上一版本重新筛选。",
+            "our_action": "• 痛点：微调缺高质量领域样本，人工标注贵且滞后于业务变化。\n• 最小实现：建trace表与curation_dataset表，加human_verdict、corrected_output、object_refs、dataset_version字段，提供筛选与打包接口。\n• 代价：依赖线上已有稳定流量与人工反馈埋点，冷启动无数据；trace含业务敏感内容，需同步做访问控制。"
+          },
+          {
+            "component_name": "Model Studio Fine-tuning（企业自有模型微调）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：选基座模型、绑定策展后的训练数据版本、设定训练参数与产出模型名称。\n② 校验：训练集版本必须已固化且样本数达阈值，数据来源须可追溯到具体trace，否则拒绝提交任务。\n③ 执行：训练完成后模型注册进平台，可被AIP Logic函数按名引用；效果不达预期时函数配置切回原模型，不影响线上链路。",
+            "our_action": "• 痛点：通用模型在专有术语与判断口径上不稳，靠提示词堆叠难以收敛。\n• 最小实现：建finetune_job表，记录base_model、dataset_version、hyperparams、output_model_id、status，提供提交与模型注册接口。\n• 代价：需自备训练算力与模型托管能力；模型迭代后要重跑评测，切换有回归风险。"
+          }
+        ]
+      }
     },
     "https://x.com/PalantirTech/status/2120251578728812685": {
       "url": "https://x.com/PalantirTech/status/2120251578728812685",
@@ -2176,7 +2274,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=YB4ev1hGVN0": {
       "url": "https://www.youtube.com/watch?v=YB4ev1hGVN0",
@@ -2188,7 +2286,8 @@
       "feature_focus": "使用 AIP Logic 构建 RAG 工作流的完整端到端实现路径，包含上下文注入与逻辑编排",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=U6Hxj6NB3us": {
       "url": "https://www.youtube.com/watch?v=U6Hxj6NB3us",
@@ -2797,7 +2896,8 @@
       "feature_focus": "在Palantir Foundry中通过Workshop构建首个业务应用的完整流程与交互设计",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
       "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
@@ -2836,7 +2936,8 @@
       "feature_focus": "Ontology-Driven Agents 的发布与开发者视角下的 Agent 编排机制设计",
       "status": "unread",
       "added_at": "2026-11-17",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=nrIBTVh3sqc": {
       "url": "https://www.youtube.com/watch?v=nrIBTVh3sqc",
@@ -3136,7 +3237,8 @@
       "feature_focus": "AIP Agent Studio 从只读 Agent 升级为操作型 Agent：Ontology Context、工具/Action 调用等三大支柱的搭建实操",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=LKXvbuxiNyA": {
       "url": "https://www.youtube.com/watch?v=LKXvbuxiNyA",
@@ -3149,7 +3251,8 @@
       "feature_focus": "Ontology 本体概念本质：作为 AI 的语义世界模型，Palantir 与 AWS 的本体建模实践对比",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=LNurFCPRzMk": {
       "url": "https://www.youtube.com/watch?v=LNurFCPRzMk",
@@ -3233,7 +3336,8 @@
       "feature_focus": "AIP Logic 内置 Evaluation Suite 的使用方式：逻辑函数的评估与回归验证",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -3312,7 +3416,8 @@
       "feature_focus": "第三方拆解 American Airlines 在 AIPCon 2025 的真机 Demo，还原航空运营场景下 AIP 的具体功能与工作流",
       "status": "unread",
       "added_at": "2026-11-20",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=IZRCw5WnJm8": {
       "url": "https://www.youtube.com/watch?v=IZRCw5WnJm8",
@@ -3325,7 +3430,8 @@
       "feature_focus": "Citi Wealth 用 AIP 重构财富管理案件处理流程（9天→秒级），展示 Agent 驱动的端到端业务工作流与效率量化",
       "status": "unread",
       "added_at": "2026-11-20",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=I7siZgE533E": {
       "url": "https://www.youtube.com/watch?v=I7siZgE533E",
@@ -3377,7 +3483,8 @@
       "feature_focus": "Parts Town 用 AIP 赋能一线客服与现场服务：备件领域的客户支持工作流与 AIP 落地实战案例",
       "status": "unread",
       "added_at": "2026-11-20",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=EvoCRLMvN5s": {
       "url": "https://www.youtube.com/watch?v=EvoCRLMvN5s",
@@ -3495,7 +3602,7 @@
       "status": "unread",
       "added_at": "2026-11-21",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://munaeem.medium.com/ukraine-is-fighting-the-war-who-will-own-the-technology-it-creates-af024b0c7706?source=rss------palantir-5": {
       "url": "https://munaeem.medium.com/ukraine-is-fighting-the-war-who-will-own-the-technology-it-creates-af024b0c7706?source=rss------palantir-5",
@@ -3521,6 +3628,98 @@
       "feature_focus": "Foundry FDE 岗位招聘广告，无任何产品功能信息",
       "status": "rejected",
       "added_at": "2026-11-21",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=r1cnPlc00jQ": {
+      "url": "https://www.youtube.com/watch?v=r1cnPlc00jQ",
+      "raw_url": "",
+      "title": "[视频 · Palantir] The Secure Foundation for Sovereign AI | Cisco at AIPCon 11",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：The Secure Foundation for Sovereign AI | Cisco at AIPCon 11。简介：The difference between secure delegation and plain delegation is the difference between market leadership and bankruptcy.",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "AIPCon 客户演讲：Cisco 基于 Palantir 的主权 AI 安全底座，核心切面是「安全委派 vs 普通委派」的 Agent 授权与权限边界设计（简介偏口号，功能细节待验证）",
+      "status": "unread",
+      "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=PWlk_f_hfcc": {
+      "url": "https://www.youtube.com/watch?v=PWlk_f_hfcc",
+      "raw_url": "",
+      "title": "[视频 · Palantir] AIP in Action | Palantir's Ted Mabrey at AIPCon",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：AIP in Action | Palantir's Ted Mabrey at AIPCon。简介：",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Palantir 产品负责人 Ted Mabrey 的 AIP in Action 现场演示，端到端展示 Ontology + AIP Agent/Logic 在真实业务流中的操作路径与交互形态",
+      "status": "unread",
+      "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=vnhcPBf9UoY": {
+      "url": "https://www.youtube.com/watch?v=vnhcPBf9UoY",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Delivering AI to Every Farmer in America | USDA at AIPCon 10",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Delivering AI to Every Farmer in America | USDA at AIPCon 10。简介：At AIPCon 10, USDA Chief Information Officer Sam Berry reveals how Palantir turned hundreds of fragmented legacy systems into ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "USDA 实战案例：用 Foundry 数据整合把数百个碎片化遗留系统统一为 Ontology 语义层，再由 AIP 把 AI 能力下发到一线农户的完整落地工作流",
+      "status": "unread",
+      "added_at": "2026-11-22",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=1HBryjBIy7Y": {
+      "url": "https://www.youtube.com/watch?v=1HBryjBIy7Y",
+      "raw_url": "",
+      "title": "[视频 · PaIantir⠀] Cummins on Effective AI Implementation with Palantir | AIPCon 3",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (PaIantir⠀)",
+      "summary": "YouTube 频道 PaIantir⠀ 视频讲解：Cummins on Effective AI Implementation with Palantir | AIPCon 3。简介：",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Cummins 制造业 AI 落地案例：AIP 在工业场景的实施方法论与业务闭环（来源频道名含同形异体字疑似仿冒搬运，需核验真伪后入池）",
+      "status": "unread",
+      "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-3-engineering-enterprise-llm-systems-case-study-architecting-a-graphrag-customer-support-ca322fec5643?source=rss------palantir-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-3-engineering-enterprise-llm-systems-case-study-architecting-a-graphrag-customer-support-ca322fec5643?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Part 3 : Engineering Enterprise LLM Systems — Case Study: Architecting a GraphRAG Customer Support…",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "通用企业级 GraphRAG 客服系统架构案例（知识图谱+检索增强），可类比 Ontology 语义检索，但摘要未见任何 Palantir 产品模块对应关系",
+      "status": "rejected",
+      "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-2-engineering-enterprise-llm-systems-7-core-design-patterns-for-production-llm-systems-56979bb2fa70?source=rss------palantir-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-2-engineering-enterprise-llm-systems-7-core-design-patterns-for-production-llm-systems-56979bb2fa70?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Part 2 : Engineering Enterprise LLM Systems - 7 Core Design Patterns for Production LLM Systems",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "生产级 LLM 系统的 7 种通用设计模式（编排、护栏、评估等），属泛 GenAI 工程方法论，非 Palantir AIP Logic/Evals 的具体机制拆解",
+      "status": "rejected",
+      "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/engineering-enterprise-llm-systems-part-1-the-mindset-shift-the-atomic-units-of-generative-ai-7a3cf43a0cad?source=rss------palantir-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/engineering-enterprise-llm-systems-part-1-the-mindset-shift-the-atomic-units-of-generative-ai-7a3cf43a0cad?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Part 1 : Engineering Enterprise LLM Systems -The Mindset Shift & The Atomic Units of Generative AI",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 5,
+      "feature_focus": "GenAI 从原型到企业系统的思维转变与「原子单元」抽象概念，纯理念铺垫，无 Palantir 产品功能或 Ontology 概念映射",
+      "status": "rejected",
+      "added_at": "2026-11-22",
       "sent_at": ""
     }
   }
