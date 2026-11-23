@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22 01:04:05",
+  "updated_at": "2026-11-23 01:05:52",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -604,8 +604,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false,
-      "fetch_fail_count": 2
+      "bitable_synced": false
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -839,7 +838,8 @@
       "feature_focus": "基于官方免费课程的全流程实操演示，展示从数据接入到 AIP 工作流构建的端到端工作流搭建方法",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=kcMgaLi3Yqs": {
       "url": "https://www.youtube.com/watch?v=kcMgaLi3Yqs",
@@ -1529,7 +1529,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=0WdJKxEphQY": {
       "url": "https://www.youtube.com/watch?v=0WdJKxEphQY",
@@ -1831,10 +1831,41 @@
       "summary": "Move from Prototype to Production Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": "2026-11-23",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Agentic Runtime：Agent权限按三重身份动态求交",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 Agent 编排层（AIP Logic / Agent Studio）与 Ontology 数据访问之间的运行时权限裁决层。每次 Agent 执行工具调用或读写 Ontology 对象时，该层拦截请求并实时计算有效权限集合，决定放行或静默丢弃。",
+        "related_history": "此前推送的 Agent Studio 文档侧重 Agent 构建时的工具权限配置（静态声明），本篇拆解的是运行时动态权限裁决——同一个 Agent 面对不同委托用户时，实际可触达的数据和通知范围在每次调用时重新计算。两者是配置态 vs 运行态的关系。",
+        "core_concept": "常规做法给Agent一个固定服务账号权限，导致Agent输出泄露给无权查看该数据的用户。Palantir要求每次执行同时校验owner、service scope、当前委托人三重身份，取交集后才放行，无权用户连执行记录都看不到。",
+        "product_mechanics": [
+          "机制点1：Agent orchestration绑定三个权限源——配置者owner权限、agent service user的OSDK scope、当前on-behalf-of用户的属性标签。运行时对每次Ontology读写请求，系统取三者交集作为有效权限集，缺任一维度则拒绝该次数据访问。",
+          "机制点2：当Agent产出结果需通知下游用户时，系统逐条校验接收者的marking和role是否覆盖该结果所涉数据的分类标签。不满足的用户不仅收不到通知，在orchestration界面中也查不到该条执行记录，实现静默隔离而非报错提示。"
+        ],
+        "scenario_usage": "销售分析Agent处理含欧洲客户数据的商机时，系统校验每条输出涉及的地理标记，仅向持有欧洲数据marking的用户推送结果并展示执行日志，其余用户完全无感知。",
+        "aip_inspiration": [
+          "取舍差异：放弃了给Agent单一高权限服务账号的简便做法，换来每次调用都做三维权限求交的运行时开销，但杜绝了跨权限域数据泄露。",
+          "最小实现要素：orchestration表需存owner_id、service_scope_id、delegated_user_id三字段；每次工具调用前查询三方权限集取交集；通知分发前按接收者marking过滤，未通过者不写入可见日志表。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Tri-identity Permission Intersection（三重身份运行时权限求交）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项/入参：每个orchestration实例绑定owner_user_id、agent_service_scope（OSDK权限枚举）、runtime_delegated_user_id；Ontology对象附带row-level marking和column-level policy。\n② 校验与拦截规则：每次数据访问时实时计算三方权限交集，若请求涉及的行或列不在交集内则静默拒绝，不返回错误信息给Agent。\n③ 执行与异常边界：通过后正常读写Ontology；拒绝时Agent收到空结果而非异常，避免Agent因报错而重试绕过；所有裁决写入不可变审计日志。",
+            "our_action": "• 适用痛点：多租户或多地域场景下Agent输出可能泄露给无权用户，需在运行时而非构建时做细粒度拦截。\n• 最小实现要素：orchestration元数据表加owner_id/service_scope/delegate_id三字段；权限裁决中间件在每次tool call前查三方ACL取交集；审计日志表记录每次裁决结果。\n• 局限与代价：每次调用增加一次权限查询延迟；要求底层数据已打好行级和列级分类标签，否则交集计算无意义。"
+          },
+          {
+            "component_name": "Ontology-backed Memory Governance（本体承载的四类记忆统一策略管控）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项/入参：将working memory、episodic memory、semantic memory、procedural memory分别建模为Ontology对象类型；每类对象继承Ontology统一的marking、row/column policy和SSO属性传播规则。\n② 校验与拦截规则：Agent读写任何memory对象时，走与普通业务数据相同的动态策略引擎；PII标记的对象仅在delegate用户持有对应属性时可读取。\n③ 执行与异常边界：写入通过Ontology Action完成，自动记录session ledger；策略变更即时生效于下一次memory读取，无需重启Agent。",
+            "our_action": "• 适用痛点：Agent记忆散落在Redis/向量库/代码常量中，无法统一施加数据分类策略，导致敏感信息残留在不受控存储里。\n• 最小实现要素：定义memory_object表含type枚举(working/episodic/semantic/procedural)、content字段、marking_ids外键；读写接口复用业务数据同一套policy engine；写入走统一action接口留审计记录。\n• 局限与代价：所有记忆必须结构化存入Ontology，放弃了直接操作外部向量库的灵活性；向量检索需在本体属性上建embedding索引，增加建模工作量。"
+          }
+        ]
+      }
     },
     "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5": {
       "url": "https://blog.palantir.com/inside-the-aipcon-8-demos-transforming-manufacturing-insurance-and-construction-2ef01d53ea96?source=rss------palantir_aip-5",
@@ -1926,7 +1957,7 @@
       "summary": "Advancing the Mission While Protecting Victims’ Sensitive Data Continue reading on Palantir Blog »",
       "score": 10,
       "feature_focus": "Polaris 反人口贩卖项目实战：展示 AIP 如何在保护敏感数据前提下，实现跨机构情报融合与高可信度 AI 推理",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -2037,8 +2068,7 @@
       "feature_focus": "从会议记录到本体对象的自动化转化流程，展示 Foundry 中 Ontology 与 AI Agent 的联动机制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": ""
     },
     "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5",
@@ -2048,10 +2078,41 @@
       "summary": "Every real estate product eventually runs into the same quiet problem: the same address means five different things depending on which… Continue reading on Medium »",
       "score": 10,
       "feature_focus": "基于本体原生设计解决地址语义歧义问题，构建消费者级房地产应用的实战案例",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": "2026-11-23",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Ontology单对象：多界面只读同一份房产记录",
+        "feature_tag": "Ontology与动作建模",
+        "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+        "arch_position": "位于数据接入之后、Workshop界面之前。多个外部feed各自落库，经实体解析与富化后收敛为一个Property对象；买家工作台、卖家控制台、对比视图、市场趋势看板全部绑定这一个对象集读取，不再各存副本。",
+        "related_history": "11-21 Workshop人机协同界面讲的是把Ontology视图与Action按钮拼成操作台；本篇补的是它下面的数据前提——所有界面共用一个对象、没有第二份副本，以及跨feed地址解析和FMV判定的具体规则。",
+        "core_concept": "常规做法每个界面各存一份房产副本，靠夜间批处理对齐，批处理挂了没人知道，数据静默错乱。这里房产只建一个本体对象，所有界面只读它，系统里没有第二份副本，对齐这一步被删掉。",
+        "product_mechanics": [
+          "每个feed配独立egress策略落成独立dataset，下游富化层按地址做实体解析join，匹配不上的记录不进主对象，最终收敛到界面读取的那一个Property对象。",
+          "FMV判定入参是该房源每平方英尺价与同ZIP同类中位数，算偏离度输出Overpriced/Underpriced/Fairly Priced四档枚举；同ZIP可比房源不足时直接返回Insufficient Data，不给结论。"
+        ],
+        "scenario_usage": "买家在网格点收藏或约看 → Workshop组件调Action写回同一Property对象 → 卖家控制台在同一记录上看到visit请求并approve或decline。",
+        "aip_inspiration": [
+          "省掉了数据库、API层和界面间同步代码，代价是放弃各界面自定义数据结构，所有字段必须先在本体里定义好，界面只能读不能另存。",
+          "至少定义object_id、address_raw、zip、price_per_sqft、zip_peer_median、comparable_count、fmv_verdict枚举；校验规则：comparable_count低于阈值时verdict强制置为Insufficient Data。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Fair Market Value（定价偏离分级）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 入参：price_per_sqft、zip、同ZIP peer中位数、可比房源数。\n② 校验：可比数达阈值才计算偏离度，否则拦截输出Insufficient Data。\n③ 执行：按偏离区间映射四档枚举写回对象；无成交回测前只作信号，不当估值结论。",
+            "our_action": "• 痛点：挂牌价没有独立基准，买卖双方判断不了贵贱。\n• 最小实现：建peer_median聚合表，加comparable_count与阈值字段，写一个分级Function。\n• 代价：冷门ZIP长期无结论，且需定期回测校准阈值。"
+          },
+          {
+            "component_name": "Bookmark Variable（对比视图选择态）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 入参：两个bookmark变量，各存一个object引用而非数据副本。\n② 校验：引用必须指向同一对象集内的合法object_id，失效引用报错清空。\n③ 执行：两侧面板各自按引用实时读同一对象渲染，对象更新后两侧同步变化，不存在不一致。",
+            "our_action": "• 痛点：对比页复制数据集导致两侧数字对不上。\n• 最小实现：界面状态只存object_id列表，渲染时按id实时查对象接口。\n• 代价：每次渲染都打查询，依赖对象层低延迟读取能力。"
+          }
+        ]
+      }
     },
     "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@sainathde/palantirs-aipcon-11-where-enterprise-sovereignty-takes-shape-9e53e13546d5?source=rss------palantir_foundry-5",
@@ -2287,7 +2348,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=U6Hxj6NB3us": {
       "url": "https://www.youtube.com/watch?v=U6Hxj6NB3us",
@@ -2897,7 +2958,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
       "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
@@ -3265,7 +3326,8 @@
       "feature_focus": "Foundry AIP Evals 评测模块的功能探索与界面走查",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=iMF6cnU3o3o": {
       "url": "https://www.youtube.com/watch?v=iMF6cnU3o3o",
@@ -3278,7 +3340,8 @@
       "feature_focus": "AIP Evals 官方讲解：用评估体系把生成式 AI 从实验推进到企业生产运营",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=79x-Xf0VZ4Y": {
       "url": "https://www.youtube.com/watch?v=79x-Xf0VZ4Y",
@@ -3337,7 +3400,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -3720,6 +3783,84 @@
       "feature_focus": "GenAI 从原型到企业系统的思维转变与「原子单元」抽象概念，纯理念铺垫，无 Palantir 产品功能或 Ontology 概念映射",
       "status": "rejected",
       "added_at": "2026-11-22",
+      "sent_at": ""
+    },
+    "https://medium.com/@tsuzurihara.kouro/what-is-an-ontology-a-beginners-guide-to-the-map-of-your-business-for-the-ai-era-0e959c8baeb0?source=rss------palantir-5": {
+      "url": "https://medium.com/@tsuzurihara.kouro/what-is-an-ontology-a-beginners-guide-to-the-map-of-your-business-for-the-ai-era-0e959c8baeb0?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "What Is an Ontology? A Beginner’s Guide to the “Map of Your Business” for the AI Era",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "Why Smart AI Stumbles on Everyday Business Tasks Continue reading on Medium »",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology 核心概念本质：将业务实体建模为 AI 可理解的「业务地图」，解决 LLM 缺乏业务语义上下文的问题",
+      "status": "unread",
+      "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5": {
+      "url": "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Palantir Platform Challenge: Adding One Node",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "A conversation about versions, install-base records, and gates that can be overridden Continue reading on Medium »",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Ontology 对象版本管理与 Action Gate（门控覆写）机制的实操演练，涉及节点新增时的数据一致性与权限约束设计",
+      "status": "unread",
+      "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-5-engineering-enterprise-llm-systems-the-complete-palantir-architecture-implementation-4d7798d99749?source=rss------palantir-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-5-engineering-enterprise-llm-systems-the-complete-palantir-architecture-implementation-4d7798d99749?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Part 5: Engineering Enterprise LLM Systems-The Complete Palantir Architecture & Implementation…",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Palantir AIP 完整架构拆解：从 Ontology 到 LLM 编排的企业级 GenAI 系统端到端实现路径与安全可控设计",
+      "status": "unread",
+      "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Part 4: Engineering Enterprise LLM Systems — From Theory to Execution: Mapping LLM Patterns to…",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "LLM 应用模式（RAG/Agent/Tool-use）与 Palantir AIP 产品模块的映射关系，理论到落地的功能对照",
+      "status": "unread",
+      "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-5-engineering-enterprise-llm-systems-the-complete-palantir-architecture-implementation-4d7798d99749?source=rss------palantir_foundry-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-5-engineering-enterprise-llm-systems-the-complete-palantir-architecture-implementation-4d7798d99749?source=rss------palantir_foundry-5",
+      "raw_url": "",
+      "title": "Part 5: Engineering Enterprise LLM Systems-The Complete Palantir Architecture & Implementation…",
+      "source": "Medium Palantir Foundry 专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "【与 index 3 重复】Palantir AIP 完整架构拆解：企业级 GenAI 系统端到端实现路径与安全可控设计",
+      "status": "unread",
+      "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5": {
+      "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5",
+      "raw_url": "",
+      "title": "Part 4: Engineering Enterprise LLM Systems — From Theory to Execution: Mapping LLM Patterns to…",
+      "source": "Medium Palantir Foundry 专栏",
+      "summary": "(A 5-part series on moving Generative AI from fragile prototypes to secure, scalable enterprise systems) Continue reading on Medium »",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "【与 index 4 重复】LLM 应用模式与 Palantir AIP 产品模块的映射关系，理论到落地的功能对照",
+      "status": "unread",
+      "added_at": "2026-11-23",
       "sent_at": ""
     }
   }

@@ -16,10 +16,12 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 17 篇）
+## 📅 已推送洞察总览表（共 19 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-23 | L3 Agent 编排与评测层 | **Agentic Runtime：Agent权限按三重身份动态求交** | Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略 | [Medium Palantir AIP 专栏](https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5) |
+| 2026-11-23 | L2 本体与动作层 | **Ontology单对象：多界面只读同一份房产记录** | 基于本体原生设计解决地址语义歧义问题，构建消费者级房地产应用的实战案例 | [Medium Palantir Foundry 专栏](https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5) |
 | 2026-11-22 | L3 Agent 编排与评测层 | **Workflow Lineage：AIP执行链路追踪与生产可观测** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/aip-observability/) |
 | 2026-11-22 | L3 Agent 编排与评测层 | **Trace Curation：生产trace入本体转微调训练集** | Model Studio 中的微调能力与生产级 trace 收集机制，实现企业对 AI 模型训练过程的掌控 | [X @PalantirTech (官方产品与DevCon动态)](https://x.com/PalantirTech/status/2121278958683500549) |
 | 2026-11-22 | L1 数据接入与管道层 | **Incremental Transforms：增量只读新增行，版本变更强制全量重算** | Legacy ETL 迁移至 Foundry 时的增量处理、模式演进与无停机验证策略 | [Dev.to Palantir 技术专栏](https://dev.to/kaviwrites/migrating-legacy-etl-to-palantir-foundry-incremental-transforms-schema-evolution-and-18lm) |
@@ -53,7 +55,18 @@
   - 取舍差异：放弃了数据库原生 upsert 能力，要求开发者自行用窗口函数建模 latest-state-per-key；换来的是每次构建都有事务级原子性和可回溯的版本链，失败不会污染下游消费
   - 最小实现要素：需定义 changelog 表含业务主键、updated_at、ingested_at 三个排序字段；transform 元数据存 semantic_version 整型与 last_committed_offset；输出表按业务日期分区；校验规则为 cast 后 null_rate 超阈值则 FAIL 阻断提交
 
-## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 3 篇）
+## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 4 篇）
+
+### [2026-11-23] Ontology单对象：多界面只读同一份房产记录
+- **原文**：[Medium Palantir Foundry 专栏 — Building Consumer-Grade Applications on Palantir Foundry: An Ontology-Native Real Estate Product](https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5)
+- **1. 解决什么问题**：常规做法每个界面各存一份房产副本，靠夜间批处理对齐，批处理挂了没人知道，数据静默错乱。这里房产只建一个本体对象，所有界面只读它，系统里没有第二份副本，对齐这一步被删掉。
+- **2. Palantir 怎么设计的**：
+  - 每个feed配独立egress策略落成独立dataset，下游富化层按地址做实体解析join，匹配不上的记录不进主对象，最终收敛到界面读取的那一个Property对象。
+  - FMV判定入参是该房源每平方英尺价与同ZIP同类中位数，算偏离度输出Overpriced/Underpriced/Fairly Priced四档枚举；同ZIP可比房源不足时直接返回Insufficient Data，不给结论。
+- **业务流转实例**：买家在网格点收藏或约看 → Workshop组件调Action写回同一Property对象 → 卖家控制台在同一记录上看到visit请求并approve或decline。
+- **3. 架构取舍与最小实现要素**：
+  - 省掉了数据库、API层和界面间同步代码，代价是放弃各界面自定义数据结构，所有字段必须先在本体里定义好，界面只能读不能另存。
+  - 至少定义object_id、address_raw、zip、price_per_sqft、zip_peer_median、comparable_count、fmv_verdict枚举；校验规则：comparable_count低于阈值时verdict强制置为Insufficient Data。
 
 ### [2026-11-19] Functions on Objects：业务逻辑绑定本体对象，统一计算入口
 - **原文**：[Palantir 官方产品文档 — Ontology 官方文档：Functions on Objects（对象函数与计算模型）](https://www.palantir.com/docs/foundry/functions/overview)
@@ -88,7 +101,18 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 7 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 8 篇）
+
+### [2026-11-23] Agentic Runtime：Agent权限按三重身份动态求交
+- **原文**：[Medium Palantir AIP 专栏 — Securing Agents in Production (Agentic Runtime, #1)](https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5)
+- **1. 解决什么问题**：常规做法给Agent一个固定服务账号权限，导致Agent输出泄露给无权查看该数据的用户。Palantir要求每次执行同时校验owner、service scope、当前委托人三重身份，取交集后才放行，无权用户连执行记录都看不到。
+- **2. Palantir 怎么设计的**：
+  - 机制点1：Agent orchestration绑定三个权限源——配置者owner权限、agent service user的OSDK scope、当前on-behalf-of用户的属性标签。运行时对每次Ontology读写请求，系统取三者交集作为有效权限集，缺任一维度则拒绝该次数据访问。
+  - 机制点2：当Agent产出结果需通知下游用户时，系统逐条校验接收者的marking和role是否覆盖该结果所涉数据的分类标签。不满足的用户不仅收不到通知，在orchestration界面中也查不到该条执行记录，实现静默隔离而非报错提示。
+- **业务流转实例**：销售分析Agent处理含欧洲客户数据的商机时，系统校验每条输出涉及的地理标记，仅向持有欧洲数据marking的用户推送结果并展示执行日志，其余用户完全无感知。
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃了给Agent单一高权限服务账号的简便做法，换来每次调用都做三维权限求交的运行时开销，但杜绝了跨权限域数据泄露。
+  - 最小实现要素：orchestration表需存owner_id、service_scope_id、delegated_user_id三字段；每次工具调用前查询三方权限集取交集；通知分发前按接收者marking过滤，未通过者不写入可见日志表。
 
 ### [2026-11-22] Workflow Lineage：AIP执行链路追踪与生产可观测
 - **原文**：[Palantir AIP 官方文档 — AIP 官方文档：AIP 可观测性与生产追踪 (Observability)](https://www.palantir.com/docs/foundry/aip/aip-observability/)
