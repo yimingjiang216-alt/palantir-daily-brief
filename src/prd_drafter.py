@@ -44,7 +44,7 @@ log = logging.getLogger("prd_drafter")
 # ── 飞书多维表格配置 ──────────────────────────────────────────────────────────
 APP_ID = os.environ.get("FEISHU_APP_ID", "").strip()
 APP_SECRET = os.environ.get("FEISHU_APP_SECRET", "").strip()
-APP_TOKEN = os.environ.get("FEISHU_BITABLE_APP_TOKEN", "HgMJwBdkliKFOEkuNOPcRN03n5e").strip()
+APP_TOKEN = os.environ.get("FEISHU_BITABLE_APP_TOKEN", "NLhFbhJNOaanjKsiLCgcWMVQn3f").strip()
 TABLE_ID = os.environ.get("FEISHU_BITABLE_TABLE_ID", "tblwrzm93a3XYFvU").strip()
 
 FEISHU_WEBHOOK = os.environ.get("FEISHU_WEBHOOK", "").strip()
