@@ -11,6 +11,7 @@ Palantir AIP 产品洞察 · 飞书推送模块
 """
 
 import os
+import re
 import json
 import time
 import base64
@@ -89,26 +90,29 @@ def _build_feishu_post(
         ])
 
         if concept:
+            c_clean = re.sub(r"^(痛点|业务痛点)[：:]\s*", "", concept)
             content_lines.append([
-                {"tag": "text", "text": f"1. 解决什么业务痛点\n{concept}"}
+                {"tag": "text", "text": f"• 痛点：{c_clean}"}
             ])
 
         if mechanics:
-            content_lines.append([
-                {"tag": "text", "text": "2. 这个功能是怎么工作的"}
-            ])
-            for m in mechanics[:3]:
+            m_joined = "；".join(
+                re.sub(r"^(做法|核心做法)[：:]\s*", "", m.strip())
+                for m in mechanics[:2] if m.strip()
+            )
+            if m_joined:
                 content_lines.append([
-                    {"tag": "text", "text": f"• {m}"}
+                    {"tag": "text", "text": f"• 做法：{m_joined}"}
                 ])
 
         if inspirations:
-            content_lines.append([
-                {"tag": "text", "text": "3. 产品设计亮点与取舍"}
-            ])
-            for ins in inspirations[:2]:
+            ins_joined = "；".join(
+                re.sub(r"^(巧思与取舍|设计巧思|产品边界与取舍)[：:]\s*", "", ins.strip())
+                for ins in inspirations[:2] if ins.strip()
+            )
+            if ins_joined:
                 content_lines.append([
-                    {"tag": "text", "text": f"• {ins}"}
+                    {"tag": "text", "text": f"• 巧思与取舍：{ins_joined}"}
                 ])
 
         if url:
@@ -176,13 +180,11 @@ def send_feishu(items, date_str=None, unread_count=0):
             arch_short = (r.get("arch_layer") or "").split(" (")[0].strip()
             print(f"\n{'=' * 66}")
             print(f"【{arch_short}】{r.get('title')}")
-            print(f"1. 解决什么业务痛点\n{r.get('core_concept')}")
-            print("2. 这个功能是怎么工作的")
-            for m in r.get("product_mechanics", [])[:3]:
-                print(f"• {m}")
-            print("3. 产品设计亮点与取舍")
-            for t in r.get("aip_inspiration", [])[:2]:
-                print(f"• {t}")
+            print(f"• 痛点：{r.get('core_concept')}")
+            if r.get("product_mechanics"):
+                print(f"• 做法：{'；'.join(r.get('product_mechanics', [])[:2])}")
+            if r.get("aip_inspiration"):
+                print(f"• 巧思与取舍：{'；'.join(r.get('aip_inspiration', [])[:2])}")
             print(f"原文：{r.get('source')} | {r.get('url')}")
         return False
 
