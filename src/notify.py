@@ -90,12 +90,12 @@ def _build_feishu_post(
 
         if concept:
             content_lines.append([
-                {"tag": "text", "text": f"1. 解决什么问题\n{concept}"}
+                {"tag": "text", "text": f"1. 解决什么业务痛点\n{concept}"}
             ])
 
         if mechanics:
             content_lines.append([
-                {"tag": "text", "text": "2. Palantir 怎么设计的"}
+                {"tag": "text", "text": "2. 这个功能是怎么工作的"}
             ])
             for m in mechanics[:3]:
                 content_lines.append([
@@ -104,7 +104,7 @@ def _build_feishu_post(
 
         if inspirations:
             content_lines.append([
-                {"tag": "text", "text": "3. 架构取舍与最小实现要素"}
+                {"tag": "text", "text": "3. 产品设计亮点与取舍"}
             ])
             for ins in inspirations[:2]:
                 content_lines.append([
@@ -176,11 +176,11 @@ def send_feishu(items, date_str=None, unread_count=0):
             arch_short = (r.get("arch_layer") or "").split(" (")[0].strip()
             print(f"\n{'=' * 66}")
             print(f"【{arch_short}】{r.get('title')}")
-            print(f"1. 解决什么问题\n{r.get('core_concept')}")
-            print("2. Palantir 怎么设计的")
+            print(f"1. 解决什么业务痛点\n{r.get('core_concept')}")
+            print("2. 这个功能是怎么工作的")
             for m in r.get("product_mechanics", [])[:3]:
                 print(f"• {m}")
-            print("3. 架构取舍与最小实现要素")
+            print("3. 产品设计亮点与取舍")
             for t in r.get("aip_inspiration", [])[:2]:
                 print(f"• {t}")
             print(f"原文：{r.get('source')} | {r.get('url')}")
@@ -274,8 +274,8 @@ def sync_to_feishu_bitable(items, date_str=None, pool=None):
             our_action = (sp.get("our_action") or "").strip()
 
             full_spec_card = (
-                f"【产品设计规格（配置/校验/边界）】\n{palantir_spec}\n\n"
-                f"【最小实现要素与代价】\n{our_action}\n\n"
+                f"【产品设计规格（怎么配/怎么用/怎么判）】\n{palantir_spec}\n\n"
+                f"【产品参考要点（场景/MVP闭环/避坑）】\n{our_action}\n\n"
                 f"来源：{it.get('title','')}（{it.get('source','')}）"
             )
             row_payload = {
