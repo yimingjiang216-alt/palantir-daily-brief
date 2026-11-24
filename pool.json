@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-23 01:05:52",
+  "updated_at": "2026-11-24 01:04:13",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -604,7 +604,8 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "bitable_synced": false
+      "bitable_synced": false,
+      "fetch_fail_count": 1
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -996,9 +997,41 @@
       "summary": "详解 AIP Agent Stack 如何封装 Ontology 查询工具、Action 执行工具与函数工具。",
       "score": 9,
       "feature_focus": "AIP Agent Stack 的工具封装体系：Ontology 查询、Action 执行与函数工具的分层集成",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-24",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Agent Stack：会话持久化与类型化上下文驱动多参与者协作",
+        "feature_tag": "AIP Logic与Agent编排",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 Agent Builder/SDK 构建层之上、Workshop/Automate 集成层之下，提供跨应用的任务连续性基础设施",
+        "related_history": "与11-23 Agentic Runtime安全机制互补：Runtime管权限隔离，Agent Stack管任务状态持久化；与11-21 Automate事件触发衔接：Automate向已有Session发送Event而非每次新建任务",
+        "core_concept": "常规做法中Agent每次调用无状态，跨应用或等人审批时上下文丢失需重建。Agent Stack用Session持久保存全部Context Items和Event历史，任何参与者在任意时间点接入同一Session即可恢复完整任务进度。",
+        "product_mechanics": [
+          "Session创建时绑定agent_id与初始context_items数组，每个item带type枚举（message/tool_result/recommendation/decision），系统按type决定渲染形态：结构化数据给自动化系统，交互视图给人工决策者",
+          "Event进入Session后由当前state_machine的event_handler处理：handler读取session_state判断是否满足转移条件，满足则更新context_items并transition到新state（如waiting_for_review），不满足则拒绝或排队"
+        ],
+        "scenario_usage": "业务员在Workshop发起采购审批 → Automate检测到金额超阈值时向该Session发送escalation_event → Agent转入等待主管review状态 → 主管在同一Session提交decision类型context_item → Agent恢复执行写回采购单",
+        "aip_inspiration": [
+          "取舍差异：放弃了无状态函数调用的简单性，换来跨天跨人跨应用的任务连续性；代价是必须维护Session存储和状态机定义，不能像普通LLM调用那样fire-and-forget",
+          "最小实现要素：需建session表（id/agent_id/state/created_at）、context_item表（session_id/type_enum/payload_json/participant_id/timestamp）、event表（session_id/event_type/payload/source_app）；state_machine配置为JSON定义states数组与transitions条件映射"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Typed Context Items（类型化上下文项）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：每个context_item必须声明type字段（枚举值包括message、tool_result、structured_recommendation、decision等），payload按type对应不同Schema校验。\n② 校验规则：写入时校验payload是否符合该type的Schema定义，不符合直接拒绝写入；读取时按请求方角色返回对应渲染形态。\n③ 执行边界：通过校验后持久化到Session的context列表，支持按type过滤查询；Schema变更时需版本兼容，旧item保持原Schema可读。",
+            "our_action": "• 适用痛点：同一Agent产出需同时服务自动化下游（要JSON）和人工审批者（要卡片视图），无类型则每个消费端自行解析易出错。\n• 最小实现要素：context_item表加type枚举字段+payload_schema_version字段；写入接口按type做JSON Schema校验；读取接口按consumer_role参数选择序列化格式。\n• 局限与代价：每新增一种信息类型需注册新type枚举与对应Schema，前期类型设计不充分会导致频繁迁移。"
+          },
+          {
+            "component_name": "Session State Machine（会话状态机）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：开发者定义states枚举（如gathering/waiting_for_review/executing/completed）、transitions映射（from_state + event_type → to_state）、每个transition绑定event_handler函数。\n② 校验规则：收到event时检查current_state是否在transitions的from_state中，不匹配则拒绝处理并记录异常event；handler执行前校验event payload完整性。\n③ 执行边界：handler可更新context_items、触发子任务或调用外部工具；handler抛异常时state不回滚但标记error_flag，支持人工介入重试。",
+            "our_action": "• 适用痛点：Agent任务含等待人工审批、等待外部回调等异步节点，纯顺序执行无法表达暂停与恢复语义。\n• 最小实现要素：session表加current_state字段；新建state_transition_config表存from_state/event_type/to_state/handler_ref；event处理入口先查config再分发。\n• 局限与代价：状态机需提前穷举所有合法路径，未覆盖的edge case会导致event被静默丢弃；调试复杂度高于无状态链式调用。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/aip-features": {
       "url": "https://www.palantir.com/docs/foundry/aip/aip-features",
@@ -2068,7 +2101,8 @@
       "feature_focus": "从会议记录到本体对象的自动化转化流程，展示 Foundry 中 Ontology 与 AI Agent 的联动机制",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5",
@@ -2134,7 +2168,7 @@
       "summary": "Imagine your company has spent years building a trusted operational data layer. Continue reading on Medium »",
       "score": 10,
       "feature_focus": "OMCP（Ontology-Managed Control Plane）中本体驱动的 AI Agent 协作与控制机制",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -2332,7 +2366,7 @@
       "summary": "YouTube 频道 Palantir 视频讲解：Palantir AIP Evolve。简介：\"AIP Evolve reduced cost and compute time by 90%.” The model is not the system. AIP Evolve optimizes production AI across ...",
       "score": 10,
       "feature_focus": "AIP Evolve 的系统级优化能力：通过工作流重构实现 90% 成本与计算时间降低，体现 AIP 对生产环境的深度调度控制",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -2558,9 +2592,41 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "Object Permissioning 支持对象、属性与链接级别的细粒度权限控制与多数据源安全策略",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-24",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Object Permissioning：Schema与数据双层权限隔离",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "Ontology架构中对象存储层的安全控制模块，位于OSv2聚合查询之前、数据索引之后，拦截所有对object/link实例的读写请求。",
+        "related_history": "与11-23 Agentic Runtime安全机制互补：Runtime管Agent行为边界，本模块管底层数据可见性；Agent即使有Action执行权限，仍受Object Permissioning约束。",
+        "core_concept": "常规做法把schema定义和数据值混在同一权限体系里，导致用户要么看到全部字段要么完全看不到类型。Palantir把ontology资源（类型/属性名/链接定义）和objects/links（实际主键值与属性值）拆成两层独立授权，schema可见不等于数据可读。",
+        "product_mechanics": [
+          "Ontology资源层：对object type、link type、action type分别配置角色权限 → 用户能看到类型定义和属性schema但无法查询任何实例数据 → 需额外授予object级读权限才能拿到实际值",
+          "Objects and links层：按对象实例粒度绑定安全策略（Object Security Policies）→ 查询时系统逐条校验当前用户对该primary key的读权限 → 不满足条件的对象直接从结果集中剔除，不报错只静默过滤"
+        ],
+        "scenario_usage": "业务员在Object Explorer搜索飞机对象 → 系统先校验其对Airplane object type的资源权限 → 再逐条过滤其无权查看的具体飞机实例 → 返回仅含授权对象的列表",
+        "aip_inspiration": [
+          "取舍差异：省掉了在每个应用层重复写数据过滤逻辑的工作量，但要求所有查询必须经过统一权限拦截层，不允许绕过直连底层存储",
+          "最小实现要素：需在元数据表增加resource_acl字段存角色列表，在对象表增加security_policy_id外键关联策略表，策略表定义user/group到object粒度的allow/deny规则，查询接口统一注入WHERE子句做行级过滤"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Object Security Policies（对象实例级安全策略）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项/入参：为每个object type绑定一个或多个security policy，policy内定义marking或group条件表达式，支持多数据源场景下不同datasource各自独立策略。\n② 校验与拦截规则：查询请求到达时，系统取当前用户所属group/marking集合，与目标对象的policy做交集判定；无交集则该对象从结果集移除，不抛异常。\n③ 执行与异常边界：通过校验的对象正常返回属性值；写入时同样校验write authorization，不满足则拒绝整条edit并返回permission denied错误。",
+            "our_action": "• 适用痛点：同一张对象表中不同行的敏感等级不同，需要按行控制谁能看谁能改。\n• 最小实现要素：建security_policy表含policy_id、condition_expr、datasource_id三个字段；对象表加policy_id外键；查询网关统一拼接过滤条件。\n• 局限与代价：每次查询多一次policy评估开销；跨数据源聚合时需合并多套策略，复杂度随数据源数量线性增长。"
+          },
+          {
+            "component_name": "Multi-datasource Object Types（多源对象类型权限隔离）",
+            "arch_layer": "L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)",
+            "palantir_spec": "① 配置项/入参：一个object type可关联多个datasource，每个datasource独立配置restricted-view或security policy，MDO配置面板指定各源的权限映射关系。\n② 校验与拦截规则：当用户查询该object type时，系统按datasource分别执行权限校验；某一源无权限则该源贡献的对象不可见，但不影响其他已授权源的对象返回。\n③ 执行与异常边界：合并结果时若同一primary key在多源出现且权限不一致，取最严格策略；索引阶段按源分片构建，权限变更只需重建对应源的索引分片。",
+            "our_action": "• 适用痛点：同一个业务实体散落在多个系统中，各系统安全等级不同，合并展示时不能一刀切放开或封死。\n• 最小实现要素：object_type_datasource关联表含source_id、policy_id、index_partition_key；查询引擎按partition并行校验后merge结果。\n• 局限与代价：主键冲突解决规则需预先约定；索引分片数等于数据源数，存储和计算成本随源数膨胀。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/ontology-sdk/overview": {
       "url": "https://www.palantir.com/docs/foundry/ontology-sdk/overview",
@@ -2957,8 +3023,7 @@
       "feature_focus": "在Palantir Foundry中通过Workshop构建首个业务应用的完整流程与交互设计",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
       "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
@@ -3399,8 +3464,7 @@
       "feature_focus": "AIP Logic 内置 Evaluation Suite 的使用方式：逻辑函数的评估与回归验证",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -3479,8 +3543,7 @@
       "feature_focus": "第三方拆解 American Airlines 在 AIPCon 2025 的真机 Demo，还原航空运营场景下 AIP 的具体功能与工作流",
       "status": "unread",
       "added_at": "2026-11-20",
-      "sent_at": "",
-      "fetch_fail_count": 1
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=IZRCw5WnJm8": {
       "url": "https://www.youtube.com/watch?v=IZRCw5WnJm8",
@@ -3491,10 +3554,35 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "Citi Wealth 用 AIP 重构财富管理案件处理流程（9天→秒级），展示 Agent 驱动的端到端业务工作流与效率量化",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-20",
-      "sent_at": "",
-      "fetch_fail_count": 1
+      "sent_at": "2026-11-24",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "案件工作流：Agent串联多步骤消除人工交接",
+        "feature_tag": "行业工作流与落地范式",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "端到端业务工作流的Agent编排落地层，位于Ontology动作执行与Workshop人机界面之间，将原本分散在多人多系统中的串行审批/处理步骤收拢为单一Agent驱动的自动化链路",
+        "related_history": "与11-23 Agent Stack工具封装体系互补——本篇聚焦业务侧如何把多角色串行流程压缩为Agent单次执行链；与11-21 Automate事件驱动机制衔接——案件状态变更触发后续自动处理节点",
+        "core_concept": "常规做法中一个财富管理案件需经多个团队串行处理，每次交接产生等待和信息丢失。Palantir把各步骤封装为Agent可调用的Action链，一次触发跑完全链路，交接次数减少80%，单案耗时从9天降到秒级。",
+        "product_mechanics": [
+          "案件入参包含客户ID、产品类型、合规检查项枚举列表。Agent按预定义DAG顺序依次调用数据查询Function和写回Action，每步校验前置步骤输出状态为completed才放行下一步，否则挂起并报错给运营人员。",
+          "每个Action节点绑定Ontology对象类型与属性写回范围，Agent只能写入该节点声明的字段集合。当某节点执行失败时系统记录失败节点ID与错误码，支持从该节点重试而非整条链路重跑。"
+        ],
+        "scenario_usage": "客户经理提交新案件 → Agent按DAG依次调用合规校验、产品匹配、定价计算等Action → 各步骤结果写回案件Ontology对象属性，最终状态标记为已完成。",
+        "aip_inspiration": [
+          "省掉了人工在多个系统间复制粘贴和排队等待的环节，但限制了每个节点只能操作声明范围内的字段，不允许Agent跨节点自由读写。",
+          "最小实现需要：案件表含case_id、status、current_step_id字段；步骤定义表含step_id、action_type、allowed_fields、depends_on_step_id；每步执行前校验depends_on步骤status=completed。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Case DAG Orchestration（案件多步骤编排）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 配置项：定义步骤DAG，每步声明action_type、input_schema、output_schema、allowed_write_fields及depends_on列表。\n② 校验规则：执行前检查所有depends_on步骤output_status=completed且output符合下游input_schema，不满足则拦截并返回blocked状态。\n③ 执行边界：通过后调用对应Action写回Ontology对象属性；失败时记录failed_step_id与error_code，支持单步重试，不回滚已成功步骤。",
+            "our_action": "• 适用痛点：业务流程涉及3个以上串行处理角色，交接等待占总耗时50%以上时采用。\n• 最小实现：建case表和step_definition表，case表加current_step_id和status字段，step_definition表加depends_on和allowed_fields字段，写一个按DAG拓扑序调度执行的编排接口。\n• 局限：要求所有步骤的输入输出Schema预先固定，无法处理运行时动态分支或人工插入临时步骤的场景。"
+          }
+        ]
+      }
     },
     "https://www.youtube.com/watch?v=I7siZgE533E": {
       "url": "https://www.youtube.com/watch?v=I7siZgE533E",
@@ -3662,7 +3750,7 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "General Mills 供应链自动化实战：以计划/投资系统为核心用例的 Foundry+AIP 端到端业务工作流落地",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-21",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -3730,8 +3818,7 @@
       "feature_focus": "USDA 实战案例：用 Foundry 数据整合把数百个碎片化遗留系统统一为 Ontology 语义层，再由 AIP 把 AI 能力下发到一线农户的完整落地工作流",
       "status": "unread",
       "added_at": "2026-11-22",
-      "sent_at": "",
-      "fetch_fail_count": 1
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=1HBryjBIy7Y": {
       "url": "https://www.youtube.com/watch?v=1HBryjBIy7Y",
@@ -3796,7 +3883,8 @@
       "feature_focus": "Ontology 核心概念本质：将业务实体建模为 AI 可理解的「业务地图」，解决 LLM 缺乏业务语义上下文的问题",
       "status": "unread",
       "added_at": "2026-11-23",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5": {
       "url": "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5",
@@ -3822,7 +3910,8 @@
       "feature_focus": "Palantir AIP 完整架构拆解：从 Ontology 到 LLM 编排的企业级 GenAI 系统端到端实现路径与安全可控设计",
       "status": "unread",
       "added_at": "2026-11-23",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5": {
       "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5",
@@ -3848,7 +3937,8 @@
       "feature_focus": "【与 index 3 重复】Palantir AIP 完整架构拆解：企业级 GenAI 系统端到端实现路径与安全可控设计",
       "status": "unread",
       "added_at": "2026-11-23",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5",
@@ -3861,6 +3951,111 @@
       "feature_focus": "【与 index 4 重复】LLM 应用模式与 Palantir AIP 产品模块的映射关系，理论到落地的功能对照",
       "status": "unread",
       "added_at": "2026-11-23",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=dECZTN-YdL0": {
+      "url": "https://www.youtube.com/watch?v=dECZTN-YdL0",
+      "raw_url": "",
+      "title": "[视频 · 跟贝贝一起学习] Palantir Ontology vs 数据仓库 vs 知识图谱 vs ORM — 到底有什么区别？",
+      "source": "YouTube 中文科普与架构拆解 (跟贝贝一起学习)",
+      "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir Ontology vs 数据仓库 vs 知识图谱 vs ORM — 到底有什么区别？。简介：大家都在问：Palantir的Ontology跟数据仓库、知识图谱、ORM到底有什么区别？从Palantir的官方视角来回答。 Ontology vs 数据 ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Ontology 与数据仓库/知识图谱/ORM 的本质区别——语义层对象建模的定位与设计理念辨析",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=_b2qsKz_Ifk": {
+      "url": "https://www.youtube.com/watch?v=_b2qsKz_Ifk",
+      "raw_url": "",
+      "title": "[视频 · Palantir Developers] Deep Dive: Advanced Ontology | DevCon 5",
+      "source": "YouTube 英文第三方实操与架构科普 (Palantir Developers)",
+      "summary": "YouTube 频道 Palantir Developers 视频讲解：Deep Dive: Advanced Ontology | DevCon 5。简介：Ontology design is a tradecraft, not simply a requirement. At DevCon 5, Palantir Group Lead Landon Carter takes a deep dive into ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Advanced Ontology 设计方法论（DevCon 5 官方 Group Lead 深讲对象、链接、Action 的建模取舍与工程实践）",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=ZGGRCTTjLfQ": {
+      "url": "https://www.youtube.com/watch?v=ZGGRCTTjLfQ",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Palantir Explained: Chief Architect on Foundry in 2022",
+      "source": "YouTube 英文第三方实操与架构科普 (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Palantir Explained: Chief Architect on Foundry in 2022。简介：Palantir Chief Architect Akshay Krishnaswamy shares a brief overview of the Foundry operating system, with insight into the value ...",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "首席架构师视角的 Foundry 操作系统整体架构与价值定位概览（偏总览，非单模块深挖）",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=ahAC2zoU7QI": {
+      "url": "https://www.youtube.com/watch?v=ahAC2zoU7QI",
+      "raw_url": "",
+      "title": "[视频 · Orzen AI] Palantir Foundry | Speedrun Your First Agentic AIP Workflow (Agentic Ontology?)",
+      "source": "YouTube 英文第三方实操与架构科普 (Orzen AI)",
+      "summary": "YouTube 频道 Orzen AI 视频讲解：Palantir Foundry | Speedrun Your First Agentic AIP Workflow (Agentic Ontology?)。简介：Welcome to Foundry Fastlane In this video, we'll speedrun Your First Agentic AIP Workflow from learn.palantir.com. I'll walk you ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "在 Foundry/AIP 上端到端搭建首个 Agentic Workflow：Agent 如何绑定 Ontology 对象与工具调用",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=QmnVwBclEVg": {
+      "url": "https://www.youtube.com/watch?v=QmnVwBclEVg",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir AIP Tutorial: Chat With Your Data (Lesson 11)",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir AIP Tutorial: Chat With Your Data (Lesson 11)。简介：Lesson 11: AIP: AI Meets Your Data Introduce Palantir AIP and demonstrate how operational AI queries your Ontology through ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "AIP 对话式数据查询：LLM 通过 Ontology 语义层检索并回答业务数据的交互机制",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=MPpdb4SDZXo": {
+      "url": "https://www.youtube.com/watch?v=MPpdb4SDZXo",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir AIP Tutorial: AIP Logic, Automate & Full Integration — Part 1 (Lesson 13)",
+      "source": "YouTube 模块深挖·AIP Logic与Agent编排 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir AIP Tutorial: AIP Logic, Automate & Full Integration — Part 1 (Lesson 13)。简介：Lesson 13, Part 1: The Problem and the Three Components The manual dispatch workflow takes hours. We replace it with three ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Logic + Automate + 全链路集成三件套替代人工派单调度工作流的实战拆解",
+      "status": "unread",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5": {
+      "url": "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "The Ontology Was Palantir’s Moat. Then It Became a Category.",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "Palantir grew revenue 96% selling companies a working model of their own business. Within ten days, Databricks shipped one and Snowflake… Continue reading on Medium »",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "以营收增速与 Databricks/Snowflake 竞品对标论述 Ontology 护城河的商业评论，缺具体功能细节",
+      "status": "rejected",
+      "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.tmtpost.com/8214351.html": {
+      "url": "https://www.tmtpost.com/8214351.html",
+      "raw_url": "",
+      "title": "杉数完成数亿元D轮融资：十年“冷门创业”，走到AI产业的关键处",
+      "source": "钛媒体",
+      "summary": "一家集成电路基金，为什么把钱投给一家软件公司？ 近日，杉数科技宣布完成数亿元人民币D轮融资，投资方包括国家绿色发展基金、上海集成电路产业投资基金、普陀资本等。 其中，上海集成电路产业投资基金自成立以来聚焦芯片制造、芯片设计，以及半导体设备和材料，这是它第一次出手一家软件企业。 该基金基于其大量芯片项目投资经验判断，芯片设计交付能力已趋于成熟和可外购，“做出芯片”本身的稀缺性和差异化正在弱化。对面向能源、交通、制造等复杂场景的计算芯片而言，真正重要的，还包括它要处理什么问题，以及这些问题对应怎样的计算结构。 换句话说，硬件架构设计之前，先要明确问题中的变量、约束和数据结构，才能判断究竟需要怎样的计算能力。 “现在最核心的能力，是定义问题的能力。” 杉数联合创始人罗小渠说。 比如，南方电网需要把广东、广西、云南、贵州、海南五省区的发电机组、输电网络、储能与用电负荷纳入区域电力市场的统一计算。随着新能源装机比例提高，不同时段的风光出力和运行边界不断变化，市场出清需要按照15分钟的时段颗粒度进行计算；在另一端，南非的能源转型规划则要以小时级分辨率，分析未来三十年的发电结构、储能配置、煤电退出节奏和碳排放约束，模型包含数百万个变量。 如何定义并解决这样的问题，是大模型当前还远远做不到的。十年时间，杉数就在处理这类问题。2016年，四位斯坦福博士回国创业，从被称为“软件芯片”的数学规划求解器起步；十年后，随着AI向产业决策深入，这门原本冷门的技术开始被更多人看见。 “不是杉数用十年时间发展成了一个AI企业，而是AI发展到现在，终于走进了杉数的赛道。” 杉数联合创始人王曦说。 最难的一类计算 2018年初，南方电网便联合杉数科技进行技术攻关。 当时需要解决的任务之一，是南方区域电力市场的优化计算。五个省区被放进同一个协调范围，模型涉及数千个节点，以及发电机组、输电网络和不同地区的用电需求",
+      "full_text": "一家集成电路基金，为什么把钱投给一家软件公司？ 近日，杉数科技宣布完成数亿元人民币D轮融资，投资方包括国家绿色发展基金、上海集成电路产业投资基金、普陀资本等。 其中，上海集成电路产业投资基金自成立以来聚焦芯片制造、芯片设计，以及半导体设备和材料，这是它第一次出手一家软件企业。 该基金基于其大量芯片项目投资经验判断，芯片设计交付能力已趋于成熟和可外购，“做出芯片”本身的稀缺性和差异化正在弱化。对面向能源、交通、制造等复杂场景的计算芯片而言，真正重要的，还包括它要处理什么问题，以及这些问题对应怎样的计算结构。 换句话说，硬件架构设计之前，先要明确问题中的变量、约束和数据结构，才能判断究竟需要怎样的计算能力。 “现在最核心的能力，是定义问题的能力。” 杉数联合创始人罗小渠说。 比如，南方电网需要把广东、广西、云南、贵州、海南五省区的发电机组、输电网络、储能与用电负荷纳入区域电力市场的统一计算。随着新能源装机比例提高，不同时段的风光出力和运行边界不断变化，市场出清需要按照15分钟的时段颗粒度进行计算；在另一端，南非的能源转型规划则要以小时级分辨率，分析未来三十年的发电结构、储能配置、煤电退出节奏和碳排放约束，模型包含数百万个变量。 如何定义并解决这样的问题，是大模型当前还远远做不到的。十年时间，杉数就在处理这类问题。2016年，四位斯坦福博士回国创业，从被称为“软件芯片”的数学规划求解器起步；十年后，随着AI向产业决策深入，这门原本冷门的技术开始被更多人看见。 “不是杉数用十年时间发展成了一个AI企业，而是AI发展到现在，终于走进了杉数的赛道。” 杉数联合创始人王曦说。 最难的一类计算 2018年初，南方电网便联合杉数科技进行技术攻关。 当时需要解决的任务之一，是南方区域电力市场的优化计算。五个省区被放进同一个协调范围，模型涉及数千个节点，以及发电机组、输电网络和不同地区的用电需求。 以15分钟为颗粒度的电力市场出清，一天对应96个时段。系统需要综合考虑机组启停、发电功率、跨区输电与交易成本：机组启停包含离散决策，出力与网络潮流涉及连续变量，而电价与结算还必须遵循相应的市场规则和定价流程。优化计算必须同时服从供需平衡、电网安全及各类运行限制。 跨省协调意味着更多发电机组、网络节点和安全约束被纳入同一个相互耦合的模型。新能源出力的不确定性进一步增加了难度：某个地区看似合理的发电安排，可能令另一个地区的输电断面超限。任何局部调整，都要重新审视系统范围内的供需和网络条件。 可以说， 难点既在算力，也在表达。 业务目标、决策变量和约束条件必须先被翻译成数学模型，再由求解器计算，能否准确写出真实世界的规则和边界，决定了算出来的方案能不能用。模型表达无误之后，还要面对大规模计算与复杂组合决策的性能瓶颈。 杉数联合创始人、首席科学家葛冬冬强调，数学规划求解器的壁垒同时来自连续数值计算与离散组合寻优。在精度敏感的场景中，往往依赖FP64双精度运算，部分任务还将可行性或最优性容差设至10⁻⁸量级，具体取决于模型、算法与业务要求。 另一重壁垒来自混合整数规划：机组启停、航班编排、生产排程等包含离散选择的模型，普遍面临NP难的组合复杂性。现代商用求解器并非盲目枚举，而是将预求解、线性规划松弛、割平面、分支定界与启发式算法紧密耦合。 这也构成了生成式AI难以直接替代的核心能力： 对适用的数学规划模型，求解器能找到可行方案；当模型被判定不可行时，还可通过冲突分析等机制辅助定位相互矛盾的约束。 过去两年，业界尝试过让通用大模型直接生成优化决策。杉数也做过内部测试，发现面对大量相互关联的硬约束时，这条路径难以稳定得到可靠结果。语言模型擅长从数据中学习表达模式并进行语义推断，但没有天然内置的数学规划可行域维护、界限计算及全局寻优机制。它生成的方案即使看起来合理，也可能违反某条关键约束。 复现是另一个硬伤，同一个问题算十遍，可能给出十个结果，抽卡能在短剧制作这样的项目里见效，但对于南方电网这样的调度系统，“黑盒”是不可接受的。 对于今年海外受到关注的决策模型Jev，杉数内部也做过评估。Jev主要面向“是或否”、评分、预设选项等高频业务任务，返回结构化、带概率的判断，而非一整套满足约束、具备可解释性的解决方案。与此同时，杉数还测试过让通用生成式大模型多轮修改复杂优化方案的路径。 杉数联合创始人兼CTO王子卓观察到，生成式模型在这种多轮修补过程中容易顾此失彼：刚纠正几条违反的约束，下一轮又可能破坏其他关联条件。问题的关键在于，擅长对单项状态分类或打分，并不等于能够同时维护成千上万条强耦合硬约束。Jev一类结构化判断模型可以成为复杂业务流程中的判别组件，却无法单独替代数学规划引擎完成机组组合、跨区电力出清等全局寻优任务。 企业需要的也远不止一个“是或否”的答案。电价、发电能力、航班周转时间等输入参数变化时，最优方案可能随之调整；包含整数变量的模型在跨越某些临界条件时，还可能出现结构性切换。因此，工业决策平台必须解释哪些约束构成瓶颈、资源调整的边际价值有多大、方案对预测误差是否敏感，以及适用范围在哪里。 在罗小渠看来， AI行业的关注点正在从泛化能力，转向精度、可靠性和实际交付。 生成、对话、写作可以容忍一定的不确定性，关键产业决策却必须通过严格检验。AI叙事正在走到要交付业务结果的阶段。“现在就是，你（AI）得帮我干活儿了。” 而在大模型与数学规划的边界上，杉数的判断也来自自己的实践。王曦回忆，公司曾“先自己革自己的命”，用多年积累的行业数据训练过专门的决策建模大模型，试图验证生成式AI能否独立完成从业务需求到数学模型的转换。 据王曦介绍，在公司采用的同类测试中，这一模型的建模表现优于若干主流模型，但距离产业级需求仍有差距。这里的“建模准确率”，与求解器返回的数值精度是两回事：前者关乎变量、目标函数、约束及下标是否正确表达了业务问题，后者关乎给定模型的求解误差与收敛状态。一个看似很小的建模遗漏，可能让优化结果完全偏离真实业务规则。因此， 自然语言建模需要同模型校验、场景测试和专家复核共同工作。 回到南方电网，这套系统经历上线验证、双轨陪跑，再逐步承担主要计算任务。围绕区域电力市场需求，南方电网联合杉数等单位研发了“天权”电力市场专用求解器。在南方区域电力市场真实出清模型的对照测试中，相较此前使用的Gurobi，“天权”计算性能平均提升14%、计算误差降低23%、稳定性提升21%。这款求解器入选“2025年度央企十大国之重器”，并支撑南方区域电力市场连续运行。 求解器早已进入全球许多关键行业。 以民航为例，航班调度、机组排班与不正常航班恢复，要在安全、运力、人员资质、航班衔接和成本等大量约束下协调运行。2025年，南方航空联合杉数科技研发国内首个航空行业专用求解器“天策”，面向航司运营场景提供自主可控的优化引擎。 这意味着国产通用求解能力进一步进入民航核心业务：既要有可复用的标准化数学规划能力，也要围绕航班网络、运力约束和运营规则开展专用优化。降低核心业务对国外商业求解器的依赖，关键不只在于软件可获得，更在于能否根据行业结构持续迭代算法。 “求解器的自主可控，一方面是指你能买得到，第二个是你能开箱定制。”葛冬冬说。所谓“开箱定制”，意味着在掌握底层代码与算法机制的前提下，将行业知识嵌入预求解、模型结构处理及搜索策略，对特定业务问题持续调优。 另一个颇具挑战的案例在南非，当地能源结构以煤电为主，同时面临供电紧张、基础设施老化、新能源接入和减排转型的多重压力，杉数要为未来三十年做一次全国范围的规划，模型涵盖发电机组、输电线路、储能单元和需求节点，还要以小时级分辨率刻画新能源接入、储能调度、煤电退出时间表，以及碳排放上限和机组计划外停运。 杉数与当地机构Meridian Economics合作，把COPT和GPU加速算法放进核心计算环节，大规模线性规划模型实现了约3到10倍提速，部分原本需要数天完成的分析压缩到小时级。这个项目从近400项全球申报中入选联合国2026年“创新促影响”案例集，今年7月，COPT团队在日内瓦的AI for Good全球峰会上引起广泛关注。 图 杉数COPT团队于联合国AI for Good峰会做案例分享 目前，杉数的技术和产品服务已覆盖全球2000余家机构、3万余名用户，分布在80多个国家和地区；南非能源转型、老挝电力调度、全球物流航线规划等场景都有落地应用。 这类关键基础产业的决策式AI能力，开始受到芯片一样的待遇。 2026年8月31日，全球最大的商用求解器厂商Gurobi宣布停止向中国大陆及港澳地区提供新增学术许可，其全球学术许可页面向各国师生免费开放，唯独把中国划出了名单。 在国内，数学规划求解器被视为工业基础软件的重要组成部分。长期以来，国际商用求解器市场由少数海外厂商主导；在能源、交通、制造等重点领域，企业既要考察国产替代的可用性，也要考察实际性能、长期维护和深入定制的能力。杉数已在多个标杆行业开展国产求解器应用。 “软件芯片”，杉数十年 杉数的故事从2016年开始，四位斯坦福大学的博士同学创立杉数科技，研发国产商用求解器COPT。彼时国内还没有一个自主可控的商用求解器，成立十年来，杉数做的核心产品始终是围绕求解器的智能决策，求解器被业界称为“软件领域的芯片”，排产、调度、路由，工业核心环节的最优方案都靠它来算。 也是在那时，上一轮人工智能热潮正酣。2016年3月，谷歌DeepMind的AlphaGo击败围棋世界冠军李世石，人工智能产业的风口是图像、语音和自然语言处理，杉数讲的智能决策，少有人知道是什么，也谈不上一个赛道。 比起芯片和AI，求解器显然更晦涩难懂，尽管它的重要程度并不弱。从投资标的属性来看，杉数绝对算得上是“冷门创业”。 第一版COPT在2019年5月发布，送测国际权威平台便登上单纯形法榜首，被视为国产商用求解器零的突破。从杉数成立到这一步，走了三年。 这个行业最大的门槛，是人才。王曦估算，因为技术门槛高的缘故，全球范围内的求解器人才较为稀缺，其中华人占一小部分，愿意回国的更少一些，“杉数都尽量争取回来。” 求解器同时是数学问题和工程问题，两类核心技术人才都缺，人比代码更难攒。 代码本身也是壁垒，这个行业的代码量巨大，工程技巧以商业秘密而非专利的形式沉淀在各家公司内部，新玩家几乎无法绕过时间的积累，从这个角度看，恰好也类似芯片产业难以逾越的壁垒。 在Hans Mittelmann维护的国际优化公开评测中，杉数COPT曾在15类榜单中的11类取得第一。“杉数求解器的能力也是一步步‘打’上来的。”他补充说，“我们内部都是与世界最先进的产品来对标，希望更多优秀厂商都能来参与，这样榜单的含金量才足够。” 十年的积累逐渐延伸成一套覆盖算力、引擎和应用的决策式AI基础设施：底层是面向优化计算的数值算子和异构算力，中间是COPT求解器，上层则是面向业务人员的擎天决策平台。三层技术分别回应不同客户需求，也形成了上下协同的产品体系。 最初遇到复杂问题，杉数主要由算法专家完成建模与求解；之后，把核心求解能力凝练为标准化产品COPT。面对行业规则多变、定制建模成本高的问题，公司又在今年7月发布了智能决策平台“擎天”，利用大模型理解自然语言业务需求，将其与行业知识、模型构建、优化求解、方案验证及结果解释相衔接。 这一平台方向也回应了此前专用建模大模型的局限：自然语言可以成为业务需求入口，但工业级建模不能只凭生成结果直接上线。模型的变量、约束和输入数据必须经过校验，复杂场景还需要业务专家确认边界。擎天所强调的，是将语义理解、求解与复盘连接成可追踪的工作流程。 再往下，GPU带来了新的可能，也提出与常见AI训练截然不同的工程难题。AI模型往往依赖低精度密集矩阵乘法获取高吞吐，而数学规划涉及稀疏数值计算、迭代更新和复杂控制流程。GPU的算力不能代替求解算法，却可以在适配的数值环节发挥巨大作用。 对于高精度稀疏求解，FP64算力、稀疏访存效率及CPU/GPU协同能力成为关键。杉数与学术合作团队推出的cuPDLP-C，正是GPU加速大规模线性规划的一条技术路线。 至此， 覆盖了高精度计算、优化求解引擎和智能决策平台的杉数全栈技术体系成型。 杉数的强项，恰好补上了国产算力生态的短板。 与仅强调算力峰值不同，这套方案更看重实际算力中的求解速度、精度、稳定性及运行成本。围绕能源电力、港口交通、航空航天、工业制造和零售消费等领域，杉数已开展相应的产品应用与产业合作。 “我们的产品和服务方案，都是真实用户的真实需求不断催生出来的。”王曦说。 AI 巨头提前到场 到了今年，原本相对冷门的智能决策方向突然被推到了聚光灯下。 今年9月，前OpenAI研究人员Diogo Almeida创办的TypeSafe AI发布的决策模型Jev，不以自由文本为主要输出，而是面向“是或否”、评分或预设选项等任务，返回结构化、带概率信息的判断结果。TypeSafe披露了快速增长的调用规模与企业采用情况；随后，OpenAI推出Decisions API，Databricks也发布了类似能力。这类产品强调低成本、高吞吐的业务判断，却不能据此直接视作面向复杂硬约束问题的通用优化求解器。 AI正在从内容生成，延伸到商业场景中的判断、优化与执行。 在沙利文有关决策智能的论述中，决策式AI被描述为面向业务目标与执行结果的技术体系，融合预测、规则、仿真、优化及反馈。而决策式AI的竞争，已从单点算法性能比拼，升级为涵盖算力、引擎、平台的全栈体系化竞争。 2026年1月，Gartner发布首份“决策智能平台”魔力象限报告，将决策建模、分析及AI驱动的业务决策纳入相应市场评价。沙利文则采用覆盖底层求解、平台及行业解决方案的“广义决策式AI可触达市场”口径，预测这一市场到2030年约为1.46万亿美元。 从技术路线上看，决策式AI要求的全栈能力，现有的AI企业基本只负责其中一个或者多个环节， 杉数科技恰好支撑了以求解器为核心的全栈决策式AI技术体系，这也是其被沙利文评为“全球全栈决策式AI领导者”的重要原因。 图 杉数全栈决策式AI技术架构 而在业内看来，信号的出现要更早一些。2023年，杉数与芝加哥大学团队把GPU加速线性规划的成果cuPDLP-C开源；此前英伟达有cuOpt求解器的专职部门，并在2024年进一步拓展其线性规划求解能力，2025年又将cuOpt开源并纳入CUDA-X体系，应用于Palantir等企业的工业级决策优化场景。 英伟达一向以长远的战略眼光著称，CUDA生态是一个典型案例，GPU的算力领先只是表层，用近二十年时间经营出来的软件生态才是真正的护城河。当它开始用同样的方式对待求解器，为这条赛道设立部门、构建生态时，相当于求解器赛道被巨头用真金白银盖了章。 AI进入求解算法研发的速度，也让从业者感到意外。葛冬冬提到，他关注到一个专项算法测试：研究人员借助Claude Code生成并迭代程序，在其中一个细分模块上取得了领先成绩。“说来就来了，这东西还挺吓人的。”他感叹。 大模型能写求解器算法了，杉数赖以立身的根本还在吗？ 葛冬冬从理论和实践两个层面作出回答，理论上，大模型可以做求解，但它的搜索逻辑人类既看不到也无法理解，到了需要精确收敛的阶段，必须有数学引导。实践上，从问题本身到可行解的这一段，大模型已经展现出很强的能力。 AI也并非只能参与离线研发。对于某些模型类型和决策环节，经过训练和验证的轻量级学习模型，可以在运行时辅助变量分支、割平面选择、启发式调用或算法参数自适应。大语言模型则更适合参与耗时较高、频率较低的模型分析和算法研发。两种方式都应由数学规划内核负责约束检查、数值计算和最优性界限维护。 “尤其在一些场景相对确定的行业性问题上，它可以很快抓住数据特点，有些特征人靠经验观察都不一定抓得准。”葛冬冬说。在结构相对稳定、数据重复出现的业务中，学习算法能够识别统计规律，再用于指导专用求解策略的设计与选择。 沿着这一判断，杉数开始探索“AI原生求解器”。 与传统求解器主要依赖专家手工设计和调试算法不同，这一方向希望将问题结构识别、自动化算法实验、学习型策略选择和异构计算更紧密地连接起来。它的目标不是让大模型直接生成答案，而是让AI提供可评测、可替换的策略模块，底层求解器继续承担严格的数学计算与结果校验。 在葛冬冬看来，这可能推动数学规划求解器经历新一轮研发范式变化。传统巨头受制于既有算法范式，AI巨头缺少精确优化引擎， 中国团队第一次和外国同行站在同一条起跑线上，杉数这次成为了领跑员。 围绕这一方向，杉数近两年重新配置了研发资源：底层求解引擎仍由葛冬冬牵头，以上海研发团队和高校合作团队为主力持续攻坚；今年初，公司又专门组建AI产品团队，将大模型的业务理解与交互能力接入行业解决方案，重点推进擎天智能决策平台落地。 AI浪潮也改写了工业基础软件的迭代节奏。“过去一年迭代一个大版本就够了，现在一两周就得迭代一次，因为英伟达两三天就发布一个新东西。”葛冬冬说，杉数接下来的目标很明确：继续保持国内第一，持续巩固世界前二的综合竞争力。 从数学优化算法到GPU加速，再到AI原生求解器，杉数十年的技术积累有了新的时代坐标。杉数此次的融资，也让一个产业趋势逐渐清晰：算力越强，解决复杂决策问题的能力越重要。 通用AI转场决策式AI，下一场竞争才刚刚开始。（本文首发于钛媒体APP） 更多精彩内容，关注钛媒体微信号（ID：taimeiti），或者下载钛媒体App",
+      "score": 0,
+      "feature_focus": "杉数科技融资新闻，与 Palantir AIP/数据平台产品功能无关",
+      "status": "rejected",
+      "added_at": "2026-11-24",
       "sent_at": ""
     }
   }

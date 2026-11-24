@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 19 篇）
+## 📅 已推送洞察总览表（共 22 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-24 | L3 Agent 编排与评测层 | **Agent Stack：会话持久化与类型化上下文驱动多参与者协作** | AIP Agent Stack 的工具封装体系：Ontology 查询、Action 执行与函数工具的分层集成 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/agent-stack) |
+| 2026-11-24 | L5 安全治理与工程落地 | **Object Permissioning：Schema与数据双层权限隔离** | Object Permissioning 支持对象、属性与链接级别的细粒度权限控制与多数据源安全策略 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/object-permissioning/overview) |
+| 2026-11-24 | L5 安全治理与工程落地 | **案件工作流：Agent串联多步骤消除人工交接** | Citi Wealth 用 AIP 重构财富管理案件处理流程（9天→秒级），展示 Agent 驱动的端到端业务工作流与效率量化 | [YouTube 模块深挖·AIPCon客户真机Demo (Palantir)](https://www.youtube.com/watch?v=IZRCw5WnJm8) |
 | 2026-11-23 | L3 Agent 编排与评测层 | **Agentic Runtime：Agent权限按三重身份动态求交** | Agentic Runtime 安全机制：详解生产环境中 AI Agent 的权限隔离、行为审计与运行时安全控制策略 | [Medium Palantir AIP 专栏](https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5) |
 | 2026-11-23 | L2 本体与动作层 | **Ontology单对象：多界面只读同一份房产记录** | 基于本体原生设计解决地址语义歧义问题，构建消费者级房地产应用的实战案例 | [Medium Palantir Foundry 专栏](https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5) |
 | 2026-11-22 | L3 Agent 编排与评测层 | **Workflow Lineage：AIP执行链路追踪与生产可观测** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/aip-observability/) |
@@ -101,7 +104,18 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 8 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 9 篇）
+
+### [2026-11-24] Agent Stack：会话持久化与类型化上下文驱动多参与者协作
+- **原文**：[Palantir 官方产品文档 — AIP 官方文档：Agent Stack 与工具调用体系](https://www.palantir.com/docs/foundry/aip/agent-stack)
+- **1. 解决什么问题**：常规做法中Agent每次调用无状态，跨应用或等人审批时上下文丢失需重建。Agent Stack用Session持久保存全部Context Items和Event历史，任何参与者在任意时间点接入同一Session即可恢复完整任务进度。
+- **2. Palantir 怎么设计的**：
+  - Session创建时绑定agent_id与初始context_items数组，每个item带type枚举（message/tool_result/recommendation/decision），系统按type决定渲染形态：结构化数据给自动化系统，交互视图给人工决策者
+  - Event进入Session后由当前state_machine的event_handler处理：handler读取session_state判断是否满足转移条件，满足则更新context_items并transition到新state（如waiting_for_review），不满足则拒绝或排队
+- **业务流转实例**：业务员在Workshop发起采购审批 → Automate检测到金额超阈值时向该Session发送escalation_event → Agent转入等待主管review状态 → 主管在同一Session提交decision类型context_item → Agent恢复执行写回采购单
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：放弃了无状态函数调用的简单性，换来跨天跨人跨应用的任务连续性；代价是必须维护Session存储和状态机定义，不能像普通LLM调用那样fire-and-forget
+  - 最小实现要素：需建session表（id/agent_id/state/created_at）、context_item表（session_id/type_enum/payload_json/participant_id/timestamp）、event表（session_id/event_type/payload/source_app）；state_machine配置为JSON定义states数组与transitions条件映射
 
 ### [2026-11-23] Agentic Runtime：Agent权限按三重身份动态求交
 - **原文**：[Medium Palantir AIP 专栏 — Securing Agents in Production (Agentic Runtime, #1)](https://blog.palantir.com/securing-agents-in-production-agentic-runtime-1-5191a0715240?source=rss------palantir_aip-5)
@@ -235,7 +249,29 @@
   - 取舍差异：放弃了通用REST API的灵活性，外部应用只能调用注册时勾选的Object Types和Actions，无法绕过Schema约束自由拼查询；换来的是编译期类型安全和统一的鉴权收敛，省掉每个应用自建OAuth和序列化层的重复工作
   - 最小实现要素：需定义应用注册表(app_id, allowed_object_types[], allowed_action_types[])、代码生成器读取Ontology Schema输出强类型客户端、SDK内置OAuth token刷新逻辑、Action调用前本地参数校验器(必填检查+枚举白名单)
 
-## L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)（已沉淀 3 篇）
+## L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)（已沉淀 5 篇）
+
+### [2026-11-24] Object Permissioning：Schema与数据双层权限隔离
+- **原文**：[Palantir 官方产品文档 — Ontology 官方文档：Object Permissioning（对象与属性级权限控制）](https://www.palantir.com/docs/foundry/object-permissioning/overview)
+- **1. 解决什么问题**：常规做法把schema定义和数据值混在同一权限体系里，导致用户要么看到全部字段要么完全看不到类型。Palantir把ontology资源（类型/属性名/链接定义）和objects/links（实际主键值与属性值）拆成两层独立授权，schema可见不等于数据可读。
+- **2. Palantir 怎么设计的**：
+  - Ontology资源层：对object type、link type、action type分别配置角色权限 → 用户能看到类型定义和属性schema但无法查询任何实例数据 → 需额外授予object级读权限才能拿到实际值
+  - Objects and links层：按对象实例粒度绑定安全策略（Object Security Policies）→ 查询时系统逐条校验当前用户对该primary key的读权限 → 不满足条件的对象直接从结果集中剔除，不报错只静默过滤
+- **业务流转实例**：业务员在Object Explorer搜索飞机对象 → 系统先校验其对Airplane object type的资源权限 → 再逐条过滤其无权查看的具体飞机实例 → 返回仅含授权对象的列表
+- **3. 架构取舍与最小实现要素**：
+  - 取舍差异：省掉了在每个应用层重复写数据过滤逻辑的工作量，但要求所有查询必须经过统一权限拦截层，不允许绕过直连底层存储
+  - 最小实现要素：需在元数据表增加resource_acl字段存角色列表，在对象表增加security_policy_id外键关联策略表，策略表定义user/group到object粒度的allow/deny规则，查询接口统一注入WHERE子句做行级过滤
+
+### [2026-11-24] 案件工作流：Agent串联多步骤消除人工交接
+- **原文**：[YouTube 模块深挖·AIPCon客户真机Demo (Palantir) — [视频 · Palantir] Redefining Wealth Management | Citi Wealth at AIPCon 7](https://www.youtube.com/watch?v=IZRCw5WnJm8)
+- **1. 解决什么问题**：常规做法中一个财富管理案件需经多个团队串行处理，每次交接产生等待和信息丢失。Palantir把各步骤封装为Agent可调用的Action链，一次触发跑完全链路，交接次数减少80%，单案耗时从9天降到秒级。
+- **2. Palantir 怎么设计的**：
+  - 案件入参包含客户ID、产品类型、合规检查项枚举列表。Agent按预定义DAG顺序依次调用数据查询Function和写回Action，每步校验前置步骤输出状态为completed才放行下一步，否则挂起并报错给运营人员。
+  - 每个Action节点绑定Ontology对象类型与属性写回范围，Agent只能写入该节点声明的字段集合。当某节点执行失败时系统记录失败节点ID与错误码，支持从该节点重试而非整条链路重跑。
+- **业务流转实例**：客户经理提交新案件 → Agent按DAG依次调用合规校验、产品匹配、定价计算等Action → 各步骤结果写回案件Ontology对象属性，最终状态标记为已完成。
+- **3. 架构取舍与最小实现要素**：
+  - 省掉了人工在多个系统间复制粘贴和排队等待的环节，但限制了每个节点只能操作声明范围内的字段，不允许Agent跨节点自由读写。
+  - 最小实现需要：案件表含case_id、status、current_step_id字段；步骤定义表含step_id、action_type、allowed_fields、depends_on_step_id；每步执行前校验depends_on步骤status=completed。
 
 ### [2026-11-17] AIP数据护栏：零留存与防泄漏机制
 - **原文**：[Palantir 官方产品文档 — AIP 官方文档：AIP 安全架构与数据护栏](https://www.palantir.com/docs/foundry/aip/aip-security)
