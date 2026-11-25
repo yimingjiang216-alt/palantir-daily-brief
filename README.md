@@ -63,15 +63,15 @@ Palantir AIP 产品功能每日抓取、拆解与飞书推送脚本。
 - `架构知识库`：底部附飞书多维表格链接。
 
 ### 2. 飞书多维表格 Webhook 字段映射
-每次运行向 `FEISHU_BITABLE_WEBHOOK` 发送 POST JSON，每篇文章按实际包含的具体功能组件写入 0 至 2 条记录（宏观理念类文章返回 `[]` 跳过入表）：
+每次运行向 `FEISHU_BITABLE_WEBHOOK` 发送 POST JSON，仅当文章包含 **Palantir 官方真实存在的通用软件功能组件**时写入记录（客户行业案例、网友理论框架、简短推文返回 `[]` 跳过入表）：
 
 | 多维表格列名 | Webhook JSON 键名 | 写入内容 |
 | :--- | :--- | :--- |
-| `功能组件` | `title` | 原子功能组件名称（`feature_specs[].component_name`） |
+| `功能组件` | `title` | 官方产品功能组件名称（`feature_specs[].component_name`） |
 | `架构层级` | `arch_layer` | `L1 数据接入与管道层` 至 `L5 安全治理与工程落地` |
-| `产品设计规格` | `core_concept` | 三要素清单：`① 后台怎么配`、`② 前台怎么用`、`③ 系统怎么判`（`palantir_spec`） |
-| `自研对标参考` | `aip_inspiration` | 三要素清单：`• 适用业务场景`、`• MVP 最小闭环`、`• 局限与避坑`（`our_action`） |
-| `规格详情` | `full_detail` | `【产品设计规格（怎么配/怎么用/怎么判）】` + `【产品参考要点（场景/MVP闭环/避坑）】` + 来源文章汇总文本 |
+| `产品设计规格` | `core_concept` | 该官方组件在 Palantir 中的真实功能作用、运作方式与约束规则（`palantir_spec`，不套固定分栏模板、不脑补未提及的界面） |
+| `自研对标参考` | `aip_inspiration` | 该组件解决的核心业务痛点与关键设计思路（`our_action`） |
+| `规格详情` | `full_detail` | `【产品功能说明】` + `【核心借鉴点】` + 来源文章汇总文本 |
 | `推送日期` | `date` | `YYYY-MM-DD` |
 | `原文链接` | `url` | 原始文章/视频 URL |
 
