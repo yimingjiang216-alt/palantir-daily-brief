@@ -276,8 +276,8 @@ def sync_to_feishu_bitable(items, date_str=None, pool=None):
             our_action = (sp.get("our_action") or "").strip()
 
             full_spec_card = (
-                f"【产品设计规格（怎么配/怎么用/怎么判）】\n{palantir_spec}\n\n"
-                f"【产品参考要点（场景/MVP闭环/避坑）】\n{our_action}\n\n"
+                f"【产品功能说明】\n{palantir_spec}\n\n"
+                f"【核心借鉴点】\n{our_action}\n\n"
                 f"来源：{it.get('title','')}（{it.get('source','')}）"
             )
             row_payload = {
