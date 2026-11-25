@@ -537,8 +537,19 @@ def fetch_full_text(item, max_chars=12000):
       3. 若是 YouTube 视频，走 InnerTube 接口拉取完整章节大纲 + 完整口播字幕
       4. 其余网页优先通过 r.jina.ai 提取干净 Markdown，并剔除 Google News 空壳页
     """
+    paywall_markers = (
+        "Continue reading on Medium",
+        "Member-only story",
+        "Sign up to discover human stories",
+        "Become a member to read",
+        "Read the rest of this story with a free account",
+    )
+
     if item.get("full_text") and len(item["full_text"]) > 800:
-        return item["full_text"][:max_chars]
+        ft0 = item["full_text"]
+        if any(pm in ft0 for pm in paywall_markers) and len(ft0) < 2500:
+            return ""
+        return ft0[:max_chars]
 
     raw_url = item.get("raw_url")
     if raw_url:
@@ -557,11 +568,14 @@ def fetch_full_text(item, max_chars=12000):
     if "news.google.com/rss/articles/" in url:
         return ""
 
-    # YouTube 视频专属提取
+    # YouTube 视频专属提取：必须提取到真实字幕或足够长的章节说明，绝不允许跌落去抓 YouTube 网页外壳
     if "youtube.com/watch" in url or "youtu.be/" in url:
         yt_text = _fetch_youtube_full_text(url, max_chars=max_chars)
-        if len(yt_text) >= 350:
+        if "【视频完整口播字幕实录】" in yt_text and len(yt_text) >= 600:
             return yt_text
+        if len(yt_text) >= 1200:
+            return yt_text
+        return ""
 
     # 1. 尝试 Jina Reader 提取干净 Markdown
     bad_markers = (
@@ -579,6 +593,9 @@ def fetch_full_text(item, max_chars=12000):
         if r.status_code == 200 and len(r.text) > 450:
             head_slice = r.text[:600]
             if not any(m in head_slice for m in bad_markers):
+                if any(pm in r.text for pm in paywall_markers) and len(r.text) < 2500:
+                    log.info(f"拦截付费墙半截残文: {url[:60]}")
+                    return ""
                 return r.text[:max_chars]
     except Exception:
         pass
@@ -589,11 +606,13 @@ def fetch_full_text(item, max_chars=12000):
         if r.status_code == 200:
             txt = _clean_html(r.text)
             if len(txt) > 450 and not any(m in txt[:400] for m in bad_markers):
+                if any(pm in txt for pm in paywall_markers) and len(txt) < 2500:
+                    return ""
                 return txt[:max_chars]
     except Exception:
         pass
 
-    return item.get("summary", "")
+    return ""
 
 
 def fetch_all_candidates():
