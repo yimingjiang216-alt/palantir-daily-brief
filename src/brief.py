@@ -434,7 +434,15 @@ def select_daily_items(pool, min_count=DAILY_MIN_COUNT, max_count=DAILY_MAX_COUN
     sent_items.sort(key=lambda x: x.get("sent_at", ""), reverse=True)
     recent_sent = sent_items[:20]
 
-    unread.sort(key=lambda x: (x.get("score", 0), x.get("added_at", "")), reverse=True)
+    def _source_tier(cand):
+        u0 = (cand.get("url") or "").lower()
+        if "palantir.com/docs/" in u0:
+            return 2
+        if "blog.palantir.com" in u0 or "github.com/" in u0:
+            return 1
+        return 0
+
+    unread.sort(key=lambda x: (_source_tier(x), x.get("score", 0), x.get("added_at", "")), reverse=True)
 
     shortlist_cap = 12
     verified_shortlist = []
@@ -666,17 +674,10 @@ def synthesize_product_insight(item, recent_sent_focuses):
         feature_tag=parsed.get("feature_tag", ""),
     )
 
-    # 校准每条原子级功能规格 (feature_specs) 的架构层级；允许模型对纯理念文章返回空数组 []
+    # 校准每条原子级功能规格 (feature_specs) 的架构层级；若无合法组件列表则置为空数组 []，绝不拿文章标题充当组件名
     raw_specs = parsed.get("feature_specs")
     if not isinstance(raw_specs, list):
-        raw_specs = [
-            {
-                "component_name": parsed.get("title", item["title"])[:24],
-                "arch_layer": parsed["arch_layer"],
-                "palantir_spec": "\n".join(parsed.get("product_mechanics", [])[:2]),
-                "our_action": "\n".join(parsed.get("aip_inspiration", [])),
-            }
-        ]
+        raw_specs = []
     for sp in raw_specs:
         sp["arch_layer"] = resolve_arch_layer(
             {"url": "", "title": sp.get("component_name", ""), "feature_focus": sp.get("palantir_spec", "")[:100]},
@@ -740,28 +741,49 @@ def generate_brief(mark_sent=False):
         for v in sent_items[:8]
     ]
 
+    def _comp_stem(name: str) -> str:
+        """提取组件名的归一化英文/主干词，用于代码级防重（如 Action Types 与 Action Type 归一为 actiontype）。"""
+        head = re.split(r"[（(]", name or "")[0].strip().lower()
+        stem = re.sub(r"[^a-z0-9\u4e00-\u9fa5]+", "", head)
+        if stem.endswith("s") and len(stem) > 4:
+            stem = stem[:-1]
+        return stem
+
     results = []
     # 预加载往期已入库多维表格的功能组件名 + 同批次已提炼组件名，跨期&同日双重防重
     used_components = []
+    used_stems = set()
     for v in sent_items:
         arch = v.get("insight_archive") or {}
         for sp in (arch.get("feature_specs") or []):
             cname = (sp.get("component_name") or "").strip()
-            if cname and cname not in used_components:
+            st = _comp_stem(cname)
+            if cname and st and st not in used_stems:
                 used_components.append(cname)
+                used_stems.add(st)
 
     for it in selected_raw:
         insight = synthesize_product_insight(it, recent_focuses + [
             f"【本篇请勿再提炼以下已用组件】{c}" for c in used_components[-25:]
         ])
+        # 代码级硬去重：剔除与历史或同批组件主干名重复的项
+        deduped_specs = []
+        for sp in (insight.get("feature_specs") or []):
+            name = (sp.get("component_name") or "").strip()
+            st = _comp_stem(name)
+            if not name or not st:
+                continue
+            if st in used_stems:
+                log.info(f"代码级拦截重复组件入表: {name}")
+                continue
+            deduped_specs.append(sp)
+            used_components.append(name)
+            used_stems.add(st)
+        insight["feature_specs"] = deduped_specs
         results.append(insight)
         recent_focuses.insert(
             0, f"[今日同批] {insight.get('title','')}（{it.get('feature_focus','')}）"
         )
-        for sp in (insight.get("feature_specs") or []):
-            name = (sp.get("component_name") or "").strip()
-            if name:
-                used_components.append(name)
 
     daily_lead = generate_daily_lead(results)
     for r in results:
