@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-24 01:04:13",
+  "updated_at": "2026-11-25 01:04:06",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -45,9 +45,39 @@
       "summary": "开源专题《palantir-aip-study》深度拆解章节：国产 AI 平台借鉴 Palantir AIP 的产品设计与落地行动指南",
       "score": 8,
       "reason": "提供国产平台借鉴 Palantir AIP 的具体行动指南，包含对 Ontology 建模、Agent 协同、可解释性、安全控制等关键机制的对比与迁移路径建议",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-25",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "三档路径决策：按场景复杂度选AI落地深度",
+        "feature_tag": "行业工作流与落地范式",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "本文不拆解单一产品模块，而是从 Palantir AIP 的三层一体化架构（语义层+操作层+治理层）中提炼出「场景复杂度决定平台深度」的产品分级策略，指导我们自研 AIP 的功能分层与交付节奏设计。",
+        "related_history": "此前已推送 Ontology 对象权限控制、Agent Stack 工具调用体系、Agentic Runtime 安全机制等单点功能；本篇首次从整体架构视角给出「什么场景该用多重的平台」的分级判断框架，补齐了从单功能到平台级产品规划的缺失环节。",
+        "core_concept": "团队常犯的错误是不管场景简单还是复杂都上全套语义建模加权限治理，结果要么过度建设没人用，要么治理欠债上线后出事。",
+        "product_mechanics": [
+          "按数据复杂度、场景需求、组织成熟度三个维度打分，低档只做检索问答加工作流，中档加一层业务对象关系定义和跨系统操作封装，高档才做完整语义建模加治理平台化。"
+        ],
+        "scenario_usage": "适用于我们自研 AIP 产品的客户分级交付策略设计：面对不同成熟度的客户，产品应该提供哪些功能档位、默认开启哪些模块、何时引导客户升级。也适用于内部立项时判断某个 AI 场景该投入多少建模和治理工程量。",
+        "aip_inspiration": [
+          "Palantir 的溢价不在单个功能而在三层一体化的集成工程量；我们 MVP 应先做最轻档跑通场景再按需叠加语义层和治理层，切忌一上来就建平台。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Three-Tier Path Framework（场景分级交付决策框架）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "① 后台怎么配：管理员在平台初始化时选择客户档位（轻量/标准/深度），系统据此决定默认开启哪些模块——轻量档只开检索问答和工作流编排，标准档额外开启业务对象关系配置面板和操作封装入口，深度档全量开启含权限策略编辑器和审计日志。\n② 前台怎么用：业务用户在轻量档只能问问题和看报告；标准档可以在对话中触发跨系统操作（如「帮我查这个供应商影响了哪些订单并创建工单」）；深度档支持自定义业务对象、配置角色可见范围、查看完整操作溯源链。\n③ 系统怎么判：当用户请求涉及跨实体关联查询但当前档位未开启语义层时，系统提示「当前版本不支持关联推理，建议升级」而非硬凑答案；当操作触发的数据超出用户角色可见范围时直接拦截并记录。",
+            "our_action": "• 适用业务场景：我们的 AIP 面向不同规模客户交付时，需要一套清晰的功能分级策略，避免小客户被重平台吓退、大客户被轻方案限制住。\n• MVP 最小闭环：先做轻量档（检索+工作流），在产品后台加一个「场景复杂度评估」配置页，三个维度各设低/中/高选项，选完自动推荐档位并展示对应功能清单；同时埋好「撞墙信号」检测点（如用户频繁尝试关联查询失败），触发升级引导。\n• 局限与避坑：档位划分是简化模型，实际客户会混合使用；不要机械卡死功能边界，允许标准档客户按需单独开启深度档的某个子模块（如只要权限控制不要全套建模）。"
+          },
+          {
+            "component_name": "Governance-First Design（治理前置设计原则）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "① 后台怎么配：在标准档及以上，管理员创建业务对象时必须同步填写「谁可以看」「谁可以改」「改了要不要审批」三项治理规则，这三项是必填项而非可选开关；系统预置常见角色模板（如部门经理可看本部门、财务可看金额字段），管理员可基于模板微调。\n② 前台怎么用：业务用户发起操作时，界面实时显示当前操作的权限状态——绿色表示可直接执行，黄色表示需审批（生成待确认申请单），红色表示无权操作并说明原因；所有已执行操作在「操作记录」页面可按时间、操作人、对象类型筛选回溯。\n③ 系统怎么判：每次 AI 生成回答或执行操作前，系统先校验当前用户角色对涉及数据的可见性和可操作性；校验不通过则拦截并在操作记录中标记「权限拦截」；数据结构发生变更时，系统自动标记受影响的语义定义并通知建模负责人确认，防止 AI 静默输出错误结果。",
+            "our_action": "• 适用业务场景：客户 POC 阶段跳过权限控制，上线后出现数据泄露或审计缺失，这是国内 AI 项目规模化失败的首要原因。\n• MVP 最小闭环：在业务对象配置页把「可见角色」和「操作记录」做成必填项，哪怕第一版只支持按部门粗粒度控权；操作记录页先做最简的时间线列表，能查到「谁在什么时候对哪个对象做了什么」即可。\n• 局限与避坑：治理规则会随业务变化持续膨胀，必须预留规则版本管理和变更通知机制；不要等客户提出合规需求再补，届时改造成本远大于初始内建。"
+          }
+        ]
+      }
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/05-ontology-engineering-patterns.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/05-ontology-engineering-patterns.md",
@@ -605,7 +635,7 @@
       "added_at": "2026-11-16",
       "sent_at": "",
       "bitable_synced": false,
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5": {
       "url": "https://medium.com/@christy.cs07/palantir-q3-2026-earnings-the-hidden-warning-behind-its-explosive-ai-revenue-growth-5225ed6b4b3e?source=rss------palantir-5",
@@ -1041,9 +1071,39 @@
       "summary": "梳理 AIP Logic、AIP Agent Studio、AIP Assist、AIP Evals、Workflow Builder 等模块分工。",
       "score": 9,
       "feature_focus": "AIP 核心模块分工：AIP Logic、Agent Studio、Assist、Evals、Workflow Builder 的功能边界与协作逻辑",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-25",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP Evals：用测试集验收 AI 函数再上线",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "位于 LLM 函数的开发与生产之间，是 AIP Logic 产出的函数进入 Automate、Chatbot 等消费方之前的质量验收环节；向下对接 Ontology 数据作为测试输入，向上为模型选型和提示词迭代提供量化依据。",
+        "related_history": "与已推送的 Agent Stack 工具调用体系互补：Agent Stack 解决『AI 能调什么』，Evals 解决『调得对不对、换个模型还稳不稳』；与 Agentic Runtime 安全机制形成前后关系——Runtime 管运行时拦截，Evals 管上线前批量验证。本篇不涉及 Data Expectations 与 Trace Curation。",
+        "core_concept": "提示词改一版、模型换一个，输出就飘，业务方不敢让 AI 函数直接进生产流程，缺一个能反复跑、能比对的验收手段。",
+        "product_mechanics": [
+          "给每个 AI 函数建一套测试用例集，逐条填输入和期望结果，一键批量跑多轮并换模型对比，系统按评分标准判通过与否，结果汇总成看板供上线决策。"
+        ],
+        "scenario_usage": "适合合同要素抽取、工单分类、审批建议这类有明确对错的 AI 函数上线前验收，以及模型供应商切换、提示词大改后的回归检查。",
+        "aip_inspiration": [
+          "把评测做成和函数同级的独立资产而非一次性调试面板，用例可沉淀复用；MVP 先做输入输出比对加通过率统计，中间步骤打分和多模型横评可后置。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "AIP Evals（AI函数评测套件）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 后台怎么配：选定要测的 AI 函数，建评测套件，逐条录入输入样例与期望答案，挑选打分方式，可指定只评某个中间环节的输出，也可把对业务对象的修改动作纳入评测范围。\n② 前台怎么用：点运行发起一轮实验，可同时挂多个模型或多版提示词做对照，跑完在看板里看每条用例的通过情况和多轮之间的波动。\n③ 系统怎么判：按预设标准逐条判定达标与否，未达标的用例标红并保留完整输入输出供排查，全部结果可导出成数据集留档。",
+            "our_action": "• 适用业务场景：同一个抽取或分类任务换了模型后效果说不清、业务方要求给出上线前的准确率证据时。\n• MVP 最小闭环：先支持手动录入二十条左右带标准答案的用例，一键批量执行，输出通过率与失败明细列表即可交付。\n• 局限与避坑：依赖人工准备标准答案，开放式生成类任务难以自动判分；用例覆盖不到的长尾场景仍会漏，需配合线上抽查。"
+          },
+          {
+            "component_name": "Use LLM node（管道内批量LLM节点）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "① 后台怎么配：管理员在控制面板的 AIP 设置里放开该能力的使用权限，搭建者在管道画布上拖入 LLM 节点，选模型、写提示词、指定输入列与输出落位。\n② 前台怎么用：先点试运行，只取输入数据的头几行看效果，反复改提示词满意后再对全量数据执行；同一画布里还能用文本转向量的表达式把文字变成语义向量。\n③ 系统怎么判：无权限的用户看不到该节点；试运行不写正式结果，只有确认后才对整份数据生效。",
+            "our_action": "• 适用业务场景：几十万条客户反馈要打标签或摘要，逐条调接口成本高又难复现时。\n• MVP 最小闭环：先做节点配置面板加小样本试跑预览，跑通后再开放全量执行与结果落表。\n• 局限与避坑：全量跑的算力开销随数据量线性上涨，必须先小样本验证提示词；权限没配好会导致业务人员误用高价模型。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/control-llm-data-access-with-markings": {
       "url": "https://www.palantir.com/docs/foundry/aip/control-llm-data-access-with-markings",
@@ -1559,7 +1619,7 @@
       "summary": "YouTube 频道 Palantir Developers 视频讲解：AIP Logic x AT&T for Automating Operational Support | DevCon 2。简介：Automation that stands the test of time will be software defined. At DevCon 2, New Product Development Engineer Ed Barmettler ...",
       "score": 9,
       "feature_focus": "AT&T 实战案例中 AIP Logic 与 Automate 联动实现运营支持自动化的完整工作流演示",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -2102,7 +2162,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5",
@@ -2381,8 +2441,7 @@
       "feature_focus": "使用 AIP Logic 构建 RAG 工作流的完整端到端实现路径，包含上下文注入与逻辑编排",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": "",
-      "fetch_fail_count": 2
+      "sent_at": ""
     },
     "https://www.youtube.com/watch?v=U6Hxj6NB3us": {
       "url": "https://www.youtube.com/watch?v=U6Hxj6NB3us",
@@ -3884,7 +3943,7 @@
       "status": "unread",
       "added_at": "2026-11-23",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5": {
       "url": "https://medium.com/@hagen.finley_71/palantir-platform-challenge-adding-one-node-85d2b0d48662?source=rss------palantir-5",
@@ -3911,7 +3970,7 @@
       "status": "unread",
       "added_at": "2026-11-23",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5": {
       "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir-5",
@@ -3938,7 +3997,7 @@
       "status": "unread",
       "added_at": "2026-11-23",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5": {
       "url": "https://medium.com/@pratik.vyas_10544/part-4-engineering-enterprise-llm-systems-from-theory-to-execution-mapping-llm-patterns-to-the-e18690051632?source=rss------palantir_foundry-5",
@@ -3965,7 +4024,7 @@
       "status": "unread",
       "added_at": "2026-11-24",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=_b2qsKz_Ifk": {
       "url": "https://www.youtube.com/watch?v=_b2qsKz_Ifk",
@@ -4056,6 +4115,45 @@
       "feature_focus": "杉数科技融资新闻，与 Palantir AIP/数据平台产品功能无关",
       "status": "rejected",
       "added_at": "2026-11-24",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=Uh0zpMUR6wY": {
+      "url": "https://www.youtube.com/watch?v=Uh0zpMUR6wY",
+      "raw_url": "",
+      "title": "[视频 · Ontologize] Build with Us | Deep Dive: Building your first application",
+      "source": "YouTube 模块深挖·Workshop与OSDK开发 (Ontologize)",
+      "summary": "YouTube 频道 Ontologize 视频讲解：Build with Us | Deep Dive: Building your first application。简介：An updated version of this video is available at https://www.youtube.com/watch?v=NWnI-8c_Fvs* In this tutorial, Ben runs through ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "Workshop + OSDK 应用开发实操：从零搭建第一个 Ontology 驱动的应用（对象绑定、界面组件与前端 SDK 调用）",
+      "status": "unread",
+      "added_at": "2026-11-25",
+      "sent_at": ""
+    },
+    "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4": {
+      "url": "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4",
+      "raw_url": "",
+      "title": "Zrozumieć Palantir: fakty i mity",
+      "source": "Palantir 官方工程博客",
+      "summary": "10 pytań dotyczących technologii, bezpieczeństwa danych, kontroli nad systemem oraz tego, kto podejmuje decyzje (Scroll down for English translation below) Czym właściwie zajmuje się Palantir? Czy firma ma dostęp do danych swoich klientów? Czy jej oprogramowanie może działać w środowiskach utrzymywanych przez klientów (on-premises)? Działalność Palantira rodzi wiele pytań — a także nieporozumień — dotyczących sposobu działania naszej technologii. Wiele z nich wynika z utożsamiania dostawcy oprogramowania z właścicielem danych albo z przekonania, że korzystanie z zaawansowanych narzędzi analitycznych oznacza oddanie kontroli nad informacjami. Dlatego Palantir Polska zebrał dziesięć najczęściej zadawanych nam pytań o firmę i jej technologię. Poniżej przedstawiamy odpowiedzi. 1. Czym dokładni",
+      "full_text": "10 pytań dotyczących technologii, bezpieczeństwa danych, kontroli nad systemem oraz tego, kto podejmuje decyzje (Scroll down for English translation below) Czym właściwie zajmuje się Palantir? Czy firma ma dostęp do danych swoich klientów? Czy jej oprogramowanie może działać w środowiskach utrzymywanych przez klientów (on-premises)? Działalność Palantira rodzi wiele pytań — a także nieporozumień — dotyczących sposobu działania naszej technologii. Wiele z nich wynika z utożsamiania dostawcy oprogramowania z właścicielem danych albo z przekonania, że korzystanie z zaawansowanych narzędzi analitycznych oznacza oddanie kontroli nad informacjami. Dlatego Palantir Polska zebrał dziesięć najczęściej zadawanych nam pytań o firmę i jej technologię. Poniżej przedstawiamy odpowiedzi. 1. Czym dokładnie zajmuje się Palantir i do czego służy jego oprogramowanie? Palantir Technologies to międzynarodowa firma technologiczna założona w 2003 roku w Dolinie Krzemowej. Obecnie nasza siedziba główna znajduje się w Miami na Florydzie, a firma ma biura na całym świecie, m.in. w Warszawie, Tokio, Monachium, Paryżu i Londynie. Mówiąc najprościej, Palantir tworzy oprogramowanie, które pomaga organizacjom z ponad 50 sektorów — od obronności i organów ścigania po producentów samolotów , przedsiębiorstwa energetyczne , sektor ochrony zdrowia i organizacje humanitarne — łączyć, analizować i wykorzystywać własne dane, aby podejmować decyzje szybciej, trafniej i w sposób zapewniający większą rozliczalność. Nasze platformy obejmują Palantir AIP, Foundry, Gotham i Apollo . Sercem architektury Palantira jest zaś Ontologia — system odwzorowujący złożone, wzajemnie powiązane procesy decyzyjne organizacji, a nie tylko jej dane. Wyobraźmy sobie duże przedsiębiorstwo produkcyjne. Informacje o zamówieniach znajdują się w jednym systemie, o dostępności surowców — w drugim, o pracy fabryki — w trzecim, a o transporcie — w kolejnym. Chociaż firma dysponuje wszystkimi tymi danymi, uzyskanie pełnego obrazu sytuacji może być trudne i czasochłonne. Platformy Palantira specjalizują się w pomaganiu klientom w łączeniu informacji z różnych źródeł, zarządzaniu dostępem do nich, analizowaniu ich i wykorzystywaniu w codziennej działalności — od zarządu po linię produkcyjną. Dzięki temu organizacja może szybciej dostrzegać problemy, odpowiednio planować działania i podejmować decyzje na podstawie aktualnych informacji pochodzących z wielu źródeł, które często funkcjonują oddzielnie. Palantir pomaga organizacjom uzyskiwać praktyczną wiedzę, którą można przełożyć na konkretne działania i optymalizację procesów przy zachowaniu najwyższych standardów ochrony prywatności i bezpieczeństwa. 2. Czy Palantir samodzielnie gromadzi, pozyskuje lub sprzedaje dane? Tworzymy oprogramowanie, które pomaga naszym klientom integrować i rozumieć ich własne dane. Nie jesteśmy firmą zajmującą się inwigilacją, która gromadzi dane i nimi handluje. Nie wykorzystujemy danych klientów do własnych celów . Nie monetyzujemy ich, nie opracowujemy ani nie trenujemy na nich wspólnych modeli AI i przetwarzamy je wyłącznie zgodnie z poleceniami klientów. Ponadto nie opracowujemy ani nie udostępniamy klientom własnych modeli AI — nie jesteśmy ich producentem. Wynika to nie tylko z naszego modelu biznesowego, lecz także z przepisów prawa. W odniesieniu do danych klientów działamy jako „ podmiot przetwarzający ”, a nie „administrator danych”. 3. Kto decyduje, jakie dane trafiają na platformę Palantira i kto może z nich korzystać? Ochrona prywatności i bezpieczeństwo danych mają fundamentalne znaczenie dla Palantira i od początku są uwzględnione w architekturze naszego oprogramowania. Każdy klient otrzymuje odrębną instancję naszego oprogramowania, nad którą sprawuje kontrolę. To klient określa , jakie dane są integrowane, kto może uzyskać do nich dostęp i w jaki sposób są wykorzystywane. Na przykład w instytucji publicznej pracownik odpowiedzialny za logistykę może mieć dostęp wyłącznie do informacji potrzebnych do realizacji powierzonych mu zadań, takich jak dostępność wyposażenia czy zapotrzebowanie na zaopatrzenie. Jego przełożony może natomiast dysponować szerszym dostępem do danych obejmujących cały dział, jednostkę lub centrum obsługi. Podobnie pracownicy innych działów widzą tylko informacje odpowiadające ich obowiązkom i dotychczasowym uprawnieniom. Platforma Palantira respektuje te różnice i nie przyznaje użytkownikom dostępu do danych, do których nie byli wcześniej upoważnieni. Mechanizmy kontroli dostępu zależnej od celu wykorzystania danych ( purpose-based access controls ) pozwalają klientom zarządzać dostępem i uprawnieniami. Klienci mogą w ten sam sposób określać i stosować ograniczenia dostępu do danych wobec modeli AI działających w ramach platformy. Samo wdrożenie naszego oprogramowania nie nadaje organizacji żadnych nowych uprawnień prawnych do pozyskiwania lub wykorzystywania danych. Pozwala natomiast lepiej zarządzać istniejącymi źródłami informacji zgodnie z obowiązującymi przepisami i procedurami. 4. Czy Palantir i jego pracownicy mają dostęp do danych klientów? Palantir nie może samodzielnie uzyskać dostępu do danych klientów bez ich zgody i współdziałania. Zapobiegają temu mechanizmy kontroli dostępu, szyfrowania i rejestrowania operacji na potrzeby audytu, a w wielu przypadkach również instalacja on-premises (wyjaśniona poniżej). Klienci zawsze zachowują pełną własność i kontrolę nad swoimi danymi, chyba że sami postanowią inaczej na potrzeby określonych przez siebie celów. W pewnych okolicznościach mogą zdecydować o przyznaniu inżynierom Palantira ograniczonego dostępu, aby wesprzeć uruchomienie, konfigurację lub utrzymanie systemu. Taki dostęp podlega ścisłej kontroli klienta, jest ograniczony czasowo oraz służy wyłącznie realizacji jego wyraźnych instrukcji. Klient zachowuje pełną kontrolę nad uprawnieniami i może je w dowolnym momencie odebrać. Po zakończeniu projektu dostęp jest usuwany. Oprogramowanie wdrożone w modelu on-premises działa na infrastrukturze należącej do klienta i przez cały okres użytkowania pozostaje pod jego pełną i wyłączną kontrolą. Oznacza to, że dane są przechowywane i przetwarzane w środowisku fizycznie zarządzanym przez klienta. Palantir nie przechowuje tych danych, nie posiada kluczy szyfrujących i nie może zdalnie uzyskać dostępu do systemu, zgodnie z politykami i procedurami bezpieczeństwa klienta. Nie może też z własnej inicjatywy przeglądać, pobierać ani eksportować informacji. Wyłącznie klient decyduje, kto może uzyskać dostęp do systemu i zawartych w nim danych — jako administrator tworzy konta użytkowników i określa przypisane im uprawnienia. Codzienna obsługa i administracja, integrowanie nowych źródeł danych oraz tworzenie własnych procesów i aplikacji w ramach platformy nie wymagają stałego udziału inżynierów Palantira. Samo dostarczenie oprogramowania nie oznacza dostępu do przetwarzanych za jego pomocą danych. 5. Czy amerykańskie władze mogą uzyskać dostęp do danych klientów Palantira na podstawie ustawy CLOUD Act? Nie. Palantir i platforma Palantira znajdują się poza zakresem stosowania amerykańskiej ustawy CLOUD Act. Jako dostawca oprogramowania dla przedsiębiorstw Palantir nie jest dostawcą usług łączności elektronicznej ani zdalnych usług obliczeniowych, a więc nie należy do kategorii usługodawców objętych tą ustawą. W związku z tym Palantir nigdy nie otrzymał żądania ujawnienia danych na podstawie CLOUD Act i nie spodziewa się otrzymania takich żądań w przyszłości. Nasze oprogramowanie jest również zaprojektowane tak, aby nikt, w tym sam Palantir, nie mógł uzyskać dostępu do danych klienta bez jego polecenia i wyraźnej zgody. Palantir nie posiada kluczy szyfrujących kontrolowanych przez klientów ani możliwości zdalnego dostępu do ich systemów lub eksportowania danych. 6. Czy klient może zachować pełną kontrolę nad swoją infrastrukturą? Tak. Umożliwia to wdrożenie oprogramowania Palantira w modelu on-premises — na infrastrukturze, nad którą klient sprawuje fizyczną kontrolę. Klient decyduje, na jakiej infrastrukturze działa system, gdzie znajdują się serwery i dane, kto zarządza środowiskiem oraz jakie mechanizmy bezpieczeństwa są stosowane. Oprogramowanie Palantira może również działać w sieciach całkowicie odizolowanych od internetu. Takie rozwiązania są szczególnie ważne dla na przykład wojska, czy także innych instytucji przetwarzających informacje szczególnie wrażliwe lub utrzymujących własne sieci teleinformatyczne. 7. Czy Palantir może zdalnie kontrolować, modyfikować lub wyłączyć system klienta? Nasi klienci sami decydują, gdzie wdrożyć oprogramowanie: na czyich zasobach do przechowywania danych i mocy obliczeniowej oraz w czyich sieciach. Jeśli infrastruktura pozostaje pod ich kontrolą, nie ma możliwości zdalnego sterowania ani mechanizmu „ kill switch ” — Palantir ani żaden zagraniczny rząd nie mają technicznej lub praktycznej możliwości zmodyfikowania bądź wyłączenia systemu. Codzienna eksploatacja oprogramowania Palantira również nie wymaga stałego udziału inżynierów firmy. Zespoły klienta mogą samodzielnie zarządzać użytkownikami, integrować nowe źródła danych, tworzyć analizy, rozwijać aplikacje i administrować środowiskiem. Wsparcie inżynierów Palantira może być wykorzystywane w uzgodnionym zakresie, ale nie jest niezbędnym warunkiem wykonywania tych czynności. Oprogramowanie nie przestaje automatycznie działać bez wiedzy klienta. Warunki licencji określają indywidualne umowy zawierane z naszymi klientami. 8. Czy klient może sprawdzić, jak działa oprogramowanie Palantira i kto korzystał z danych? Tak. Możliwość monitorowania i audytowania jest jedną z podstawowych zasad technologii Palantira, ponieważ system nie został zaprojektowany jako „czarna skrzynka” — jego działanie jest przejrzyste dla klienta. Oprogramowanie rejestruje wszystkie działania użytkowników. Upoważnione osoby mogą dzięki temu sprawdzić, kto uzyskał dostęp do określonych informacji, kiedy to nastąpiło i co z nimi zrobił. Platforma umożliwia równ",
+      "score": 5,
+      "feature_focus": "官方答疑式科普：数据归属与访问权限、on-premises 部署形态、系统控制权与决策归属等安全治理概念，无具体模块设计细节",
+      "status": "rejected",
+      "added_at": "2026-11-25",
+      "sent_at": ""
+    },
+    "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss------palantir-5": {
+      "url": "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "Zrozumieć Palantir: fakty i mity",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "10 pytań dotyczących technologii, bezpieczeństwa danych, kontroli nad systemem oraz tego, kto podejmuje decyzje Continue reading on Palantir Blog »",
+      "full_text": "",
+      "score": 4,
+      "feature_focus": "与 [2] 同文的 Medium 转载摘要，仅罗列数据安全/控制权十问标题，无任何产品功能展开",
+      "status": "rejected",
+      "added_at": "2026-11-25",
       "sent_at": ""
     }
   }
