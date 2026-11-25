@@ -107,12 +107,12 @@ def _build_feishu_post(
 
         if inspirations:
             ins_joined = "；".join(
-                re.sub(r"^(巧思与取舍|设计巧思|产品边界与取舍)[：:]\s*", "", ins.strip())
+                re.sub(r"^(亮点与边界|巧思与取舍|设计巧思|产品边界与取舍)[：:]\s*", "", ins.strip())
                 for ins in inspirations[:2] if ins.strip()
             )
             if ins_joined:
                 content_lines.append([
-                    {"tag": "text", "text": f"• 巧思与取舍：{ins_joined}"}
+                    {"tag": "text", "text": f"• 亮点与边界：{ins_joined}"}
                 ])
 
         if url:
@@ -184,7 +184,7 @@ def send_feishu(items, date_str=None, unread_count=0):
             if r.get("product_mechanics"):
                 print(f"• 做法：{'；'.join(r.get('product_mechanics', [])[:2])}")
             if r.get("aip_inspiration"):
-                print(f"• 巧思与取舍：{'；'.join(r.get('aip_inspiration', [])[:2])}")
+                print(f"• 亮点与边界：{'；'.join(r.get('aip_inspiration', [])[:2])}")
             print(f"原文：{r.get('source')} | {r.get('url')}")
         return False
 
