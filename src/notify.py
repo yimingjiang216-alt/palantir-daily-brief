@@ -251,21 +251,11 @@ def sync_to_feishu_bitable(items, date_str=None, pool=None):
             continue
 
         specs = it.get("feature_specs")
-        if isinstance(specs, list) and len(specs) == 0:
-            log.info(f"本篇无具体软件组件规格（宏观/理念类文章），跳过多维表格入库: {it.get('title','')[:30]}")
+        if not isinstance(specs, list) or len(specs) == 0:
+            log.info(f"本篇无独立官方组件规格，跳过多维表格入库: {it.get('title','')[:30]}")
             if u and u in items_map:
                 items_map[u]["bitable_synced"] = True
             continue
-        if not specs:
-            raw_layer = (it.get("arch_layer") or "L2 本体与动作层").strip()
-            specs = [
-                {
-                    "component_name": (it.get("title") or "").strip(),
-                    "arch_layer": raw_layer,
-                    "palantir_spec": "\n".join(f"• {m}" for m in (it.get("product_mechanics") or [])),
-                    "our_action": "\n".join(f"• {t}" for t in (it.get("aip_inspiration") or [])),
-                }
-            ]
 
         item_ok = True
         for sp in specs:
