@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-25 01:04:06",
+  "updated_at": "2026-11-26 01:04:52",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -21,9 +21,26 @@
       "summary": "开源专题《palantir-aip-study》深度拆解章节：Palantir FDE（前线部署工程师）模式与产品演进机制解析",
       "score": 8,
       "reason": "聚焦 FDE 模式在产品演进中的角色，揭示前线部署工程师如何驱动 AIP 从原型到生产级系统的迭代机制，体现产品与工程协同的实战闭环",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-26",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "FDE模式：驻场判断力如何沉淀为产品资产",
+        "feature_tag": "行业工作流与落地范式",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "",
+        "related_history": "",
+        "core_concept": "企业AI项目失败多因技术团队不懂业务、业务团队不懂翻译需求，中间缺一个能同时做技术判断和业务判断的人把系统真正跑起来。",
+        "product_mechanics": [
+          "FDE常驻客户现场，在需求讨论中当场判断哪些该建模为Ontology对象，再把反复出现的共性问题抽象为可复用模式，逐步固化为Workshop模板和OSDK脚手架，让后续客户自助完成标准部署。"
+        ],
+        "scenario_usage": "",
+        "aip_inspiration": [
+          "FDE的核心价值不是完成交付而是把判断力编码进工具；如果所有工作只停留在交付层面没有沉淀为可复用资产，就是在消耗商业模式而非强化它。"
+        ],
+        "feature_specs": []
+      }
     },
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/03-enterprise-ai-landing.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/03-enterprise-ai-landing.md",
@@ -187,9 +204,33 @@
       "summary": "Palantir AIP 官方产品文档核心模块拆解：AIP 官方文档：AIP 安全架构与数据护栏",
       "score": 9,
       "reason": "全面解析 AIP 安全架构与数据护栏机制，包括数据隔离、访问控制、审计日志、敏感信息脱敏等，支撑高合规场景下的可信 AI 运行",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-26",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP安全架构：第三方模型零留存与区域端点路由",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "位于平台最外层的安全治理层，为所有上层Agent编排、本体操作和应用交互提供统一的数据隐私保障与合规基线。",
+        "related_history": "此前已推送Object Permissioning（对象级权限控制）和Agentic Runtime（运行时安全），本篇聚焦的是更上游的问题：当数据离开平台边界送往第三方LLM时，如何从合同与技术两个层面确保零泄露。",
+        "core_concept": "企业调用第三方大模型时，提示词和返回结果可能被模型厂商留存或用于训练，造成客户数据外泄风险。",
+        "product_mechanics": [
+          "Palantir在接入每个第三方模型前，先与厂商签订技术加合同双重保证：提示词和补全内容即时丢弃不留存、不用于模型再训练、厂商人员无权访问；同时优先选用客户所在区域的模型端点以降低延迟并满足数据驻留要求。"
+        ],
+        "scenario_usage": "适用于金融、医疗、政务等对数据出境和隐私合规有硬性要求的行业客户，需要在不牺牲AI能力的前提下消除数据外泄顾虑。",
+        "aip_inspiration": [
+          "关键设计亮点是把「零留存」从口头承诺变成了逐厂商的技术验证加合同约束的准入门槛，而非事后审计补救；适用前提是客户愿意接受平台代为托管模型调用链路。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Regional LLM Endpoints（区域化模型端点路由）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "AIP在对接第三方托管模型时，会优先选择与客户部署区域匹配的模型服务端点（目前覆盖美国、英国、欧盟等区域的部分模型）。具体可用区域受各模型厂商的技术限制约束，且可能随时间变化。这一机制同时服务于降低网络延迟和满足数据地理驻留合规两个目标。",
+            "our_action": "适用于客户明确要求数据不出境的场景，核心思路是在模型调用链路中内置区域感知路由，让合规约束变成平台自动执行的路由规则而非人工检查项。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/aip-observability/": {
       "url": "https://www.palantir.com/docs/foundry/aip/aip-observability/",
@@ -870,7 +911,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=kcMgaLi3Yqs": {
       "url": "https://www.youtube.com/watch?v=kcMgaLi3Yqs",
@@ -1242,9 +1283,33 @@
       "summary": "说明如何接入开源或自托管大模型，并与平台内置模型统一调度。",
       "score": 9,
       "feature_focus": "多模型接入（BYOM）与模型路由管理：开源/自托管模型与平台内置模型的统一调度能力",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-26",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "BYOM：自带模型统一接入与权限解耦",
+        "feature_tag": "多模型接入与治理",
+        "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+        "arch_position": "",
+        "related_history": "",
+        "core_concept": "客户因合规或自有微调模型需接入平台时，缺乏与内置模型同等的限流、权限和可观测治理能力。",
+        "product_mechanics": [
+          "管理员通过 REST API 或自托管计算模块注册模型后，底层数据源权限即与终端用户解耦，访问仅由 Control Panel 的启用开关控制，同时继承三级限流体系（租户→项目默认70%→用户）。"
+        ],
+        "scenario_usage": "",
+        "aip_inspiration": [
+          "注册即切断源权限的设计让模型分发不再依赖底层连接授权，配合租户-项目-用户三级限流实现自带模型与内置模型完全一致的治理体验。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Registered Models（自带模型注册与统一调度）",
+            "arch_layer": "L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)",
+            "palantir_spec": "管理员在 Control Panel 中通过 REST API 源或自托管计算模块注册外部模型，注册完成后底层数据源权限自动与使用者脱钩，终端用户无需任何源权限即可调用。平台为注册模型提供与内置模型相同的三级限流（租户级、项目级默认70%、用户级）、Markings 数据分级策略以及跨应用的模型选择器，但不支持 AIP Assist 等依赖官方评测的原生助手功能。",
+            "our_action": "适用于客户有合规限制或自有微调模型需纳入平台统一管控的场景，核心思路是将模型注册与底层连接权限彻底解耦，让模型分发和治理独立于数据源授权体系运行。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/ontology/overview": {
       "url": "https://www.palantir.com/docs/foundry/ontology/overview",
@@ -2441,7 +2506,8 @@
       "feature_focus": "使用 AIP Logic 构建 RAG 工作流的完整端到端实现路径，包含上下文注入与逻辑编排",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=U6Hxj6NB3us": {
       "url": "https://www.youtube.com/watch?v=U6Hxj6NB3us",
@@ -3082,7 +3148,8 @@
       "feature_focus": "在Palantir Foundry中通过Workshop构建首个业务应用的完整流程与交互设计",
       "status": "unread",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
       "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
@@ -3135,7 +3202,8 @@
       "feature_focus": "No-code AIP Logic Alerts 在 Palantir Foundry 中的自动化配置与数据监控实现",
       "status": "unread",
       "added_at": "2026-11-17",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=EqsLWIrzDbs": {
       "url": "https://www.youtube.com/watch?v=EqsLWIrzDbs",
@@ -3451,7 +3519,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=iMF6cnU3o3o": {
       "url": "https://www.youtube.com/watch?v=iMF6cnU3o3o",
@@ -3465,7 +3533,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=79x-Xf0VZ4Y": {
       "url": "https://www.youtube.com/watch?v=79x-Xf0VZ4Y",
@@ -3523,7 +3591,8 @@
       "feature_focus": "AIP Logic 内置 Evaluation Suite 的使用方式：逻辑函数的评估与回归验证",
       "status": "unread",
       "added_at": "2026-11-19",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -4089,7 +4158,8 @@
       "feature_focus": "AIP Logic + Automate + 全链路集成三件套替代人工派单调度工作流的实战拆解",
       "status": "unread",
       "added_at": "2026-11-24",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5": {
       "url": "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5",
@@ -4128,7 +4198,8 @@
       "feature_focus": "Workshop + OSDK 应用开发实操：从零搭建第一个 Ontology 驱动的应用（对象绑定、界面组件与前端 SDK 调用）",
       "status": "unread",
       "added_at": "2026-11-25",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4": {
       "url": "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4",
@@ -4154,6 +4225,84 @@
       "feature_focus": "与 [2] 同文的 Medium 转载摘要，仅罗列数据安全/控制权十问标题，无任何产品功能展开",
       "status": "rejected",
       "added_at": "2026-11-25",
+      "sent_at": ""
+    },
+    "https://x.com/PalantirTech/status/2123414683138801672": {
+      "url": "https://x.com/PalantirTech/status/2123414683138801672",
+      "raw_url": "",
+      "title": "@PalantirTech 产品洞察：Wield your alpha to beat the frontier. At DevCon 7, McCarthy Building Companies presents a sove...",
+      "source": "X @PalantirTech (官方产品与DevCon动态)",
+      "summary": "Wield your alpha to beat the frontier. At DevCon 7, McCarthy Building Companies presents a sovereign model factory built on Ontology-linked data, Model Studio, GPU Hubs, and AIP Evals. Together, they turn construction domain expertise into a fine-tuned model that beat a Show more 00:00 49 344 141K",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "DevCon 7 McCarthy案例：Ontology关联数据 + Model Studio + GPU Hubs + AIP Evals 组成的主权模型工厂与领域微调闭环",
+      "status": "unread",
+      "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://x.com/chadwahl/status/2125624023136587888": {
+      "url": "https://x.com/chadwahl/status/2125624023136587888",
+      "raw_url": "",
+      "title": "@chadwahl 产品洞察：Palantir + Tampa General savings lives together 🤝 Reducing sepsis deaths by 48% is a great use...",
+      "source": "X @chadwahl (Palantir Ontology架构师)",
+      "summary": "Palantir + Tampa General savings lives together 🤝 Reducing sepsis deaths by 48% is a great use of AI (Ad in Washington Union Square station) +3 THE SOVEREIGN AI REVOLUTION IS IN FULL FORCE. We are helping our customers build superintelligence they own, with data they control. McCarthy Building fine-tuned Nemotron in Foundry on labeled RFI data in the Ontology to identify project risks before they escalate, 26 210 5.4K",
+      "full_text": "",
+      "score": 5,
+      "feature_focus": "Tampa General脓毒症死亡率下降48%的客户成效宣传，附带Foundry上RFI标注数据微调Nemotron的一句话提及，无功能机制细节",
+      "status": "rejected",
+      "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=pIolrZc0lII": {
+      "url": "https://www.youtube.com/watch?v=pIolrZc0lII",
+      "raw_url": "",
+      "title": "[视频 · AI科技解码🧐] Peter Thiel豪掷1.22亿美元买入PLTR！400万股购买计划曝光，Palantir要起飞？",
+      "source": "YouTube 中文科普与架构拆解 (AI科技解码🧐)",
+      "summary": "YouTube 频道 AI科技解码🧐 视频讲解：Peter Thiel豪掷1.22亿美元买入PLTR！400万股购买计划曝光，Palantir要起飞？。简介：Peter Thiel 突然出手！Palantir（PLTR）董事长 Peter Thiel 通过旗下公司，一次性买入 850100 股 Palantir 股票，交易总金额高达 ...",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "Peter Thiel增持PLTR股票的股价与投资炒作内容，与产品功能无关",
+      "status": "rejected",
+      "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=_kAvkBfc-Mk": {
+      "url": "https://www.youtube.com/watch?v=_kAvkBfc-Mk",
+      "raw_url": "",
+      "title": "[视频 · PaIantir⠀] Introducing Palantir AIP | Capabilities and Product Demo",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (PaIantir⠀)",
+      "summary": "YouTube 频道 PaIantir⠀ 视频讲解：Introducing Palantir AIP | Capabilities and Product Demo。简介：",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "AIP官方能力总览与产品Demo：LLM编排、Ontology驱动的应用与工作流演示",
+      "status": "unread",
+      "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=GSkySDNmjV8": {
+      "url": "https://www.youtube.com/watch?v=GSkySDNmjV8",
+      "raw_url": "",
+      "title": "[视频 · Crayon Capital] Palantir Technologies Explained Like You’re 5",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (Crayon Capital)",
+      "summary": "YouTube 频道 Crayon Capital 视频讲解：Palantir Technologies Explained Like You’re 5。简介：Use code crayoncapital at https://incogni.com/crayoncapital to get an exclusive 60% off. September 11, 2001. The U.S. ...",
+      "full_text": "",
+      "score": 3,
+      "feature_focus": "面向小白的Palantir公司背景与9·11起源科普（含VPN广告），无具体产品模块拆解",
+      "status": "rejected",
+      "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=4GSwJPqn0Uc": {
+      "url": "https://www.youtube.com/watch?v=4GSwJPqn0Uc",
+      "raw_url": "",
+      "title": "[视频 · LearnWithBeibei] Palantir AIP Evals Tutorial: Threshold Sweeps, Repeats & Versions",
+      "source": "YouTube 模块深挖·AIP Evals评测与权限治理 (LearnWithBeibei)",
+      "summary": "YouTube 频道 LearnWithBeibei 视频讲解：Palantir AIP Evals Tutorial: Threshold Sweeps, Repeats & Versions。简介：Palantir AIP Evals tutorial: go beyond one pass rate. Pin versions, repeat tests, compare runs and sweep thresholds to test LLM ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Evals深度教程：版本固定、重复测试、多次运行对比与阈值扫描的LLM评估机制",
+      "status": "unread",
+      "added_at": "2026-11-26",
       "sent_at": ""
     }
   }

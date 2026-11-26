@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 24 篇）
+## 📅 已推送洞察总览表（共 27 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-26 | L5 安全治理与工程落地 | **AIP安全架构：第三方模型零留存与区域端点路由** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/aip-security/) |
+| 2026-11-26 | L5 安全治理与工程落地 | **BYOM：自带模型统一接入与权限解耦** | 多模型接入（BYOM）与模型路由管理：开源/自托管模型与平台内置模型的统一调度能力 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/bring-your-own-model) |
+| 2026-11-26 | L5 安全治理与工程落地 | **FDE模式：驻场判断力如何沉淀为产品资产** |  | [GitHub 深度专题 (palantir-aip-study)](https://github.com/wwwweeia/palantir-aip-study/blob/main/02-fde-forward-deployed-engineer.md) |
 | 2026-11-25 | L3 Agent 编排与评测层 | **AIP Evals：用测试集验收 AI 函数再上线** | AIP 核心模块分工：AIP Logic、Agent Studio、Assist、Evals、Workflow Builder 的功能边界与协作逻辑 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/aip-features) |
 | 2026-11-25 | L5 安全治理与工程落地 | **三档路径决策：按场景复杂度选AI落地深度** |  | [GitHub 深度专题 (palantir-aip-study)](https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-domestic-ai.md) |
 | 2026-11-24 | L3 Agent 编排与评测层 | **Agent Stack：会话持久化与类型化上下文驱动多参与者协作** | AIP Agent Stack 的工具封装体系：Ontology 查询、Action 执行与函数工具的分层集成 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/agent-stack) |
@@ -260,7 +263,32 @@
   - 取舍差异：放弃了通用REST API的灵活性，外部应用只能调用注册时勾选的Object Types和Actions，无法绕过Schema约束自由拼查询；换来的是编译期类型安全和统一的鉴权收敛，省掉每个应用自建OAuth和序列化层的重复工作
   - 最小实现要素：需定义应用注册表(app_id, allowed_object_types[], allowed_action_types[])、代码生成器读取Ontology Schema输出强类型客户端、SDK内置OAuth token刷新逻辑、Action调用前本地参数校验器(必填检查+枚举白名单)
 
-## L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)（已沉淀 6 篇）
+## L5 安全治理与工程落地 (Markings 权限 / 架构理念 / FDE 模式)（已沉淀 9 篇）
+
+### [2026-11-26] AIP安全架构：第三方模型零留存与区域端点路由
+- **原文**：[Palantir AIP 官方文档 — AIP 官方文档：AIP 安全架构与数据护栏](https://www.palantir.com/docs/foundry/aip/aip-security/)
+- **1. 解决什么业务痛点**：企业调用第三方大模型时，提示词和返回结果可能被模型厂商留存或用于训练，造成客户数据外泄风险。
+- **2. 这个功能是怎么工作的**：
+  - Palantir在接入每个第三方模型前，先与厂商签订技术加合同双重保证：提示词和补全内容即时丢弃不留存、不用于模型再训练、厂商人员无权访问；同时优先选用客户所在区域的模型端点以降低延迟并满足数据驻留要求。
+- **业务场景实例**：适用于金融、医疗、政务等对数据出境和隐私合规有硬性要求的行业客户，需要在不牺牲AI能力的前提下消除数据外泄顾虑。
+- **3. 产品设计亮点与取舍**：
+  - 关键设计亮点是把「零留存」从口头承诺变成了逐厂商的技术验证加合同约束的准入门槛，而非事后审计补救；适用前提是客户愿意接受平台代为托管模型调用链路。
+
+### [2026-11-26] BYOM：自带模型统一接入与权限解耦
+- **原文**：[Palantir 官方产品文档 — AIP 官方文档：多模型接入（BYOM）与模型路由管理](https://www.palantir.com/docs/foundry/aip/bring-your-own-model)
+- **1. 解决什么业务痛点**：客户因合规或自有微调模型需接入平台时，缺乏与内置模型同等的限流、权限和可观测治理能力。
+- **2. 这个功能是怎么工作的**：
+  - 管理员通过 REST API 或自托管计算模块注册模型后，底层数据源权限即与终端用户解耦，访问仅由 Control Panel 的启用开关控制，同时继承三级限流体系（租户→项目默认70%→用户）。
+- **3. 产品设计亮点与取舍**：
+  - 注册即切断源权限的设计让模型分发不再依赖底层连接授权，配合租户-项目-用户三级限流实现自带模型与内置模型完全一致的治理体验。
+
+### [2026-11-26] FDE模式：驻场判断力如何沉淀为产品资产
+- **原文**：[GitHub 深度专题 (palantir-aip-study) — Palantir FDE（前线部署工程师）模式与产品演进机制解析](https://github.com/wwwweeia/palantir-aip-study/blob/main/02-fde-forward-deployed-engineer.md)
+- **1. 解决什么业务痛点**：企业AI项目失败多因技术团队不懂业务、业务团队不懂翻译需求，中间缺一个能同时做技术判断和业务判断的人把系统真正跑起来。
+- **2. 这个功能是怎么工作的**：
+  - FDE常驻客户现场，在需求讨论中当场判断哪些该建模为Ontology对象，再把反复出现的共性问题抽象为可复用模式，逐步固化为Workshop模板和OSDK脚手架，让后续客户自助完成标准部署。
+- **3. 产品设计亮点与取舍**：
+  - FDE的核心价值不是完成交付而是把判断力编码进工具；如果所有工作只停留在交付层面没有沉淀为可复用资产，就是在消耗商业模式而非强化它。
 
 ### [2026-11-25] 三档路径决策：按场景复杂度选AI落地深度
 - **原文**：[GitHub 深度专题 (palantir-aip-study) — 国产 AI 平台借鉴 Palantir AIP 的产品设计与落地行动指南](https://github.com/wwwweeia/palantir-aip-study/blob/main/04-action-guide-domestic-ai.md)
