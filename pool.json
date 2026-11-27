@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-26 01:04:52",
+  "updated_at": "2026-11-27 01:04:06",
   "items": {
     "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md": {
       "url": "https://github.com/wwwweeia/palantir-aip-study/blob/main/01-palantir-aip-ontology.md",
@@ -333,9 +333,33 @@
       "summary": "Palantir AIP 官方产品文档核心模块拆解：AIP 官方文档：构建 LLM 代理与联邦层 (Proxy / Federation)",
       "score": 9,
       "reason": "系统阐述 LLM 代理与联邦层构建机制，涵盖代理生命周期管理、跨系统联邦通信、上下文路由、状态同步等关键能力",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-27",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "Compute Module代理层：在模型出口拦截并改写请求",
+        "feature_tag": "AIP Logic与Agent编排",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "",
+        "related_history": "",
+        "core_concept": "企业调用外部大模型时，需要在请求离开自身环境前对内容做脱敏、注入指令或按成本延迟路由到不同供应商，而非直接透传。",
+        "product_mechanics": [
+          "用户部署一个容器实现标准模型接口格式，AIP把推理请求发给该容器，容器执行自定义逻辑（脱敏、改写提示词、格式转换或多供应商路由）后再转发给外部模型提供商，整个过程对上层应用透明。"
+        ],
+        "scenario_usage": "",
+        "aip_inspiration": [
+          "关键设计在于把代理层注册为一个普通模型，上层所有AIP应用无需感知背后是单供应商还是多供应商联邦，切换路由策略不影响业务侧任何配置。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "Compute Module Proxy（计算模块代理/联邦层）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "这是一个用户自行部署的容器，插在AIP与外部模型供应商之间充当中间人。它接收AIP发来的推理请求，可以剥离敏感信息、拼接系统提示词、转换接口格式，或根据成本和延迟将请求分发到多个供应商。容器的网络出口和密钥通过Data Connection的数据源统一管理，最终在控制面板注册为模型供全平台使用。",
+            "our_action": "适用于企业既要用外部大模型能力又必须管控数据出境内容的场景，核心思路是把安全过滤和智能路由下沉到一个对业务透明的中间容器，让上层应用只管选模型不管背后链路。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/llm-capacity-management/": {
       "url": "https://www.palantir.com/docs/foundry/aip/llm-capacity-management/",
@@ -908,7 +932,7 @@
       "summary": "YouTube 频道 Ontologize 视频讲解：Speedrun: Your First AIP Workflow。简介：Come build alongside Gena as she works through Palantir's free online course titled “Speedrun: Your First AIP Workflow” ...",
       "score": 8,
       "feature_focus": "基于官方免费课程的全流程实操演示，展示从数据接入到 AIP 工作流构建的端到端工作流搭建方法",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-16",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -1056,9 +1080,33 @@
       "summary": "介绍 AIP 如何将大模型、自定义函数与业务动作锚定在企业 Ontology 之上。",
       "score": 9,
       "feature_focus": "AIP 如何将大模型、自定义函数与业务动作锚定于企业 Ontology 的统一语义运行时",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-27",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP Observability：监控优化Agent与应用性能",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "",
+        "related_history": "",
+        "core_concept": "AI应用上线后，开发者需要持续掌握平台上构建的Agent和应用的实际运行表现，才能做针对性优化。",
+        "product_mechanics": [
+          "AIP提供专门的可观测性工具集，让开发者对平台上构建的Agent和应用进行性能监控与优化；同时平台支持分布式计算和资源用量的精细控制与限额设定。"
+        ],
+        "scenario_usage": "",
+        "aip_inspiration": [
+          "把可观测性作为独立产品模块而非附属日志功能来建设，说明Palantir认为生产级AI应用的运维监控本身就是核心产品能力。"
+        ],
+        "feature_specs": [
+          {
+            "component_name": "AIP Observability（AI应用可观测性）",
+            "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+            "palantir_spec": "AIP Observability是平台内置的监控工具集，专门面向在AIP上构建的Agent和应用，帮助开发者追踪其运行性能并做优化调整。它与平台的资源用量精细控制和限额设定能力配合，确保大规模部署下AI应用的性能可控、问题可定位。",
+            "our_action": "适用于AI应用从试点走向规模化部署后缺乏统一运行监控的痛点，核心思路是把Agent和应用的性能观测做成平台原生能力，而不是让各业务团队各自拼凑监控方案。"
+          }
+        ]
+      }
     },
     "https://www.palantir.com/docs/foundry/aip/agent-stack": {
       "url": "https://www.palantir.com/docs/foundry/aip/agent-stack",
@@ -2507,7 +2555,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=U6Hxj6NB3us": {
       "url": "https://www.youtube.com/watch?v=U6Hxj6NB3us",
@@ -2808,9 +2856,26 @@
       "full_text": "",
       "score": 9,
       "feature_focus": "AIP Evals 构建大模型与 Agent 自动化评测基准，支持准确率、耗时与成本对比分析",
-      "status": "unread",
+      "status": "sent",
       "added_at": "2026-11-16",
-      "sent_at": ""
+      "sent_at": "2026-11-27",
+      "bitable_synced": true,
+      "insight_archive": {
+        "title": "AIP Evals：用评测套件给模型与Agent打分",
+        "feature_tag": "权限安全与Evals评测",
+        "arch_layer": "L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)",
+        "arch_position": "",
+        "related_history": "",
+        "core_concept": "大模型和Agent上线前后缺少统一的质量基准，准确率、耗时与成本难以横向对比，改动效果只能靠人工抽查判断。",
+        "product_mechanics": [
+          "围绕Logic函数建评测套件，可评中间参数对应的块输出与Ontology编辑结果，跑套件或做实验后把运行结果写入数据集，再在指标看板里分析对比。"
+        ],
+        "scenario_usage": "",
+        "aip_inspiration": [
+          "亮点是评测对象不止最终答案，还能落到中间块输出和本体写操作；结果沉淀成数据集，让每次改动都有可复查的历史记录。"
+        ],
+        "feature_specs": []
+      }
     },
     "https://www.youtube.com/watch?v=FDHF5BddMnc": {
       "url": "https://www.youtube.com/watch?v=FDHF5BddMnc",
@@ -3149,7 +3214,7 @@
       "status": "unread",
       "added_at": "2026-11-16",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=gOnYsbWg6-Q": {
       "url": "https://www.youtube.com/watch?v=gOnYsbWg6-Q",
@@ -3203,7 +3268,7 @@
       "status": "unread",
       "added_at": "2026-11-17",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=EqsLWIrzDbs": {
       "url": "https://www.youtube.com/watch?v=EqsLWIrzDbs",
@@ -3360,7 +3425,8 @@
       "feature_focus": "从零搭建外部租户门户的 OSDK 实现细节（与 React Tenant Portal 主题重复）",
       "status": "unread",
       "added_at": "2026-11-18",
-      "sent_at": ""
+      "sent_at": "",
+      "fetch_fail_count": 1
     },
     "https://www.youtube.com/watch?v=2jm-dmDOxaI": {
       "url": "https://www.youtube.com/watch?v=2jm-dmDOxaI",
@@ -3516,7 +3582,7 @@
       "full_text": "",
       "score": 8,
       "feature_focus": "Foundry AIP Evals 评测模块的功能探索与界面走查",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-19",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -3530,7 +3596,7 @@
       "full_text": "",
       "score": 8,
       "feature_focus": "AIP Evals 官方讲解：用评估体系把生成式 AI 从实验推进到企业生产运营",
-      "status": "unread",
+      "status": "insufficient_content",
       "added_at": "2026-11-19",
       "sent_at": "",
       "fetch_fail_count": 2
@@ -3592,7 +3658,7 @@
       "status": "unread",
       "added_at": "2026-11-19",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://www.youtube.com/watch?v=cwggpCxiHZ4": {
       "url": "https://www.youtube.com/watch?v=cwggpCxiHZ4",
@@ -4159,7 +4225,7 @@
       "status": "unread",
       "added_at": "2026-11-24",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5": {
       "url": "https://medium.com/@dydrnsj/the-ontology-was-palantirs-moat-then-it-became-a-category-b24474deace3?source=rss------palantir-5",
@@ -4199,7 +4265,7 @@
       "status": "unread",
       "added_at": "2026-11-25",
       "sent_at": "",
-      "fetch_fail_count": 1
+      "fetch_fail_count": 2
     },
     "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4": {
       "url": "https://blog.palantir.com/zrozumie%C4%87-palantir-fakty-i-mity-afa49bcfb8ab?source=rss----3c87dc14372f---4",
@@ -4303,6 +4369,138 @@
       "feature_focus": "AIP Evals深度教程：版本固定、重复测试、多次运行对比与阈值扫描的LLM评估机制",
       "status": "unread",
       "added_at": "2026-11-26",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=uXN_GQYmT7s": {
+      "url": "https://www.youtube.com/watch?v=uXN_GQYmT7s",
+      "raw_url": "",
+      "title": "[视频 · 跟贝贝一起学习] Palantir AIP Evolve 教程：用 AI 智能体改进 AI 系统并审查 Proposal",
+      "source": "YouTube 中文科普与架构拆解 (跟贝贝一起学习)",
+      "summary": "YouTube 频道 跟贝贝一起学习 视频讲解：Palantir AIP Evolve 教程：用 AI 智能体改进 AI 系统并审查 Proposal。简介：Palantir AIP Evolve 是什么？它会协调一群 AI FDE 智能体，自动改进 Foundry 中的 AI 系统。不过 Evolve 会直接改动系统，所以 ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Evolve：多 AI FDE 智能体自动改进 Foundry 中 AI 系统，并以 Proposal（变更提案）形式供人工审查的自演进与可控性机制",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://www.youtube.com/watch?v=8wX9YjrR_1k": {
+      "url": "https://www.youtube.com/watch?v=8wX9YjrR_1k",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Revolutionizing Supply Chain Agility for the Frosty | Wendy’s QSCC at AIPCon 6",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Revolutionizing Supply Chain Agility for the Frosty | Wendy’s QSCC at AIPCon 6。简介：For Wendy's, holding their product to the highest standards comes with a serious shelf-life problem. At Palantir AIPCon 6, Pete ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Wendy's QSCC 供应链实战：用 AIP/Ontology 解决冻品保质期与库存周转的敏捷调度工作流",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=SePXznjZ-1A": {
+      "url": "https://www.youtube.com/watch?v=SePXznjZ-1A",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Agentic Operating System for the Enterprise | Palantir’s AIP Lead Jack Dobson at AIPCon 6",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Agentic Operating System for the Enterprise | Palantir’s AIP Lead Jack Dobson at AIPCon 6。简介：Palantir's customers operate in the most mission critical, sensitive and competitive environments - this demands more from the ...",
+      "full_text": "",
+      "score": 9,
+      "feature_focus": "AIP Lead 阐述「企业级 Agentic Operating System」架构理念：Ontology 之上 Agent 编排、人机协同与任务关键环境的可控性设计",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=uo6y_0DG29I": {
+      "url": "https://www.youtube.com/watch?v=uo6y_0DG29I",
+      "raw_url": "",
+      "title": "[视频 · Palantir] AI-Driven Supply Chain Transformation | Heineken at AIPCon 6",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：AI-Driven Supply Chain Transformation | Heineken at AIPCon 6。简介：Laurens van de Rotte, Chief Operations Officer at Heineken USA, demonstrates at AIPCon 6 how Palantir technology has ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Heineken USA 供应链转型 Demo：AIP 在需求预测、补货与运营决策中的端到端业务落地",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=yrtDgoqWmgM": {
+      "url": "https://www.youtube.com/watch?v=yrtDgoqWmgM",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Multi-Domain AI: The Future of Command and Control | CDAO at AIPCon 9",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Multi-Domain AI: The Future of Command and Control | CDAO at AIPCon 9。简介：Cameron Stanley, Chief Digital and Artificial Intelligence Officer of the Department of War, shares how the DoW is driving ...",
+      "full_text": "",
+      "score": 7,
+      "feature_focus": "军种多域指挥控制场景下的 Multi-Domain AI：跨域数据融合与决策链路的产品能力展示（偏国防叙事）",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=oSsEaz36DLU": {
+      "url": "https://www.youtube.com/watch?v=oSsEaz36DLU",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Agentic Supply Chain for Data Center Delivery | Nscale at AIPCon 10",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Agentic Supply Chain for Data Center Delivery | Nscale at AIPCon 10。简介：At AIPCon 10, Nscale shared how they use AI to build for AI, with Palantir's AIP powering the supply chain behind the world's next ...",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "Nscale 数据中心交付的 Agentic Supply Chain：AIP Agent 驱动的设备/物料交付排程与异常处置",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=DLx3ix6c0Oo": {
+      "url": "https://www.youtube.com/watch?v=DLx3ix6c0Oo",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Transforming Network Planning for Aviation | American Airlines at AIPCon 8",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Transforming Network Planning for Aviation | American Airlines at AIPCon 8。简介：American Airlines unlocked tens of millions of dollars in value within a year by reimagining their network planning ecosystem.",
+      "full_text": "",
+      "score": 8,
+      "feature_focus": "American Airlines 航线网络规划：基于 Ontology 的网络规划生态重构与情景模拟优化",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=xoQejZ7n_QA": {
+      "url": "https://www.youtube.com/watch?v=xoQejZ7n_QA",
+      "raw_url": "",
+      "title": "[视频 · Amit Kukreja] PALANTIR AIP CON 8 LIVE WITH A FORWARD DEPLOYED ENGINEER",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Amit Kukreja)",
+      "summary": "YouTube 频道 Amit Kukreja 视频讲解：PALANTIR AIP CON 8 LIVE WITH A FORWARD DEPLOYED ENGINEER。简介：All right hello everybody welcome to AIP Con 8 i am here with Ford deployed engineer Anit anit what's up good to be here we are ...",
+      "full_text": "",
+      "score": 6,
+      "feature_focus": "AIPCon 8 现场直播访谈 Forward Deployed Engineer，偏会议氛围与交付角色闲聊，缺乏具体功能拆解",
+      "status": "rejected",
+      "added_at": "2026-11-27",
+      "sent_at": ""
+    },
+    "https://www.youtube.com/watch?v=akieze8_tSE": {
+      "url": "https://www.youtube.com/watch?v=akieze8_tSE",
+      "raw_url": "",
+      "title": "[视频 · Palantir] Palantir AIP Capabilities Demonstration | CTO Shyam Sankar at AIPCon",
+      "source": "YouTube 模块深挖·AIPCon客户真机Demo (Palantir)",
+      "summary": "YouTube 频道 Palantir 视频讲解：Palantir AIP Capabilities Demonstration | CTO Shyam Sankar at AIPCon。简介：Palantir CTO Shyam Sankar provides a detailed look at Palantir AIP, including AIP Assist, AIP Logic, and AIP Automate. Palantir ...",
+      "full_text": "",
+      "score": 10,
+      "feature_focus": "CTO Shyam Sankar 完整演示 AIP Assist / AIP Logic / AIP Automate 三大核心模块的功能设计与交互流程",
+      "status": "unread",
+      "added_at": "2026-11-27",
+      "sent_at": "",
+      "fetch_fail_count": 1
+    },
+    "https://medium.com/@ntlivetech/what-did-palantir-ceo-alex-karp-say-about-neurodivergent-adhd-workers-8360b3531495?source=rss------palantir-5": {
+      "url": "https://medium.com/@ntlivetech/what-did-palantir-ceo-alex-karp-say-about-neurodivergent-adhd-workers-8360b3531495?source=rss------palantir-5",
+      "raw_url": "",
+      "title": "What did Palantir CEO Alex Karp say about Neurodivergent ADHD workers?",
+      "source": "Medium Palantir 深度专栏",
+      "summary": "In the latest US AI news updates, it has been reported that Alex Karp, who is the current CEO of the Palantir company, expressed his view… Continue reading on Medium »",
+      "full_text": "",
+      "score": 0,
+      "feature_focus": "CEO Alex Karp 关于神经多样性/ADHD 员工的个人言论，与产品功能无关",
+      "status": "rejected",
+      "added_at": "2026-11-27",
       "sent_at": ""
     }
   }

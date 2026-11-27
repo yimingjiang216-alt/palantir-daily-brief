@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 27 篇）
+## 📅 已推送洞察总览表（共 30 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-27 | L3 Agent 编排与评测层 | **Compute Module代理层：在模型出口拦截并改写请求** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/build-a-proxy-or-federation-layer/) |
+| 2026-11-27 | L3 Agent 编排与评测层 | **AIP Observability：监控优化Agent与应用性能** | AIP 如何将大模型、自定义函数与业务动作锚定于企业 Ontology 的统一语义运行时 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/overview) |
+| 2026-11-27 | L3 Agent 编排与评测层 | **AIP Evals：用评测套件给模型与Agent打分** | AIP Evals 构建大模型与 Agent 自动化评测基准，支持准确率、耗时与成本对比分析 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip-evals/overview) |
 | 2026-11-26 | L5 安全治理与工程落地 | **AIP安全架构：第三方模型零留存与区域端点路由** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/aip-security/) |
 | 2026-11-26 | L5 安全治理与工程落地 | **BYOM：自带模型统一接入与权限解耦** | 多模型接入（BYOM）与模型路由管理：开源/自托管模型与平台内置模型的统一调度能力 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/bring-your-own-model) |
 | 2026-11-26 | L5 安全治理与工程落地 | **FDE模式：驻场判断力如何沉淀为产品资产** |  | [GitHub 深度专题 (palantir-aip-study)](https://github.com/wwwweeia/palantir-aip-study/blob/main/02-fde-forward-deployed-engineer.md) |
@@ -109,7 +112,31 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 10 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 13 篇）
+
+### [2026-11-27] Compute Module代理层：在模型出口拦截并改写请求
+- **原文**：[Palantir AIP 官方文档 — AIP 官方文档：构建 LLM 代理与联邦层 (Proxy / Federation)](https://www.palantir.com/docs/foundry/aip/build-a-proxy-or-federation-layer/)
+- **1. 解决什么业务痛点**：企业调用外部大模型时，需要在请求离开自身环境前对内容做脱敏、注入指令或按成本延迟路由到不同供应商，而非直接透传。
+- **2. 这个功能是怎么工作的**：
+  - 用户部署一个容器实现标准模型接口格式，AIP把推理请求发给该容器，容器执行自定义逻辑（脱敏、改写提示词、格式转换或多供应商路由）后再转发给外部模型提供商，整个过程对上层应用透明。
+- **3. 产品设计亮点与取舍**：
+  - 关键设计在于把代理层注册为一个普通模型，上层所有AIP应用无需感知背后是单供应商还是多供应商联邦，切换路由策略不影响业务侧任何配置。
+
+### [2026-11-27] AIP Observability：监控优化Agent与应用性能
+- **原文**：[Palantir 官方产品文档 — AIP 官方文档：产品全景与核心能力矩阵](https://www.palantir.com/docs/foundry/aip/overview)
+- **1. 解决什么业务痛点**：AI应用上线后，开发者需要持续掌握平台上构建的Agent和应用的实际运行表现，才能做针对性优化。
+- **2. 这个功能是怎么工作的**：
+  - AIP提供专门的可观测性工具集，让开发者对平台上构建的Agent和应用进行性能监控与优化；同时平台支持分布式计算和资源用量的精细控制与限额设定。
+- **3. 产品设计亮点与取舍**：
+  - 把可观测性作为独立产品模块而非附属日志功能来建设，说明Palantir认为生产级AI应用的运维监控本身就是核心产品能力。
+
+### [2026-11-27] AIP Evals：用评测套件给模型与Agent打分
+- **原文**：[Palantir 官方产品文档 — AIP Evals 官方文档：大模型与 Agent 自动化评测基准](https://www.palantir.com/docs/foundry/aip-evals/overview)
+- **1. 解决什么业务痛点**：大模型和Agent上线前后缺少统一的质量基准，准确率、耗时与成本难以横向对比，改动效果只能靠人工抽查判断。
+- **2. 这个功能是怎么工作的**：
+  - 围绕Logic函数建评测套件，可评中间参数对应的块输出与Ontology编辑结果，跑套件或做实验后把运行结果写入数据集，再在指标看板里分析对比。
+- **3. 产品设计亮点与取舍**：
+  - 亮点是评测对象不止最终答案，还能落到中间块输出和本体写操作；结果沉淀成数据集，让每次改动都有可复查的历史记录。
 
 ### [2026-11-25] AIP Evals：用测试集验收 AI 函数再上线
 - **原文**：[Palantir 官方产品文档 — AIP 官方文档：核心产品特性目录（AIP Features）](https://www.palantir.com/docs/foundry/aip/aip-features)
