@@ -16,10 +16,13 @@
 [L5 安全治理与落地范式] Markings 细粒度权限穿透  |  可解释审计追踪  |  FDE 驻场工程孵化模式
 ```
 
-## 📅 已推送洞察总览表（共 30 篇）
+## 📅 已推送洞察总览表（共 33 篇）
 
 | 推送日期 | 架构层级 | 洞察标题 | 核心功能切面 | 来源 |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-28 | L2 本体与动作层 | **Action Types：把业务写操作做成可校验的标准动作** | Ontology 中 Action Types 的参数校验、权限规则、副作用与业务操作写回机制 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/action-types/overview) |
+| 2026-11-28 | L2 本体与动作层 | **Action Webhooks：动作触发外部系统写回** | Action Webhooks 实现 Ontology 决策动作到外部 ERP/SAP/CRM 系统的实时反向写回 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/action-types/webhooks) |
+| 2026-11-28 | L3 Agent 编排与评测层 | **Regional GPU Hubs：LoRA 适配器热部署到共享算力池** | DevCon 7 发布的 Regional GPU Hubs 与 Multi-Adapter Deployments：Model Studio 训练 LoRA adapter 到生产部署的主权算力链路 | [X @PalantirTech (官方产品与DevCon动态)](https://x.com/PalantirTech/status/2122426136520953879) |
 | 2026-11-27 | L3 Agent 编排与评测层 | **Compute Module代理层：在模型出口拦截并改写请求** |  | [Palantir AIP 官方文档](https://www.palantir.com/docs/foundry/aip/build-a-proxy-or-federation-layer/) |
 | 2026-11-27 | L3 Agent 编排与评测层 | **AIP Observability：监控优化Agent与应用性能** | AIP 如何将大模型、自定义函数与业务动作锚定于企业 Ontology 的统一语义运行时 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip/overview) |
 | 2026-11-27 | L3 Agent 编排与评测层 | **AIP Evals：用评测套件给模型与Agent打分** | AIP Evals 构建大模型与 Agent 自动化评测基准，支持准确率、耗时与成本对比分析 | [Palantir 官方产品文档](https://www.palantir.com/docs/foundry/aip-evals/overview) |
@@ -66,7 +69,25 @@
   - 取舍差异：放弃了数据库原生 upsert 能力，要求开发者自行用窗口函数建模 latest-state-per-key；换来的是每次构建都有事务级原子性和可回溯的版本链，失败不会污染下游消费
   - 最小实现要素：需定义 changelog 表含业务主键、updated_at、ingested_at 三个排序字段；transform 元数据存 semantic_version 整型与 last_committed_offset；输出表按业务日期分区；校验规则为 cast 后 null_rate 超阈值则 FAIL 阻断提交
 
-## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 4 篇）
+## L2 本体与动作层 (Ontology / Object Views / Action Types / Functions)（已沉淀 6 篇）
+
+### [2026-11-28] Action Types：把业务写操作做成可校验的标准动作
+- **原文**：[Palantir 官方产品文档 — Ontology 官方文档：Action Types（动作类型）与业务闭环](https://www.palantir.com/docs/foundry/action-types/overview)
+- **1. 解决什么业务痛点**：让对本体对象的修改走统一的动作定义，而不是各处随意改数据，参数、提交条件、权限和后续通知都在同一处声明清楚。
+- **2. 这个功能是怎么工作的**：
+  - 一个动作类型先声明参数（可设默认值、过滤下拉候选项、按场景覆盖配置），再用规则和提交条件判断这次提交是否允许，通过后写回对象与链接，并可挂通知、Webhook 或触发调度构建作为副作用。
+- **业务场景实例**：适合需要人工或 AI 修改业务对象状态的场景：审批、派单、调整计划等。文档专门列了参数下拉的安全考量、参数性能考量、规模与属性上限，以及试运行（Test run）用于正式提交前验证动作效果。
+- **3. 产品设计亮点与取舍**：
+  - 亮点是把「能不能提交」和「提交后连带发生什么」都收进动作定义本身，而不是散落在各个应用里；边界是参数下拉的可见范围和批量规模都有明确约束需要单独设计。
+
+### [2026-11-28] Action Webhooks：动作触发外部系统写回
+- **原文**：[Palantir 官方产品文档 — Ontology 官方文档：Action Webhooks 反向写回外部业务系统](https://www.palantir.com/docs/foundry/action-types/webhooks)
+- **1. 解决什么业务痛点**：平台内做出的决策动作，如何不止停留在本体对象上，而是把结果实时反向写回企业已有的 ERP/SAP/CRM 等外部业务系统。
+- **2. 这个功能是怎么工作的**：
+  - Webhook 被配置为某个动作类型的副作用，动作提交后由平台向外部系统发起调用完成写回；官方文档把它与通知并列为两类副作用，并单独提供一篇「设置 webhook」的配置指引。
+- **业务场景实例**：适用于决策在 AIP 里做、但单据主数据和流程仍留在 SAP/ERP/CRM 的企业：审批、调拨、状态变更这类动作在本体侧完成后，需要让原系统同步落账，而不是靠人工二次录入。
+- **3. 产品设计亮点与取舍**：
+  - 关键设计是把「对外写回」做成动作的标准副作用而非散落的集成脚本，动作与外呼绑定在同一处配置，边界是它只负责触发调用，成败语义取决于外部系统。
 
 ### [2026-11-23] Ontology单对象：多界面只读同一份房产记录
 - **原文**：[Medium Palantir Foundry 专栏 — Building Consumer-Grade Applications on Palantir Foundry: An Ontology-Native Real Estate Product](https://medium.com/@hr_52458/building-consumer-grade-applications-on-palantir-foundry-an-ontology-native-real-estate-product-4f5a48d2ea13?source=rss------palantir_foundry-5)
@@ -112,7 +133,16 @@
   - 【通用设计精髓与认知校准】常规直觉认为 AI 应直接操作系统，但 Palantir 的真实做法是‘反向写回’：让 AI 只能‘申请’，平台才是‘执行者’。这打破了‘大模型即代理’的幻想，真正实现了‘可控、可审计、可追溯’的可信执行，是 AIP 从‘会答’走向‘能做’的核心跃迁。
   - 【对标框架落位与起步取舍】该能力应沉淀于‘数据本体底座’层，当前起步阶段不必追求全局图谱，优先聚焦一个业务闭环子图（如安全运营），先建好 Object/Link/Action 类型，再对接 Agent 编排运行时。重点抄作业的是：Action 的前置条件+执行流水线+审计日志三件套，而非复杂图结构
 
-## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 13 篇）
+## L3 Agent 编排与评测层 (AIP Logic / Agent Studio / AIP Evals)（已沉淀 14 篇）
+
+### [2026-11-28] Regional GPU Hubs：LoRA 适配器热部署到共享算力池
+- **原文**：[X @PalantirTech (官方产品与DevCon动态) — @PalantirTech 产品洞察：Sovereign models require sovereign compute. At DevCon 7, Palantir Software Engineers launch Reg...](https://x.com/PalantirTech/status/2122426136520953879)
+- **1. 解决什么业务痛点**：企业微调出大量 LoRA adapter 后，传统逐个部署需要独立加载完整模型权重，耗时长且 GPU 资源浪费严重，训练成果难以快速上线。
+- **2. 这个功能是怎么工作的**：
+  - 在 Model Studio 完成 LoRA adapter 训练后，将其推送到 Regional GPU Hub 上已预热运行的基座模型实例，平台自动管理基座版本、分词器与显存配置的匹配，30-45 秒内即可上线服务，数百个微调模型共享同一 GPU 池。
+- **业务场景实例**：适用于需要在数据主权区域内运行大量垂直场景微调模型的企业，例如不同业务线各自训练了专属 adapter，但希望共用一组本地 GPU 而非为每个模型单独采购算力。
+- **3. 产品设计亮点与取舍**：
+  - 核心设计亮点是将基座模型常驻预热、adapter 作为轻量插件热挂载，把部署粒度从「整个模型」降到「一个适配器文件」，从而用一个 GPU 池承载数百个业务模型的并行服务。
 
 ### [2026-11-27] Compute Module代理层：在模型出口拦截并改写请求
 - **原文**：[Palantir AIP 官方文档 — AIP 官方文档：构建 LLM 代理与联邦层 (Proxy / Federation)](https://www.palantir.com/docs/foundry/aip/build-a-proxy-or-federation-layer/)
